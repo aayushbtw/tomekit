@@ -4,11 +4,7 @@ Fully typed content collections for Markdown.
 
 ## Support
 
-|            | Version |
-| ---------- | ------- |
-| Vite       | 8+      |
-| TypeScript | 7+      |
-| Node       | 24+     |
+Vite 8+, TypeScript 7+ and Node 24+.
 
 ## Quick start
 
