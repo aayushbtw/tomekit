@@ -4,6 +4,9 @@
   "compatibility_date": "2026-09-16",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  // Prerender writes a directory index per route while the router links without
+  // a trailing slash, so the default would 307 on every deep link.
+  "assets": { "html_handling": "drop-trailing-slash" },
   "routes": [{ "pattern": "tomekit.aayush.cv", "custom_domain": true }],
   // A prerendered docs site serves almost everything from assets, so a log per
   // request is noise. 1% is enough to see the worker is alive and erroring.
