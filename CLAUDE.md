@@ -1,6 +1,6 @@
 # tomekit
 
-Typed content collections for Vite. Content is parsed and validated at build time and served as generated modules, so nothing is parsed at runtime.
+Fully typed content collections for Markdown. Content is parsed and validated at build time and served as generated modules, so nothing is parsed at runtime.
 
 Goal: the best API and DX, fully typed, fast. The one real consumer is `../portfolio` (it depends on the published `tomekit` from npm).
 
