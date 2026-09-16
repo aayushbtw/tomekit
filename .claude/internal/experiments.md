@@ -23,6 +23,11 @@ Designs that were tried and failed, and measurements behind a decision, so nobod
 - **Flagging frontmatter keys missing from the schema's output** (2026-09-16): breaks on an undeclared `slug` and on schemas that rename or reshape keys.
 - **Failing the build when a folder has files but none match `include`** (2026-09-16): rejected by the user; it warns with the count of other files instead.
 
+## Docs and tests
+
+- **Documenting what fails, and when** (2026-09-16): a hand-written table in `errors.md`, then TSDoc problem tags (`@typeError`, `@buildError`, `@warning`, `@notCaught`) that generated the table, with `catches.test.ts` pinning every tag to a real build and `tsc` run. Dropped: each new check needed a tag in up to 3 places plus a case, the test pinned docs wording rather than behavior, and all 35 cases duplicated module tests. Type and build errors already name the problem and fix, and warnings state their consequence, so they need no docs. What nothing reports is documented where the choice is made (strict schemas in `collections.md`, `get()` returning `undefined` in `reading.md`).
+- **Snapshotting error output into docs:** rejected before building. Snapshots record what happens, not what should, so a silently accepted mistake looks as green as a caught one.
+
 ## Measurements
 
 - **`directory()` full reload** (2026-09-15): ~80 ms for 1,000 files, ~710 ms for 10,000. Transforms are already skipped by hash.

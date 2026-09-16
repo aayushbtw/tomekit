@@ -64,7 +64,6 @@ Public exports get TSDoc: a one-sentence summary, then an `@example` that runs a
 ````
 
 - Document everything users import from `tomekit`, `tomekit/content` and `tomekit/vite`, plus each option field.
-- Every mistake a user can make with an API gets a problem tag on that API, with the earliest point it's caught: `@typeError`, `@buildError`, `@warning` or `@notCaught`, then one sentence. The docs site's errors page is generated from these tags, and `test/catches.test.ts` needs a case for each one that proves it.
 - Add `@param` / `@returns` only when they say something the name and type don't (units, what `undefined` means, ownership).
 - Internal functions get no TSDoc unless they have a contract the types can't express. Never add docs to a function just because its neighbors have them.
 - Inline comments explain only the non-obvious _why_, never restate the line.

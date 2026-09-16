@@ -20,9 +20,6 @@ interface TomekitOptions {
   /**
    * Path to the config file, relative to the Vite root.
    *
-   * @buildError The config throws while it loads.
-   * @buildError The config has no default export.
-   *
    * @default "tomekit.config.ts"
    */
   config?: "tomekit.config.ts" | (string & Record<never, never>);
@@ -30,8 +27,6 @@ interface TomekitOptions {
    * The folder generated types are written to, relative to the Vite root, or
    * `false` to skip them. Map `tomekit/content*` to `<types>/content*` in your
    * tsconfig `paths`.
-   *
-   * @warning `tsconfig.json` doesn't map `tomekit/content`.
    *
    * @default ".tomekit"
    */

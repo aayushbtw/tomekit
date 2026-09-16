@@ -112,19 +112,22 @@ posts: {
 - It must produce an object. A file without frontmatter is validated as `{}`.
 - Frontmatter must be keys and values. A YAML list or a single value is an error.
 - An issue points at the key's line and column: `content/posts/hello.md:3:1: title:` and then the validator's message. A missing key points at its deepest parent that exists.
-- `directory()` reads `slug` before the schema runs. It stays in `metadata` only if the schema keeps it, and `z.object` drops keys it doesn't list.
+- `directory()` reads `slug` before the schema runs. It stays in `metadata` only if the schema keeps it.
 
-### Unknown keys
+### Recommended: strict schemas
 
-The schema decides what happens to keys it doesn't list. `z.object` drops them, so a misspelled optional key like `modifedAt` builds fine and `modifiedAt` is `undefined`. To fail the build instead, reject unknown keys:
+Use a strict object schema, so a misspelled key fails the build:
 
-| Validator | Rejects unknown keys           |
-| --------- | ------------------------------ |
-| Zod       | `z.strictObject({ ... })`      |
-| Valibot   | `v.strictObject({ ... })`      |
-| ArkType   | `type({ "+": "reject", ... })` |
+```ts
+// Zod
+schema: z.strictObject({ title: z.string() });
 
-A strict schema also rejects `slug`, so list it if your files set one, eg `slug: z.string().optional()`.
+// Valibot
+schema: v.strictObject({ title: v.string() });
+
+// ArkType
+schema: type({ "+": "reject", title: "string" });
+```
 
 ## References
 

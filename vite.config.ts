@@ -83,18 +83,7 @@ export default defineConfig({
       "eslint/no-constant-binary-expression": "off",
       "func-style": ["error", "declaration", { allowArrowFunctions: false }],
       // The docs site renders TSDoc, whose `@remarks` isn't a JSDoc tag.
-      "jsdoc/check-tag-names": [
-        "warn",
-        {
-          definedTags: [
-            "buildError",
-            "notCaught",
-            "remarks",
-            "typeError",
-            "warning",
-          ],
-        },
-      ],
+      "jsdoc/check-tag-names": ["warn", { definedTags: ["remarks"] }],
       "jsdoc/empty-tags": "error",
       "no-multi-assign": "error",
       "no-unused-vars": "error",

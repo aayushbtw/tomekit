@@ -33,9 +33,6 @@ function withHeadings<TMetadata extends object>({
 
 const pages = directory("content/docs");
 
-// Replaced with the table of every problem tag in tomekit's TSDoc.
-const PROBLEMS = "<!-- problems -->";
-
 export default defineConfig({
   collections: {
     docs: {
@@ -44,17 +41,10 @@ export default defineConfig({
         async load(context) {
           const written = await pages.load(context);
           context.watch(apiReferenceWatch);
-          const reference = apiReference(context.root);
 
           return {
             ...written,
-            entries: [
-              ...written.entries.map((entry) => ({
-                ...entry,
-                body: entry.body?.replace(PROBLEMS, reference.problems),
-              })),
-              ...reference.index,
-            ],
+            entries: [...written.entries, ...apiReference(context.root).index],
           };
         },
       },

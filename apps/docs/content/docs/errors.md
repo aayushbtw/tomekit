@@ -7,17 +7,6 @@ order: 4
 
 tomekit reports every broken file in one pass, pointing at where to fix it.
 
-## When a problem is caught
-
-Each problem is listed with the earliest point it's caught, and the API it belongs to. Your editor shows the same list when you hover that API.
-
-- **Type error:** TypeScript flags it in your editor and `tsc`.
-- **Build error:** `vite build` fails. The dev server shows it in the overlay and keeps serving the rest.
-- **Warning:** logged. Nothing stops.
-- **Not caught:** nothing tells you, so check it yourself.
-
-<!-- problems -->
-
 ## Content errors
 
 A problem in a document is printed as `file:line:column: message`, with the file relative to the project root.

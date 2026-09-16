@@ -52,11 +52,7 @@ export type CollectionName = ${union(collections.map(({ name }) => name))};
 /** A slug in the named collection, or in any collection, eg \`SlugOf<"posts">\`. */
 export type SlugOf<TName extends CollectionName = CollectionName> = _Slugs[TName];
 
-/**
- * A document in the named collection, or in any collection, eg \`DocumentOf<"posts">\`.
- *
- * @typeError A field that doesn't exist on \`metadata\`.
- */
+/** A document in the named collection, or in any collection, eg \`DocumentOf<"posts">\`. */
 export type DocumentOf<TName extends CollectionName = CollectionName> = {
   [TKey in TName]: _WithSlug<_WithReferences<_InferDocument<_Configs[TKey & keyof _Configs]>, TKey extends keyof _References ? _References[TKey] : Record<never, never>, _Slugs>, SlugOf<TKey>>;
 }[TName];
@@ -64,11 +60,7 @@ export type DocumentOf<TName extends CollectionName = CollectionName> = {
 // No known slugs for a union of names: a slug may exist in only one of them.
 type _KnownSlug<TName extends CollectionName, TEach extends CollectionName = TName> = TEach extends unknown ? ([TName] extends [TEach] ? SlugOf<TName> : never) : never;
 
-/**
- * Every collection in your config.
- *
- * @typeError A collection name that isn't in the config, eg \`collections.get("postz")\`.
- */
+/** Every collection in your config. */
 export declare const collections: {
   /** The collection with this name. */
   get<TName extends CollectionName>(this: void, name: TName): _Collection<DocumentOf<TName>, SlugOf<TName>, _KnownSlug<TName>>;

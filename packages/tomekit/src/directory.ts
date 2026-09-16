@@ -74,13 +74,6 @@ async function filesIn(
  * The slug is the frontmatter's `slug`, or the file's path inside the
  * directory without the extension, eg `guides/setup`.
  *
- * @buildError The folder doesn't exist.
- * @buildError Frontmatter YAML doesn't parse.
- * @buildError Frontmatter isn't keys and values, eg a list.
- * @buildError A `slug` in frontmatter isn't a non-empty string.
- * @warning The folder has no files.
- * @warning The folder has files, but none match `include`.
- *
  * @param folder Relative to the project root, eg `content/posts`.
  *
  * @example
