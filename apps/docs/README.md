@@ -15,10 +15,12 @@ Cloudflare Workers, built and deployed by Workers Builds on every push to `main`
 
 The build settings in the dashboard (Workers & Pages → tomekit-docs → Settings → Builds):
 
-| Setting        | Value                                    |
-| -------------- | ---------------------------------------- |
-| Root directory | `apps/docs`                              |
-| Build command  | `cd ../.. && pnpm install && pnpm build` |
-| Deploy command | `pnpm exec wrangler deploy`              |
+| Setting | Value |
+| --- | --- |
+| Root directory | `apps/docs` |
+| Build command | `pnpm exec vp run build` |
+| Deploy command | `pnpm exec wrangler deploy` |
+| Include paths | `apps/docs/*`, `packages/tomekit/src/*`, `packages/tomekit/package.json`, `pnpm-lock.yaml` |
+| Exclude paths | `apps/docs/README.md` |
 
-The build runs from the repo root because `vp run -r build` has to pack `tomekit` before the site can read its API reference. `.node-version` pins the build image to Node 24.
+Workers Builds installs from the lockfile before the build command runs, and pnpm installs the whole workspace from any package in it, so the build needs no `cd` to the root. `vp run build` then packs `tomekit` first through its `dependsOn`. Watch paths are relative to the repo root rather than the root directory, and the library is in them because the API reference pages come from its build. `.node-version` pins the build image to Node 24.

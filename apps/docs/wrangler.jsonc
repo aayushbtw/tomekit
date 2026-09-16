@@ -5,5 +5,11 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
   "routes": [{ "pattern": "tomekit.aayush.cv", "custom_domain": true }],
-  "observability": { "enabled": true },
+  // A prerendered docs site serves almost everything from assets, so a log per
+  // request is noise. 1% is enough to see the worker is alive and erroring.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.01,
+    "logs": { "invocation_logs": false },
+  },
 }
