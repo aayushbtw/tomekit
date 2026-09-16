@@ -1,4 +1,5 @@
-import { notFound } from "@tanstack/react-router";
+import { notFound, rootRouteId } from "@tanstack/react-router";
+import type { NotFoundError } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { collections } from "tomekit/content";
 import type { DocumentOf } from "tomekit/content";
@@ -13,6 +14,9 @@ interface ReferenceParams {
   name: string;
   slug: string;
 }
+
+// The root route, not this one: a 404 replaces the docs layout instead of rendering inside it.
+const notFoundHere: NotFoundError = { routeId: rootRouteId };
 
 /** A page with no section is a link of its own, above the sections. */
 function sectionRank(section: Section) {
@@ -59,7 +63,7 @@ const getDoc = createServerFn({ method: "GET" })
     const doc = collections.get("docs").get(slug);
 
     if (!doc) {
-      throw notFound();
+      throw notFound(notFoundHere);
     }
 
     const docs = sortedDocs();
@@ -78,7 +82,7 @@ const getReference = createServerFn({ method: "GET" })
     const page = collections.get("reference").get(`${slug}/${kind}/${name}`);
 
     if (!page) {
-      throw notFound();
+      throw notFound(notFoundHere);
     }
 
     return page;

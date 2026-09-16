@@ -3,6 +3,8 @@ import { createThemeCss } from "@tanstack/highlight/theme";
 import { githubDarkTheme } from "@tanstack/highlight/themes/github-dark";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
+import { NotFound } from "#/components/not-found";
+
 // Relative, not `#/`: the StyleX compiler can't resolve package import aliases.
 import { colors, fonts } from "../tokens.stylex";
 
@@ -79,6 +81,7 @@ export const Route = createRootRoute({
         : []),
     ],
   }),
+  notFoundComponent: NotFound,
   shellComponent: RootDocument,
 });
 
