@@ -35,7 +35,7 @@ Pure modules, one class that owns state, and a thin adapter, each in its own fil
 - Name each file after its one concern (`parse.ts`, `serialize.ts`). Split a file when it takes on a second concern, not when it gets long.
 - State lives in a class with `#private` fields and `readonly` where possible, not in `let`s inside a closure.
 - Keep one explicit `export { ... }` list at the bottom of each file. No `export *` barrels, since the public surface is only what `package.json` `exports` lists.
-- One test file per source module in `test/` (`collection.ts` → `collection.test.ts`). Type-level tests go in `test/types.ts`, which is checked by `pnpm check` and never run.
+- One test file per source module in `test/` (`collection.ts` → `collection.test.ts`). Type-level tests go in `<module>.test-d.ts` (`query.ts` → `query.test-d.ts`), which `pnpm check` type-checks and Vitest never runs.
 
 ## Errors
 

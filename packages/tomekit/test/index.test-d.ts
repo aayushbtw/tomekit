@@ -1,4 +1,4 @@
-// Checked by `vp check`, never run: each line fails to compile if inference breaks.
+// Checked by `pnpm check`, never run: each line fails to compile if inference breaks.
 import { z } from "zod";
 
 import {
@@ -7,12 +7,9 @@ import {
   defineLoader,
   directory,
 } from "../src/index";
-import { ContentError } from "../src/index";
 import type {
   Collection,
-  ContentSubject,
   FileInfo,
-  Issue,
   InferDocument,
   Source,
   TransformContext,
@@ -96,49 +93,11 @@ export type Push = ReturnType<typeof posts.documents>["push"];
 // @ts-expect-error collections not in the config do not exist
 export type Drafts = (typeof config.collections)["drafts"];
 
-// A known slug returns its document; any other string may not exist until `has` says so.
-declare const known: Collection<{ title: string }, "a" | "b", "a" | "b">;
-
-declare const fromRoute: string;
-
-export const knownTitle: string = known.get("a").title;
-
-export const routeTitle: string | undefined = known.get(fromRoute)?.title;
-
-// @ts-expect-error a slug from a plain string may not exist
-export const uncheckedTitle: string = known.get(fromRoute).title;
-
-// A template literal is built at runtime, so it may not exist.
-export const builtTitle: string | undefined = known.get(
-  `${fromRoute}/a`
-)?.title;
-
-// @ts-expect-error a slug literal that is not a known slug is a typo
-export const typoTitle = known.get("c");
-
-export const checkedTitle: string = known.has(fromRoute)
-  ? known.get(fromRoute).title
-  : "";
-
 // Collections with different documents can still be read together.
 export const everyDocument: (Post | NonNullable<typeof firstNote>)[] = [
   ...notes.documents(),
   ...posts.documents(),
 ];
-
-// A generic helper takes any collection whose documents fit.
-export function titles<TDocument extends { title: string }>(
-  collection: Collection<TDocument>
-): string[] {
-  return collection.documents().map((document) => document.title);
-}
-
-// Without known slugs, any literal may exist.
-export function hasHome<TDocument>(collection: Collection<TDocument>): boolean {
-  return collection.get("home") !== undefined;
-}
-
-export const knownTitles: string[] = titles(known);
 
 // One transform shared by several collections keeps each schema's fields.
 function withUrl<TMetadata extends object>(
@@ -283,15 +242,6 @@ export const stringConfig = defineConfig({
   },
 });
 
-// Globs suggest common patterns but accept any string.
-export const globbed = defineCollection({
-  loader: directory("content/notes", {
-    exclude: ["drafts/**"],
-    include: "**/*.markdown",
-  }),
-  schema: z.object({}),
-});
-
 // A loader written in the config types documents the same way, without a file.
 const generated = defineConfig({
   collections: {
@@ -352,13 +302,6 @@ const inlineFile = read(inlineCollection).documents()[0]?.file;
 
 export const inlinePath: string =
   inlineFile === undefined ? "" : inlineFile.path;
-
-// A `ContentError` can be built from the exported subject and issue types.
-const subject: ContentSubject = { collection: "pages", slug: "a" };
-
-const issue: Issue = { line: 1, message: "title: expected a string" };
-
-export const contentMessage: string = new ContentError(subject, issue).message;
 
 // References type the fields they name as the target's slugs, and keep each transform's output type.
 const referencing = defineConfig({
