@@ -5,6 +5,7 @@ import { DocIcon } from "#/components/doc-icon";
 import { GithubIcon } from "#/components/github-icon";
 import { docLink, homeSlug } from "#/lib/links";
 import { sectionsWithoutIcons } from "#/lib/sections";
+import { site } from "#/lib/site";
 
 import { colors, durations, layout, space, weights } from "../tokens.stylex";
 import { typography } from "../typography";
@@ -23,21 +24,29 @@ const styles = stylex.create({
     color: colors.textPrimary,
     fontVariationSettings: weights.medium,
   },
-  github: {
+  footer: {
     alignItems: "center",
     borderBlockStartColor: colors.borderSubtle,
     borderBlockStartStyle: "solid",
     borderBlockStartWidth: 1,
+    display: "flex",
+    flexShrink: 0,
+    height: layout.pageTop,
+    justifyContent: "space-between",
+  },
+  github: {
+    alignItems: "center",
     color: {
       ":hover": colors.textPrimary,
       default: colors.textMuted,
     },
     display: "flex",
-    flexShrink: 0,
     gap: space.px8,
-    height: layout.pageTop,
     transitionDuration: durations.fast,
     transitionProperty: "color",
+  },
+  version: {
+    color: colors.textFaint,
   },
   label: {
     alignItems: "center",
@@ -109,13 +118,18 @@ function DocsNav({ nav }: DocsNavProps) {
           );
         })}
       </nav>
-      <a
-        href="https://github.com/aayushbtw/tomekit"
-        {...stylex.props(typography.sm, styles.github)}
-      >
-        <GithubIcon />
-        GitHub
-      </a>
+      <div {...stylex.props(styles.footer)}>
+        <a
+          href="https://github.com/aayushbtw/tomekit"
+          {...stylex.props(typography.sm, styles.github)}
+        >
+          <GithubIcon />
+          GitHub
+        </a>
+        <span {...stylex.props(typography.sm, styles.version)}>
+          v{site.version}
+        </span>
+      </div>
     </>
   );
 }
