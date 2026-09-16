@@ -47,8 +47,11 @@ async function isFile(file: string): Promise<boolean> {
 
 /**
  * Loads each Markdown file in a directory as an entry: its frontmatter is the
- * metadata and the rest is the body. The slug is the frontmatter's `slug`, or
- * the file's path inside the directory without the extension, eg `guides/setup`.
+ * metadata and the rest is the body.
+ *
+ * @remarks
+ * The slug is the frontmatter's `slug`, or the file's path inside the
+ * directory without the extension, eg `guides/setup`.
  *
  * @param folder Relative to the project root, eg `content/posts`.
  *

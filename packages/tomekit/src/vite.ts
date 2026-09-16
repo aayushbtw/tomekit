@@ -35,8 +35,11 @@ interface TomekitOptions {
 
 /**
  * The Vite plugin that loads your collections and serves them as
- * `tomekit/content`. Content is validated at build time, so a broken file
- * fails `vite build`; in dev it is reported and left out.
+ * `tomekit/content`.
+ *
+ * @remarks
+ * Content is validated at build time, so a broken file fails `vite build`; in
+ * dev it is reported and left out.
  *
  * @example
  * ```ts
