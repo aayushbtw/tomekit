@@ -3,12 +3,8 @@
   "version": "0.6.0",
   "description": "Fully typed content collections for Markdown.",
   "keywords": [
-    "collections",
-    "content",
-    "frontmatter",
+    "content-collection",
     "markdown",
-    "standard-schema",
-    "vite",
     "vite-plugin"
   ],
   "homepage": "https://tomekit.aayush.cv",
