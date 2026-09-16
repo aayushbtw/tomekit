@@ -52,7 +52,7 @@ export default defineConfig({
         rules: { "promise/prefer-await-to-then": "off" },
       },
       {
-        files: ["apps/site/vite.config.ts"],
+        files: ["apps/docs/vite.config.ts"],
         // `@stylexjs/unplugin/vite` is typed as returning `any`; its typed factory skips the Vite hooks that emit CSS.
         rules: { "typescript/no-unsafe-return": "off" },
       },

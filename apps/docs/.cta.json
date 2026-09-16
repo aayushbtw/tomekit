@@ -1,5 +1,5 @@
 {
-  "projectName": "site",
+  "projectName": "docs",
   "mode": "file-router",
   "typescript": true,
   "tailwind": false,

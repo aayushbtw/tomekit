@@ -161,7 +161,7 @@ const memberCategories = ["Constructors", "Properties", "Methods"] as const;
 const repository =
   "https://github.com/aayushbtw/tomekit/blob/main/packages/tomekit";
 
-/** tomekit's build, relative to the site root. */
+/** tomekit's build, relative to the docs root. */
 const DIST = "../../packages/tomekit/dist";
 
 const configuration = new TSDocConfiguration();
