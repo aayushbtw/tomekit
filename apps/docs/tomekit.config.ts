@@ -48,7 +48,7 @@ export default defineConfig({
           };
         },
       },
-      schema: z.object({
+      schema: z.strictObject({
         description: z.string(),
         order: z.number(),
         section: z.enum(sections).optional(),
@@ -65,7 +65,7 @@ export default defineConfig({
           return { entries: apiReference(root).items };
         },
       },
-      schema: z.object({
+      schema: z.strictObject({
         description: z.string().optional(),
         kind: z.enum([
           "Class",

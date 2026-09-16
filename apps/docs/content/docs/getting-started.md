@@ -47,7 +47,7 @@ export default defineConfig({
   collections: {
     posts: {
       loader: directory("content/posts"),
-      schema: z.object({ title: z.string(), date: z.coerce.date() }),
+      schema: z.strictObject({ title: z.string(), date: z.coerce.date() }),
     },
   },
 });

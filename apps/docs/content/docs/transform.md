@@ -18,7 +18,7 @@ export default defineConfig({
   collections: {
     posts: {
       loader: directory("content/posts"),
-      schema: z.object({ title: z.string() }),
+      schema: z.strictObject({ title: z.string() }),
       transform: ({ body, metadata, slug }, { collection }) => ({
         body: marked.parse(body, { async: false }),
         metadata: { ...metadata, url: `/${collection}/${slug}` },

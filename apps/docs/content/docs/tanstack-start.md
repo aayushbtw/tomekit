@@ -34,11 +34,11 @@ export default defineConfig({
   collections: {
     authors: {
       loader: directory("content/authors"),
-      schema: z.object({ name: z.string() }),
+      schema: z.strictObject({ name: z.string() }),
     },
     posts: {
       loader: directory("content/posts"),
-      schema: z.object({
+      schema: z.strictObject({
         author: z.string(),
         draft: z.boolean().default(false),
         publishedAt: z.coerce.date(),

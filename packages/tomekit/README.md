@@ -26,7 +26,7 @@ export default defineConfig({
   collections: {
     posts: {
       loader: directory("content/posts"),
-      schema: z.object({ title: z.string() }),
+      schema: z.strictObject({ title: z.string() }),
     },
   },
 });

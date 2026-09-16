@@ -30,7 +30,7 @@ export default defineConfig({
   collections: {
     posts: {
       loader: directory("content/posts", { exclude: "drafts/**" }),
-      schema: z.object({ title: z.string() }),
+      schema: z.strictObject({ title: z.string() }),
     },
   },
 });
@@ -60,7 +60,7 @@ export default defineConfig({
           };
         },
       },
-      schema: z.object({ name: z.string() }),
+      schema: z.strictObject({ name: z.string() }),
     },
   },
 });
@@ -100,7 +100,7 @@ To combine sources in one collection, call another loader's `load` inside yours 
 ```ts
 posts: {
   loader: directory("content/posts"),
-  schema: z.object({
+  schema: z.strictObject({
     date: z.coerce.date(),
     tags: z.array(z.string()).default([]),
     title: z.string(),
@@ -114,6 +114,18 @@ posts: {
 - An issue points at the key's line and column: `content/posts/hello.md:3:1: title:` and then the validator's message. A missing key points at its deepest parent that exists.
 - `directory()` reads `slug` before the schema runs. It stays in `metadata` only if the schema keeps it, and `z.object` drops keys it doesn't list.
 
+### Unknown keys
+
+The schema decides what happens to keys it doesn't list. `z.object` drops them, so a misspelled optional key like `modifedAt` builds fine and `modifiedAt` is `undefined`. To fail the build instead, reject unknown keys:
+
+| Validator | Rejects unknown keys           |
+| --------- | ------------------------------ |
+| Zod       | `z.strictObject({ ... })`      |
+| Valibot   | `v.strictObject({ ... })`      |
+| ArkType   | `type({ "+": "reject", ... })` |
+
+A strict schema also rejects `slug`, so list it if your files set one, eg `slug: z.string().optional()`.
+
 ## References
 
 `references` names the metadata fields that hold slugs of another collection. It sits next to `collections`, keyed by collection name and then by key path.
@@ -123,13 +135,15 @@ export default defineConfig({
   collections: {
     authors: {
       loader: directory("content/authors"),
-      schema: z.object({ name: z.string() }),
+      schema: z.strictObject({ name: z.string() }),
     },
     posts: {
       loader: directory("content/posts"),
-      schema: z.object({
+      schema: z.strictObject({
         author: z.string(),
-        sections: z.array(z.object({ author: z.string(), title: z.string() })),
+        sections: z.array(
+          z.strictObject({ author: z.string(), title: z.string() })
+        ),
       }),
     },
   },

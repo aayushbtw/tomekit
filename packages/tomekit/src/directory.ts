@@ -81,7 +81,7 @@ async function filesIn(
  * ```ts
  * posts: {
  *   loader: directory("content/posts", { exclude: "drafts/**" }),
- *   schema: z.object({ title: z.string() }),
+ *   schema: z.strictObject({ title: z.string() }),
  * }
  * ```
  */

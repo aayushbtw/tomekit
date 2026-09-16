@@ -468,7 +468,7 @@ type WithSlug<TDocument, TSlug extends string> = TDocument extends {
  * ```ts
  * export const posts = defineCollection({
  *   loader: directory("content/posts"),
- *   schema: z.object({ title: z.string() }),
+ *   schema: z.strictObject({ title: z.string() }),
  * });
  *
  * export default defineConfig({ collections: { posts } });
@@ -495,7 +495,7 @@ function defineCollection<
  * });
  *
  * export default defineConfig({
- *   collections: { pages: { loader: pages, schema: z.object({}) } },
+ *   collections: { pages: { loader: pages, schema: z.strictObject({}) } },
  * });
  * ```
  */
@@ -533,7 +533,7 @@ type InferredCollections<
  *   collections: {
  *     posts: {
  *       loader: directory("content/posts"),
- *       schema: z.object({ title: z.string(), date: z.coerce.date() }),
+ *       schema: z.strictObject({ title: z.string(), date: z.coerce.date() }),
  *     },
  *   },
  * });
