@@ -16,7 +16,7 @@ pnpm build   # every package; the library runs vp pack → packages/tomekit/dist
 
 Shared fmt and lint config lives in the root `vite.config.ts`; package-specific lint rules go in its `overrides` with workspace globs, since Vite+ ignores `lint` in package configs. Each package's own `vite.config.ts` holds only its build, test or app config.
 
-Before calling a change done, run `pnpm check` and `pnpm test`. For changes to runtime output or generated types, also check the portfolio: `pnpm build`, then in `../portfolio` temporarily set the `tomekit` dependency to `file:../tomekit/packages/tomekit` and run `pnpm install && pnpm exec vite build && pnpm exec tsc --noEmit`. Afterwards restore its `package.json` and `pnpm-lock.yaml` to what they were, and run `pnpm install` again. Its uncommitted files belong to the user, so never revert them.
+Before calling a change done, run `pnpm check` and `pnpm test`. For changes to runtime output or generated types, also check the portfolio: `pnpm build`, then in `../portfolio` temporarily set the `tomekit` dependency to `file:../tomekit/packages/tomekit` and run `pnpm install && pnpm exec vp build && pnpm exec tsc --noEmit`. Afterwards restore its `package.json` and `pnpm-lock.yaml` to what they were, and run `pnpm install` again. Its uncommitted files belong to the user, so never revert them.
 
 ## Structure
 
