@@ -27,7 +27,7 @@ Content errors come from:
 - the schema
 - two documents with the same slug
 - `transform`, eg a function in what it returns
-- a loader that throws, or reports `issues`
+- a loader that throws, or reports `issues`, eg a `directory()` folder that doesn't exist
 - a [reference](/collections#references) to a slug that no document has
 
 ## Warnings
@@ -35,7 +35,8 @@ Content errors come from:
 Warnings don't stop anything. Each one says what happens because of it:
 
 ```
-posts: directory "content/post" does not exist, so collections.get("posts") is empty
+posts: directory "content/posts" has no files, so collections.get("posts") is empty
+posts: no files in "content/posts" match "**/*.md", but it has 12 other files, so collections.get("posts") is empty
 ```
 
 ## Config errors

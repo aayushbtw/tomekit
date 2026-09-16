@@ -181,7 +181,7 @@ interface LoadResult<
   entries: readonly Entry<TFile>[];
   /** Entries that could not be loaded. The rest still load. */
   issues?: readonly LoadIssue[];
-  /** Printed as they are. Say what happens because of them, eg `directory "x" does not exist, so collections.get("x") is empty`. */
+  /** Printed as they are. Say what happens because of them, eg `directory "x" has no files, so collections.get("x") is empty`. */
   warnings?: readonly string[];
 }
 

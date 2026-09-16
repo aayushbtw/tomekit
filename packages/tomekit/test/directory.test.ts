@@ -268,20 +268,44 @@ describe("directory", () => {
     expect(errors[0]).toMatchObject({ line: 4 });
   });
 
-  it("warns when the directory is missing or nothing matches", async () => {
-    const root = await project({ "content/posts/notes.txt": "text" });
+  it("fails when the directory is missing", async () => {
+    const root = await project({});
 
-    const missing = await loadCollection(
+    const { documents, errors, warnings } = await loadCollection(
       "blogPosts",
       defineCollection({ ...posts, loader: directory("content/post") }),
       root
     );
 
-    const empty = await loadCollection("posts", posts, root);
+    expect(documents).toStrictEqual([]);
+    expect(warnings).toStrictEqual([]);
+    expect(messages(errors)).toStrictEqual([
+      'collections.get("blogPosts"): directory "content/post" does not exist. Create it, or fix the path passed to `directory()`',
+    ]);
+  });
 
-    expect([...missing.warnings, ...empty.warnings]).toStrictEqual([
-      'blogPosts: directory "content/post" does not exist, so collections.get("blogPosts") is empty',
-      'posts: no files in "content/posts" match "**/*.md", so collections.get("posts") is empty',
+  it("warns when the directory has no files, ignoring dotfiles", async () => {
+    const root = await project({ "content/posts/.gitkeep": "" });
+
+    const { errors, warnings } = await loadCollection("posts", posts, root);
+
+    expect(errors).toStrictEqual([]);
+    expect(warnings).toStrictEqual([
+      'posts: directory "content/posts" has no files, so collections.get("posts") is empty',
+    ]);
+  });
+
+  it("warns with a count when files exist but none match", async () => {
+    const root = await project({
+      "content/posts/a.mdx": "",
+      "content/posts/nested/b.txt": "",
+    });
+
+    const { errors, warnings } = await loadCollection("posts", posts, root);
+
+    expect(errors).toStrictEqual([]);
+    expect(warnings).toStrictEqual([
+      'posts: no files in "content/posts" match "**/*.md", but it has 2 other files, so collections.get("posts") is empty',
     ]);
   });
 

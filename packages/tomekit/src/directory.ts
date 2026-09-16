@@ -45,13 +45,35 @@ async function isFile(file: string): Promise<boolean> {
   return stats?.isFile() ?? true;
 }
 
+async function filesIn(
+  directory: string,
+  include: readonly string[],
+  exclude: readonly string[] = []
+): Promise<string[]> {
+  const matches: string[] = [];
+
+  for await (const match of glob(include, { cwd: directory, exclude })) {
+    matches.push(match);
+  }
+
+  // Globs match folders too, eg `archive.md/`.
+  const checked = await Promise.all(
+    matches.map(async (match) =>
+      (await isFile(path.join(directory, match))) ? [match] : []
+    )
+  );
+
+  return checked.flat().toSorted();
+}
+
 /**
  * Loads each Markdown file in a directory as an entry: its frontmatter is the
  * metadata and the rest is the body.
  *
  * @remarks
  * The slug is the frontmatter's `slug`, or the file's path inside the
- * directory without the extension, eg `guides/setup`.
+ * directory without the extension, eg `guides/setup`. A missing directory is
+ * a content error; one with no matching files only warns.
  *
  * @param folder Relative to the project root, eg `content/posts`.
  *
@@ -79,34 +101,34 @@ function directory(
       ]);
 
       const absolute = path.resolve(root, folder);
-      const empty = `collections.get(${JSON.stringify(collection)}) is empty`;
 
       if (!(await isDirectory(absolute))) {
         return {
           entries: [],
-          warnings: [
-            `${collection}: directory "${folder}" does not exist, so ${empty}`,
+          issues: [
+            {
+              message: `directory "${folder}" does not exist. Create it, or fix the path passed to \`directory()\``,
+            },
           ],
         };
       }
 
-      const matches: string[] = [];
+      const files = await filesIn(absolute, includes, excludes);
 
-      for await (const match of glob(includes, {
-        cwd: absolute,
-        exclude: excludes,
-      })) {
-        matches.push(match);
+      if (files.length === 0) {
+        const empty = `collections.get(${JSON.stringify(collection)}) is empty`;
+        // Node's glob skips dotfiles, so a folder holding only `.gitkeep` counts as empty.
+        const { length: others } = await filesIn(absolute, ["**/*"]);
+
+        return {
+          entries: [],
+          warnings: [
+            others === 0
+              ? `${collection}: directory "${folder}" has no files, so ${empty}`
+              : `${collection}: no files in "${folder}" match ${JSON.stringify(include)}, but it has ${others} other ${others === 1 ? "file" : "files"}, so ${empty}`,
+          ],
+        };
       }
-
-      // Globs match folders too, eg `archive.md/`.
-      const checked = await Promise.all(
-        matches.map(async (match) =>
-          (await isFile(path.join(absolute, match))) ? [match] : []
-        )
-      );
-
-      const files = checked.flat().toSorted();
 
       const results = await Promise.all(
         files.map(async (file) => {
@@ -142,16 +164,7 @@ function directory(
         );
       }
 
-      return {
-        entries,
-        issues,
-        warnings:
-          files.length === 0
-            ? [
-                `${collection}: no files in "${folder}" match ${JSON.stringify(include)}, so ${empty}`,
-              ]
-            : [],
-      };
+      return { entries, issues };
     },
   };
 }
