@@ -14,6 +14,8 @@ const highlightCss = createThemeCss({
   lineNumbersSelector: "pre[data-lang]",
 });
 
+const tagline = "Fully typed content collections for Markdown.";
+
 export const Route = createRootRoute({
   head: () => ({
     styles: [{ children: highlightCss }],
@@ -32,8 +34,41 @@ export const Route = createRootRoute({
       {
         title: "tomekit",
       },
+      {
+        name: "description",
+        content: tagline,
+      },
+      {
+        property: "og:title",
+        content: "tomekit",
+      },
+      {
+        property: "og:description",
+        content: tagline,
+      },
+      {
+        property: "og:image",
+        content: "/og.png",
+      },
+      {
+        property: "og:type",
+        content: "website",
+      },
+      {
+        name: "twitter:card",
+        content: "summary_large_image",
+      },
+      {
+        name: "twitter:creator",
+        content: "@aayushbtw",
+      },
     ],
     links: [
+      {
+        rel: "icon",
+        href: "/favicon.svg",
+        type: "image/svg+xml",
+      },
       {
         rel: "stylesheet",
         href: appCss,
