@@ -171,6 +171,32 @@ export default defineConfig({ collections: { posts } });
 `,
     },
   },
+  "The transform returns `metadata` that isn't an object.": {
+    message: "Type 'string' is not assignable to type 'object'",
+    files: {
+      "content/posts/hello.md": HELLO,
+      "tomekit.config.ts": `${IMPORTS}
+const posts = defineCollection({
+  loader: directory("content/posts"),
+  schema: ${TITLE},
+  transform: () => ({ metadata: "text" }),
+});
+
+export default defineConfig({ collections: { posts } });
+`,
+    },
+  },
+  "The transform returns `metadata` that isn't an object, written inline in `defineConfig`.":
+    {
+      message: "transform returned `metadata` that isn't an object",
+      files: {
+        "content/posts/hello.md": HELLO,
+        "tomekit.config.ts": posts(
+          TITLE,
+          ', transform: () => ({ metadata: "text" })'
+        ),
+      },
+    },
   "The transform returns something that isn't data, eg a function.": {
     message: "cannot write a function at metadata.run",
     files: {
@@ -300,6 +326,20 @@ export default defineConfig({
       "tomekit.config.ts": posts(
         "z.strictObject({ tags: z.array(z.string()).optional(), title: z.string() })"
       ),
+    },
+  },
+  "A reference on a collection with no string fields.": {
+    message: "this collection has no string fields to reference",
+    files: {
+      "content/posts/hello.md": "---\norder: 1\n---\n",
+      "tomekit.config.ts": `${IMPORTS}
+export default defineConfig({
+  collections: {
+    posts: { loader: directory("content/posts"), schema: z.strictObject({ order: z.number() }) },
+  },
+  references: { posts: { order: "posts" } },
+});
+`,
     },
   },
   "A referenced slug of a document with errors.": {

@@ -216,6 +216,13 @@ export const sharedUrl: string | undefined = shared?.metadata.url;
 
 export const sharedOrder: number | undefined = shared?.metadata.order;
 
+export const stringMetadata = defineCollection({
+  loader: directory("content/extra"),
+  schema: z.object({}),
+  // @ts-expect-error a transform's metadata is an object
+  transform: () => ({ metadata: "text" }),
+});
+
 export const extraField = defineCollection({
   loader: directory("content/extra"),
   schema: z.object({}),
@@ -474,6 +481,21 @@ export const nonString = defineConfig({
     people: {
       // @ts-expect-error a reference names a field of strings
       order: "people",
+    },
+  },
+});
+
+const counts = defineCollection({
+  loader: directory("content/counts"),
+  schema: z.object({ date: z.coerce.date(), order: z.number() }),
+});
+
+export const noStrings = defineConfig({
+  collections: { counts },
+  references: {
+    counts: {
+      // @ts-expect-error a collection with no string fields has nothing to reference
+      order: "counts",
     },
   },
 });

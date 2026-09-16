@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { assertTransformResult, buildDocument } from "../src/document";
 import {
+  TransformMetadataError,
   TransformResultError,
   UnknownTransformFieldError,
   UnserializableValueError,
@@ -21,7 +22,7 @@ describe("assertTransformResult", () => {
       {},
       { body: "B" },
       { metadata: {} },
-      { body: 1, metadata: null },
+      { body: 1, metadata: { order: 1 } },
     ]) {
       expect(() => {
         assertTransformResult(result);
@@ -34,6 +35,14 @@ describe("assertTransformResult", () => {
       expect(() => {
         assertTransformResult(result);
       }).toThrow(TransformResultError);
+    }
+  });
+
+  it("rejects metadata that isn't a plain object", () => {
+    for (const metadata of [null, "text", 1, [], new Map()]) {
+      expect(() => {
+        assertTransformResult({ metadata });
+      }).toThrow(TransformMetadataError);
     }
   });
 

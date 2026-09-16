@@ -1,11 +1,15 @@
-import { TransformResultError, UnknownTransformFieldError } from "./errors";
+import {
+  TransformMetadataError,
+  TransformResultError,
+  UnknownTransformFieldError,
+} from "./errors";
 import type { Source, TransformResult } from "./index";
 import { assertContentValue, isPlainObject } from "./value";
 import type { ContentValue } from "./value";
 
 const RESULT_FIELDS = new Set(["body", "metadata"]);
 
-/** Checks what `transform` returned: an object with only `metadata` and/or `body`. */
+/** Checks what `transform` returned: an object with only `metadata` and/or `body`, and `metadata` an object. */
 function assertTransformResult(
   result: unknown
 ): asserts result is TransformResult {
@@ -19,6 +23,10 @@ function assertTransformResult(
 
   if (unknownField !== undefined) {
     throw new UnknownTransformFieldError(unknownField);
+  }
+
+  if ("metadata" in result && !isPlainObject(result.metadata)) {
+    throw new TransformMetadataError();
   }
 }
 

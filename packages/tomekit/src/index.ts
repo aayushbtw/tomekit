@@ -237,7 +237,7 @@ interface TransformResult {
   /** Replaces the document's body, eg with rendered HTML. */
   body?: unknown;
   /** Replaces the document's metadata, eg to add derived fields. */
-  metadata?: unknown;
+  metadata?: object;
 }
 
 type TransformOutput = Skipped | TransformResult;
@@ -274,6 +274,7 @@ interface CollectionConfig<
    *
    * @buildError The transform returns something that isn't data, eg a function.
    * @buildError The transform returns a top-level field other than `metadata` or `body`, written inline in `defineConfig`.
+   * @buildError The transform returns `metadata` that isn't an object, written inline in `defineConfig`.
    *
    * @example
    * ```ts
@@ -312,6 +313,7 @@ interface Config<
    *
    * @typeError A key names a collection that isn't in the config.
    * @typeError A path doesn't lead to strings, eg a misspelled field.
+   * @typeError A reference on a collection with no string fields.
    * @buildError A referenced slug that no document has.
    * @buildError A referenced slug of a skipped document.
    * @buildError A referenced slug of a document with errors.
@@ -416,6 +418,15 @@ type ReferencePath<
       }[keyof TMetadata & string]
     : never;
 
+// With no paths, a mapped type is `{}`, which accepts any key; an index signature rejects each one with a message.
+type ReferencePaths<TMetadata, TName extends string> = [
+  ReferencePath<TMetadata>,
+] extends [never]
+  ? Readonly<
+      Record<string, "this collection has no string fields to reference">
+    >
+  : { readonly [TPath in ReferencePath<TMetadata>]?: TName };
+
 // Replaces the strings in a value, and in its arrays, with `TSlug`.
 type Slugged<TValue, TSlug> = TValue extends string
   ? TSlug
@@ -504,6 +515,7 @@ type ObjectSchema<TSchema> =
  * `transform` typed from its schema.
  *
  * @typeError The transform returns a top-level field other than `metadata` or `body`.
+ * @typeError The transform returns `metadata` that isn't an object.
  *
  * @example
  * ```ts
@@ -595,11 +607,10 @@ function defineConfig<
   TFiles extends { [TName in keyof TSchemas]: unknown },
   // Top level, not on each collection: checking paths and names there loses each transform's output type.
   const TReferences extends {
-    readonly [TName in keyof TSchemas]?: {
-      readonly [
-        TPath in ReferencePath<InferOutput<TSchemas[TName]>>
-      ]?: keyof TSchemas & string;
-    };
+    readonly [TName in keyof TSchemas]?: ReferencePaths<
+      InferOutput<TSchemas[TName]>,
+      keyof TSchemas & string
+    >;
   } = Record<never, never>,
 >(config: {
   collections: {
@@ -634,6 +645,7 @@ function defineConfig<
        *
        * @buildError The transform returns something that isn't data, eg a function.
        * @buildError The transform returns a top-level field other than `metadata` or `body`, written inline in `defineConfig`.
+       * @buildError The transform returns `metadata` that isn't an object, written inline in `defineConfig`.
        */
       transform?: (
         source: Source<
@@ -649,6 +661,7 @@ function defineConfig<
    *
    * @typeError A key names a collection that isn't in the config.
    * @typeError A path doesn't lead to strings, eg a misspelled field.
+   * @typeError A reference on a collection with no string fields.
    * @buildError A referenced slug that no document has.
    * @buildError A referenced slug of a skipped document.
    * @buildError A referenced slug of a document with errors.
@@ -698,6 +711,7 @@ export {
   PluginNotReadyError,
   TomekitError,
   TransformError,
+  TransformMetadataError,
   TransformResultError,
   UnknownTransformFieldError,
   UnserializableInstanceError,
