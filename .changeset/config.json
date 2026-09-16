@@ -4,7 +4,10 @@
   "baseBranch": "main",
   "changelog": [
     "@changesets/changelog-github",
-    { "repo": "aayushbtw/tomekit" }
+    {
+      "repo": "aayushbtw/tomekit",
+      "disableThanks": true
+    }
   ],
   "commit": false,
   "format": false
