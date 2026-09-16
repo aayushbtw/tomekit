@@ -248,14 +248,32 @@ interface CollectionConfig<
   TOutput = unknown,
   TFile extends FileInfo | undefined = FileInfo | undefined,
 > {
-  /** Where the entries come from, eg `directory("content/posts")`. */
+  /**
+   * Where the entries come from, eg `directory("content/posts")`.
+   *
+   * @typeError The collection has no `loader`.
+   * @buildError The collection has no `loader`, in a JavaScript config.
+   * @buildError The loader throws.
+   * @buildError The loader returns `issues`.
+   * @buildError Two entries have the same slug.
+   */
   loader: Loader<TFile>;
-  /** Validates each entry's metadata, and must produce an object. A file without frontmatter is validated as `{}`. */
+  /**
+   * Validates each entry's metadata, and must produce an object. A file without frontmatter is validated as `{}`.
+   *
+   * @typeError The schema doesn't produce an object.
+   * @buildError Metadata fails the schema, eg a missing `title`.
+   * @buildError A misspelled key, with a strict schema like `z.strictObject`.
+   * @notCaught A misspelled key, with `z.object`, which drops it.
+   */
   schema: TSchema;
   /**
    * Changes each document at build time. Return a new `metadata` and/or
    * `body`, and their types become the document's. Return data only: plain
    * objects, arrays, primitives, `Date`, `Map`, `Set`, `URL` or `RegExp`.
+   *
+   * @buildError The transform returns something that isn't data, eg a function.
+   * @buildError The transform returns a top-level field other than `metadata` or `body`, written inline in `defineConfig`.
    *
    * @example
    * ```ts
@@ -281,12 +299,22 @@ interface Config<
   >,
   TReferences = Readonly<Record<string, Readonly<Record<string, string>>>>,
 > {
-  /** Keyed by collection name, eg `posts` for `collections.get("posts")`. */
+  /**
+   * Keyed by collection name, eg `posts` for `collections.get("posts")`.
+   *
+   * @buildError A collection name isn't letters, digits and `_`, starting with a letter.
+   */
   collections: TCollections;
   /**
    * Metadata fields that hold slugs of another collection, keyed by collection
    * name and then by key path. A slug that no document has fails the build,
    * and the field is typed as that collection's slugs.
+   *
+   * @typeError A key names a collection that isn't in the config.
+   * @typeError A path doesn't lead to strings, eg a misspelled field.
+   * @buildError A referenced slug that no document has.
+   * @buildError A referenced slug of a skipped document.
+   * @buildError A referenced slug of a document with errors.
    *
    * @example
    * ```ts
@@ -464,6 +492,8 @@ type WithSlug<TDocument, TSlug extends string> = TDocument extends {
  * Defines a collection outside the config, eg in its own file, with
  * `transform` typed from its schema.
  *
+ * @typeError The transform returns a top-level field other than `metadata` or `body`.
+ *
  * @example
  * ```ts
  * export const posts = defineCollection({
@@ -559,17 +589,37 @@ function defineConfig<
 >(config: {
   collections: {
     [TName in keyof TSchemas]: {
-      /** Validates each entry's metadata, and must produce an object. A file without frontmatter is validated as `{}`. */
+      /**
+       * Validates each entry's metadata, and must produce an object. A file without frontmatter is validated as `{}`.
+       *
+       * @typeError The schema doesn't produce an object.
+       * @buildError Metadata fails the schema, eg a missing `title`.
+       * @buildError A misspelled key, with a strict schema like `z.strictObject`.
+       * @notCaught A misspelled key, with `z.object`, which drops it.
+       */
       schema: TSchemas[TName] & StandardSchema<object>;
     };
   } & {
     [TName in keyof TFiles]: {
-      /** Where the entries come from, eg `directory("content/posts")`. */
+      /**
+       * Where the entries come from, eg `directory("content/posts")`.
+       *
+       * @typeError The collection has no `loader`.
+       * @buildError The collection has no `loader`, in a JavaScript config.
+       * @buildError The loader throws.
+       * @buildError The loader returns `issues`.
+       * @buildError Two entries have the same slug.
+       */
       loader: Loader<FileOf<TFiles[TName]>>;
     };
   } & {
     [TName in keyof TOutputs]: {
-      /** Changes each document at build time. Return a new `metadata` and/or `body`, and their types become the document's. */
+      /**
+       * Changes each document at build time. Return a new `metadata` and/or `body`, and their types become the document's.
+       *
+       * @buildError The transform returns something that isn't data, eg a function.
+       * @buildError The transform returns a top-level field other than `metadata` or `body`, written inline in `defineConfig`.
+       */
       transform?: (
         source: Source<
           InferOutput<TSchemas[TName & keyof TSchemas]>,
@@ -579,7 +629,15 @@ function defineConfig<
       ) => TOutputs[TName];
     };
   };
-  /** Metadata fields that hold slugs of another collection, eg `{ posts: { author: "authors" } }`. A slug that no document has fails the build. */
+  /**
+   * Metadata fields that hold slugs of another collection, eg `{ posts: { author: "authors" } }`.
+   *
+   * @typeError A key names a collection that isn't in the config.
+   * @typeError A path doesn't lead to strings, eg a misspelled field.
+   * @buildError A referenced slug that no document has.
+   * @buildError A referenced slug of a skipped document.
+   * @buildError A referenced slug of a document with errors.
+   */
   references?: TReferences;
 }): Config<InferredCollections<TSchemas, TOutputs, TFiles>, TReferences>;
 // Loose on purpose: the parameter's `schema` intersection never matches the inferred return type.

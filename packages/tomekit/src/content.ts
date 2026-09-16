@@ -30,6 +30,8 @@ type SlugOf<TName extends CollectionName = CollectionName> =
  * A document in the named collection, or in any collection. The generated
  * types give its `metadata` and `body` the types from your config.
  *
+ * @typeError A field that doesn't exist on `metadata`.
+ *
  * @example
  * ```ts
  * function title(post: DocumentOf<"posts">) {
@@ -47,6 +49,8 @@ function missingPlugin(): never {
 /**
  * Every collection in your config. Provided by the `tomekit()` Vite plugin;
  * importing it without the plugin throws.
+ *
+ * @typeError A collection name that isn't in the config, eg `collections.get("postz")`.
  *
  * @example
  * ```ts

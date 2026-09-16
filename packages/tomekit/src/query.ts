@@ -46,6 +46,8 @@ interface Collection<
   /**
    * The document with this slug. A slug that exists returns its document.
    *
+   * @typeError A slug literal that no file has, eg `get("helo-world")`.
+   *
    * @example
    * ```ts
    * posts.get("hello-world").metadata.title;
@@ -59,6 +61,8 @@ interface Collection<
   /**
    * The document with this slug, or `undefined` if there is none, eg for a
    * route param.
+   *
+   * @notCaught A plain string that no file has, eg `get(params.slug)`, which returns `undefined`.
    *
    * @example
    * ```ts

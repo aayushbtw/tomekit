@@ -54,6 +54,7 @@ Settled design that users don't see directly. Each one was argued; reopen it onl
 
 ## Errors
 
+- What fails, and when, is declared once in TSDoc problem tags on the API it belongs to. Editor hover, API reference pages and the errors page table all come from them, and `catches.test.ts` fails when a tag and the behavior disagree. Rejected 2026-09-16: a hand-written table in `errors.md`, which nothing kept true.
 - Every error class is exported from `tomekit` in an explicit list, so users check `instanceof` instead of matching `name`.
 - Error classes get a one-line summary each. The single `@example` lives on `TomekitError`.
 

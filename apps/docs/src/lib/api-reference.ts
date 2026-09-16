@@ -80,11 +80,17 @@ interface Doc {
   examples: string[];
   internal: boolean;
   params: Map<string, string>;
+  problems: Problem[];
   remarks: string | undefined;
   returns: string | undefined;
   summary: string;
   /** The summary without Markdown, for meta tags. `undefined` when empty. */
   summaryText: string | undefined;
+}
+
+interface Problem {
+  caught: string;
+  text: string;
 }
 
 interface KindInfo {
@@ -176,6 +182,24 @@ configuration.addTagDefinition(
     tagName: "@default",
   })
 );
+
+// Problem tags say when a mistake is caught; the errors page lists them all.
+const problemTags = new Map([
+  ["@typeError", "Type error"],
+  ["@buildError", "Build error"],
+  ["@warning", "Warning"],
+  ["@notCaught", "Not caught"],
+]);
+
+for (const tagName of problemTags.keys()) {
+  configuration.addTagDefinition(
+    new TSDocTagDefinition({
+      allowMultiple: true,
+      syntaxKind: TSDocTagSyntaxKind.BlockTag,
+      tagName,
+    })
+  );
+}
 
 const parser = new TSDocParser(configuration);
 
@@ -455,6 +479,13 @@ function parseDoc(comment: string): Doc {
         tidy(markdown(block.content)),
       ])
     ),
+    problems: blocks.flatMap((block) => {
+      const caught = problemTags.get(block.blockTag.tagName);
+
+      return caught === undefined
+        ? []
+        : [{ caught, text: tidy(markdown(block.content)) }];
+    }),
     remarks:
       parsed.remarksBlock === undefined
         ? undefined
@@ -517,6 +548,12 @@ function codeBlock(code: string) {
   return `\`\`\`ts\n${code}\n\`\`\``;
 }
 
+function problemList(problems: readonly Problem[]) {
+  return problems.length === 0
+    ? ""
+    : problems.map(({ caught, text }) => `- **${caught}:** ${text}`).join("\n");
+}
+
 function docParts(doc: Doc | undefined) {
   if (doc === undefined) {
     return [];
@@ -525,6 +562,7 @@ function docParts(doc: Doc | undefined) {
   return [
     doc.summary,
     doc.remarks ?? "",
+    problemList(doc.problems),
     doc.defaultValue === undefined ? "" : `Default: \`${doc.defaultValue}\``,
     ...doc.examples,
   ];
@@ -787,6 +825,7 @@ function itemPage(item: Item) {
       : definedIn(declaration, declaration.node.start),
     doc?.summary ?? "",
     doc?.remarks ?? "",
+    problemList(doc?.problems ?? []),
     ...(first === undefined ? [] : extendsSection(first)),
     ...(first?.type === "TSDeclareFunction"
       ? [...parameterSections(item, first), ...returnsSection(item, first)]
@@ -843,6 +882,58 @@ interface ApiReference {
   index: Entry[];
   /** One page per export, for the `reference` collection. */
   items: Entry[];
+  /** A Markdown table of every problem tag, for the errors page. */
+  problems: string;
+}
+
+/** Every problem tag on an export or its members, each once, in the order they're caught. */
+function problemTable(items: readonly Item[]) {
+  const rows = new Map<string, string>();
+
+  for (const item of items) {
+    const [first] = item.resolved.nodes;
+
+    const members = (first === undefined ? [] : memberGroups(first)).flatMap(
+      (group) =>
+        group.nodes.map((node) => ({
+          comment: docComment(item.resolved.parsed, node.start),
+          name: `${item.name}.${group.name}`,
+        }))
+    );
+
+    const owners = [
+      { doc: item.doc, name: item.name },
+      ...members.map(({ comment, name }) => ({
+        doc: comment === undefined ? undefined : parseDoc(comment),
+        name,
+      })),
+    ];
+
+    for (const { doc, name } of owners) {
+      for (const { caught, text } of doc?.problems ?? []) {
+        if (!rows.has(text)) {
+          rows.set(
+            text,
+            `| ${text} | ${caught} | [\`${name}\`](${url(item)}) |`
+          );
+        }
+      }
+    }
+  }
+
+  const order = [...problemTags.values()];
+
+  const sorted = [...rows.values()].toSorted(
+    (a, b) =>
+      order.findIndex((caught) => a.includes(`| ${caught} |`)) -
+      order.findIndex((caught) => b.includes(`| ${caught} |`))
+  );
+
+  return [
+    "| Problem | Caught | Where |",
+    "| --- | --- | --- |",
+    ...sorted,
+  ].join("\n");
 }
 
 /** The API reference pages, read from tomekit's build. Rereads the build on every call. */
@@ -888,6 +979,7 @@ function apiReference(root: string): ApiReference {
       },
       slug: `${item.entryPoint.slug}/${item.kind.directory}/${item.name}`,
     })),
+    problems: problemTable(items),
   };
 }
 
