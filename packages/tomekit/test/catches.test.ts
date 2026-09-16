@@ -350,7 +350,8 @@ export default defineConfig({
     },
   },
   "Metadata fails the schema, eg a missing `title`.": {
-    message: "title: Invalid input: expected string, received undefined",
+    message:
+      "content/posts/hello.md:1:1: title: Invalid input: expected string, received undefined",
     files: {
       "content/posts/hello.md": "---\n---\n",
       "tomekit.config.ts": posts(TITLE),

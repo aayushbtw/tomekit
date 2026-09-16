@@ -136,7 +136,11 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
     isPlainObject(metadata) && "slug" in metadata ? metadata.slug : undefined;
 
   function locate(keys: readonly string[]): Position | undefined {
-    return yaml === undefined ? undefined : positionAt(offsetOf(yaml, keys));
+    if (match === null) {
+      return undefined;
+    }
+
+    return positionAt(yaml === undefined ? undefined : offsetOf(yaml, keys));
   }
 
   const frontmatterIssues = isPlainObject(metadata)

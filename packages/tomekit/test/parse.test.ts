@@ -133,6 +133,13 @@ describe("parse", () => {
     });
   });
 
+  it("locates a key in a frontmatter block with no lines at the opening line", () => {
+    expect(entryOf("---\n---\n")[LOCATE](["title"])).toStrictEqual({
+      column: 1,
+      line: 1,
+    });
+  });
+
   it("locates the whole frontmatter at its first line", () => {
     expect(entryOf("---\ntitle: A\n---\n")[LOCATE]([])).toStrictEqual({
       column: 1,
