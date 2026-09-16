@@ -284,6 +284,41 @@ describe("directory", () => {
     ]);
   });
 
+  it("fails when the path is a file, not a directory", async () => {
+    const root = await project({ "content/posts.md": "---\ntitle: A\n---\n" });
+
+    const { errors } = await loadCollection(
+      "posts",
+      defineCollection({ ...posts, loader: directory("content/posts.md") }),
+      root
+    );
+
+    expect(messages(errors)).toStrictEqual([
+      'collections.get("posts"): "content/posts.md" is a file, not a directory. Pass the folder that holds it, eg `directory("content")`',
+    ]);
+  });
+
+  it("fails with the reason when the directory can't be read", async () => {
+    const root = await project({
+      "content/posts/a.md": "---\ntitle: A\n---\n",
+    });
+
+    await chmod(path.join(root, "content"), 0o000);
+
+    try {
+      const { errors } = await loadCollection("posts", posts, root);
+
+      expect(messages(errors)).toStrictEqual([
+        expect.stringMatching(
+          /^collections\.get\("posts"\): directory "content\/posts" can't be read: EACCES: /u
+        ),
+      ]);
+      expect(errors[0]?.cause).toBeInstanceOf(Error);
+    } finally {
+      await chmod(path.join(root, "content"), 0o755);
+    }
+  });
+
   it("warns when the directory has no files, ignoring dotfiles", async () => {
     const root = await project({ "content/posts/.gitkeep": "" });
 

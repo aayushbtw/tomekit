@@ -32,10 +32,37 @@ interface DirectoryOptions {
   include?: Glob | readonly Glob[];
 }
 
-async function isDirectory(directory: string): Promise<boolean> {
-  const stats = await stat(directory).catch(() => null);
+function isMissing(cause: unknown): boolean {
+  return (
+    cause instanceof Error &&
+    "code" in cause &&
+    (cause.code === "ENOENT" || cause.code === "ENOTDIR")
+  );
+}
 
-  return stats?.isDirectory() ?? false;
+/** Why `folder` can't be loaded, or `undefined` when it is a directory. */
+async function folderIssue(
+  folder: string,
+  absolute: string
+): Promise<LoadIssue | undefined> {
+  try {
+    const stats = await stat(absolute);
+
+    return stats.isDirectory()
+      ? undefined
+      : {
+          message: `"${folder}" is a file, not a directory. Pass the folder that holds it, eg \`directory(${JSON.stringify(path.posix.dirname(folder))})\``,
+        };
+  } catch (error) {
+    return isMissing(error)
+      ? {
+          message: `directory "${folder}" does not exist. Create it, or fix the path passed to \`directory()\``,
+        }
+      : {
+          cause: error,
+          message: `directory "${folder}" can't be read: ${error instanceof Error ? error.message : String(error)}`,
+        };
+  }
 }
 
 // `stat` follows symlinks, so a linked file still loads. A path it can't stat counts as a file, so reading it reports why.
@@ -101,15 +128,10 @@ function directory(
 
       const absolute = path.resolve(root, folder);
 
-      if (!(await isDirectory(absolute))) {
-        return {
-          entries: [],
-          issues: [
-            {
-              message: `directory "${folder}" does not exist. Create it, or fix the path passed to \`directory()\``,
-            },
-          ],
-        };
+      const issue = await folderIssue(folder, absolute);
+
+      if (issue !== undefined) {
+        return { entries: [], issues: [issue] };
       }
 
       const files = await filesIn(absolute, includes, excludes);
