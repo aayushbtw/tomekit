@@ -611,7 +611,7 @@ export {
 
 export { directory, type DirectoryOptions } from "./directory";
 
-export type { Collection } from "./query";
+export type { Collection, LookupKey } from "./query";
 
 export {
   BrokenContentError,

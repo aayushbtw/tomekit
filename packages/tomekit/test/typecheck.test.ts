@@ -151,6 +151,25 @@ export { name, slug, unchecked, type Archive };
     expect(output).toContain("possibly 'undefined'");
   }, 30_000);
 
+  it("reject a slug or collection name literal that does not exist, naming the valid ones", async () => {
+    const output = await typecheck(`
+import { collections } from "tomekit/content";
+
+const post = collections.get("posts").get("helo");
+const posts = collections.get("postz");
+
+export { post, posts };
+`);
+
+    expect(output).toMatch(
+      /usage\.ts\(4,43\): error TS2769: .*'"helo"' is not assignable to parameter of type '"hello"'/su
+    );
+    expect(output).toMatch(
+      /usage\.ts\(5,31\): error TS2769: .*'"postz"' is not assignable to parameter of type 'CollectionName'/su
+    );
+    expect(output.match(/error TS/gu)).toHaveLength(2);
+  }, 30_000);
+
   it("type referenced fields as the slugs of the collection they point at", async () => {
     const output = await typecheck(`
 import { collections, type SlugOf } from "tomekit/content";

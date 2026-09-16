@@ -10,6 +10,21 @@ type Prettify<TValue> = { [TKey in keyof TValue]: TValue[TKey] } & Record<
 >;
 
 /**
+ * What a lookup accepts: any string built at runtime, but a literal must be one
+ * of `TKnown`, so a typo fails to compile. Without known values, any literal.
+ *
+ * @internal
+ */
+// Only a literal key makes a `Record` with a required field: `string` and template literals make an index signature, which `{}` fits.
+type LookupKey<TKey extends string, TKnown extends string> = [TKnown] extends [
+  never,
+]
+  ? TKey
+  : Record<never, never> extends Record<TKey, true>
+    ? TKey
+    : TKnown;
+
+/**
  * One collection's documents. Everything is built ahead of time, so reads are synchronous.
  *
  * @example
@@ -51,7 +66,10 @@ interface Collection<
    * if (!post) throw notFound();
    * ```
    */
-  get(this: void, slug: string): TDocument | undefined;
+  get<TKey extends string>(
+    this: void,
+    slug: LookupKey<TKey, TKnownSlug>
+  ): TDocument | undefined;
   /**
    * Whether a document has this slug. Narrows a route param to the
    * collection's slugs, so `get` then returns the document.
@@ -139,5 +157,6 @@ export {
   type Collections,
   createCollection,
   createCollections,
+  type LookupKey,
   type Prettify,
 };

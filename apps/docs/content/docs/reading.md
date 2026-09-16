@@ -16,7 +16,7 @@ collections.names(); // ["docs", "posts"], in config order
 const posts = collections.get("posts");
 ```
 
-A name from your config returns its collection. Any other string, eg a route param, returns the collection or `undefined`. `has` narrows a string to a collection name:
+A name from your config returns its collection, and a misspelled name doesn't compile. A plain string, eg a route param, returns the collection or `undefined`. `has` narrows a string to a collection name:
 
 ```ts
 collections.get(params.collection); // a collection, or undefined
@@ -33,9 +33,10 @@ posts.documents(); // every document, in the loader's order
 posts.slugs(); // every slug, in the same order
 posts.get("hello-world"); // the document
 posts.get(params.slug); // the document, or undefined
+posts.get("helo-world"); // doesn't compile
 ```
 
-`get` follows the same rule as for collections: a slug that exists returns the document, and any other string might return `undefined`. `has` narrows a string to a slug:
+`get` follows the same rule as for collections: a slug that exists returns the document, a misspelled slug doesn't compile, and a plain string might return `undefined`. `has` narrows a string to a slug:
 
 ```ts
 if (posts.has(params.slug)) {

@@ -35,7 +35,7 @@ function typesFile(
     .join("\n");
 
   return `${HEADER}
-import type { Collection as _Collection, InferDocument as _InferDocument, WithReferences as _WithReferences, WithSlug as _WithSlug } from "tomekit";
+import type { Collection as _Collection, InferDocument as _InferDocument, LookupKey as _LookupKey, WithReferences as _WithReferences, WithSlug as _WithSlug } from "tomekit";
 import type config from ${JSON.stringify(configImport)};
 
 type _Configs = (typeof config)["collections"];
@@ -65,7 +65,7 @@ export declare const collections: {
   /** The collection with this name. */
   get<TName extends CollectionName>(this: void, name: TName): _Collection<DocumentOf<TName>, SlugOf<TName>, _KnownSlug<TName>>;
   /** The collection with this name, or \`undefined\` if there is none, eg for a route param. */
-  get(this: void, name: string): _Collection<DocumentOf, SlugOf> | undefined;
+  get<TKey extends string>(this: void, name: _LookupKey<TKey, CollectionName>): _Collection<DocumentOf, SlugOf> | undefined;
   /** Whether a collection has this name. Narrows a route param to \`CollectionName\`. */
   has(this: void, name: string): name is CollectionName;
   /** Every collection name, in config order. */
