@@ -2,13 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Article } from "#/components/article";
 import { getReference } from "#/lib/docs";
+import { pageHead } from "#/lib/head";
 
 // Not sorted: `loader` must come before `head` and `component`, which infer `loaderData` from it.
 export const Route = createFileRoute("/_docs/$slug_/$kind/$name")({
   loader: ({ params }) => getReference({ data: params }),
-  head: ({ loaderData }) => ({
-    meta: [{ title: `${loaderData?.metadata.name ?? "Reference"} | tomekit` }],
-  }),
+  head: ({ loaderData, match }) =>
+    pageHead({
+      description: loaderData?.metadata.description,
+      pathname: match.pathname,
+      title: loaderData?.metadata.name ?? "Reference",
+    }),
   component: Reference,
 });
 

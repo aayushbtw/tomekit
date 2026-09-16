@@ -80,8 +80,11 @@ interface Doc {
   examples: string[];
   internal: boolean;
   params: Map<string, string>;
+  remarks: string | undefined;
   returns: string | undefined;
   summary: string;
+  /** The summary without Markdown, for meta tags. `undefined` when empty. */
+  summaryText: string | undefined;
 }
 
 interface KindInfo {
@@ -391,12 +394,44 @@ function markdown(node: DocNode): string {
     : children;
 }
 
+function plainText(node: DocNode): string {
+  if (node instanceof DocCodeSpan) {
+    return node.code;
+  }
+
+  if (node instanceof DocLinkTag) {
+    return node.linkText ?? linkMarkdown(node).replaceAll("`", "");
+  }
+
+  if (node instanceof DocFencedCode) {
+    return "";
+  }
+
+  if (
+    node instanceof DocPlainText ||
+    node instanceof DocErrorText ||
+    node instanceof DocEscapedText ||
+    node instanceof DocSoftBreak
+  ) {
+    return markdown(node);
+  }
+
+  const children = node.getChildNodes().map(plainText).join("");
+
+  return node instanceof DocParagraph ? `${children} ` : children;
+}
+
 function tidy(value: string) {
   return value.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function parseDoc(comment: string): Doc {
   const { docComment: parsed } = parser.parseString(comment);
+
+  const summaryText = plainText(parsed.summarySection)
+    .replace(/\s+/g, " ")
+    .trim();
+
   const blocks = parsed.customBlocks;
 
   const defaultBlock = blocks.find(
@@ -420,11 +455,16 @@ function parseDoc(comment: string): Doc {
         tidy(markdown(block.content)),
       ])
     ),
+    remarks:
+      parsed.remarksBlock === undefined
+        ? undefined
+        : tidy(markdown(parsed.remarksBlock.content)),
     returns:
       parsed.returnsBlock === undefined
         ? undefined
         : tidy(markdown(parsed.returnsBlock.content)),
     summary: tidy(markdown(parsed.summarySection)),
+    summaryText: summaryText === "" ? undefined : summaryText,
   };
 }
 
@@ -484,6 +524,7 @@ function docParts(doc: Doc | undefined) {
 
   return [
     doc.summary,
+    doc.remarks ?? "",
     doc.defaultValue === undefined ? "" : `Default: \`${doc.defaultValue}\``,
     ...doc.examples,
   ];
@@ -745,6 +786,7 @@ function itemPage(item: Item) {
       ? ""
       : definedIn(declaration, declaration.node.start),
     doc?.summary ?? "",
+    doc?.remarks ?? "",
     ...(first === undefined ? [] : extendsSection(first)),
     ...(first?.type === "TSDeclareFunction"
       ? [...parameterSections(item, first), ...returnsSection(item, first)]
@@ -839,7 +881,11 @@ function apiReference(root: string): ApiReference {
     })),
     items: items.map((item) => ({
       body: itemPage(item),
-      metadata: { kind: item.kind.kind, name: item.name },
+      metadata: {
+        description: item.doc?.summaryText,
+        kind: item.kind.kind,
+        name: item.name,
+      },
       slug: `${item.entryPoint.slug}/${item.kind.directory}/${item.name}`,
     })),
   };

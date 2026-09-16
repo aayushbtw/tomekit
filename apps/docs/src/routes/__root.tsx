@@ -4,6 +4,7 @@ import { githubDarkTheme } from "@tanstack/highlight/themes/github-dark";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
 import { NotFound } from "#/components/not-found";
+import { site } from "#/lib/site";
 
 // Relative, not `#/`: the StyleX compiler can't resolve package import aliases.
 import { colors, fonts } from "../tokens.stylex";
@@ -16,7 +17,9 @@ const highlightCss = createThemeCss({
   lineNumbersSelector: "pre[data-lang]",
 });
 
-const tagline = "Fully typed content collections for Markdown.";
+const xHandle = "@aayushbtw";
+
+const ogImage = new URL("/og.png", site.url).href;
 
 export const Route = createRootRoute({
   head: () => ({
@@ -34,35 +37,47 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "tomekit",
+        title: site.name,
       },
       {
         name: "description",
-        content: tagline,
+        content: site.description,
       },
       {
         property: "og:title",
-        content: "tomekit",
+        content: site.name,
       },
       {
         property: "og:description",
-        content: tagline,
+        content: site.description,
       },
       {
         property: "og:image",
-        content: "/og.png",
+        content: ogImage,
       },
       {
         property: "og:type",
         content: "website",
       },
       {
+        property: "og:site_name",
+        content: site.name,
+      },
+      {
         name: "twitter:card",
         content: "summary_large_image",
       },
       {
+        name: "twitter:image",
+        content: ogImage,
+      },
+      {
+        name: "twitter:site",
+        content: xHandle,
+      },
+      {
         name: "twitter:creator",
-        content: "@aayushbtw",
+        content: xHandle,
       },
     ],
     links: [

@@ -66,6 +66,7 @@ export default defineConfig({
         },
       },
       schema: z.object({
+        description: z.string().optional(),
         kind: z.enum([
           "Class",
           "Function",
