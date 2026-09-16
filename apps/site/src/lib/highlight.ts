@@ -10,4 +10,9 @@ const highlighter = createHighlighter({ languages: [json, shell, ts, tsx] });
 
 const highlightCode = createTanStackMarkdownHighlighter(highlighter);
 
-export { highlightCode };
+/** A shell line's tokens, carrying the class names the theme's CSS colors. */
+function shellTokens(code: string) {
+  return highlighter.tokenize(code, { lang: "shell" }).tokens;
+}
+
+export { highlightCode, shellTokens };

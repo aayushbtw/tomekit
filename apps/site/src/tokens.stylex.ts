@@ -96,6 +96,7 @@ export const borderWidths = stylex.defineConsts({
 export const durations = stylex.defineConsts({
   fast: "0.15s",
   slow: "0.2s",
+  swap: "0.3s",
 });
 
 export const below = stylex.defineConsts({

@@ -4,9 +4,12 @@ import type {
   MarkdownComponents,
   MarkdownProps,
 } from "@tanstack/markdown/react";
-import { createContext, use } from "react";
+import { createContext, use, useRef } from "react";
 import type { ComponentPropsWithoutRef } from "react";
 
+import { CodeFrame } from "#/components/code-frame";
+import { FileIcon } from "#/components/file-icon";
+import { Install } from "#/components/install";
 import { highlightCode } from "#/lib/highlight";
 
 import {
@@ -134,16 +137,25 @@ const styles = stylex.create({
       default: space.px16,
     },
   },
+  codeLabel: {
+    alignItems: "center",
+    display: "flex",
+    gap: space.px8,
+    minWidth: 0,
+  },
+  filename: {
+    fontFamily: fonts.mono,
+    fontSize: fontSizes.xs,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
   pre: {
     borderColor: colors.border,
     borderRadius: radii.md,
     borderStyle: "solid",
     borderWidth: borderWidths.thin,
     color: colors.textPrimary,
-    marginBlockEnd: {
-      ":last-child": 0,
-      default: space.px24,
-    },
     overflowX: "auto",
     paddingBlock: space.px12,
     paddingInline: space.px16,
@@ -222,11 +234,38 @@ const styles = stylex.create({
 // Inline `code` and the `code` inside a `pre` are the same element; only the inline one gets a box.
 const InPre = createContext(false);
 
-function Pre(props: ComponentPropsWithoutRef<"pre">) {
+function Pre({
+  "data-filename": filename,
+  ...props
+}: ComponentPropsWithoutRef<"pre"> & { "data-filename"?: string }) {
+  const code = useRef<HTMLPreElement>(null);
+
+  // Line numbers are CSS counters, so the text content is the source as written.
+  function source() {
+    return code.current?.textContent ?? "";
+  }
+
   return (
-    <InPre value>
-      <pre {...props} {...stylex.props(typography.sm, styles.pre)} />
-    </InPre>
+    <CodeFrame
+      header={
+        filename === undefined ? null : (
+          <span {...stylex.props(typography.xs, styles.codeLabel)}>
+            <FileIcon />
+            <span {...stylex.props(styles.filename)}>{filename}</span>
+          </span>
+        )
+      }
+      label="Copy code"
+      text={source}
+    >
+      <InPre value>
+        <pre
+          ref={code}
+          {...props}
+          {...stylex.props(typography.sm, styles.pre)}
+        />
+      </InPre>
+    </CodeFrame>
   );
 }
 
@@ -255,6 +294,8 @@ const components: MarkdownComponents = {
     <blockquote {...props} {...stylex.props(styles.blockquote)} />
   ),
   code: Code,
+  figcaption: () => null,
+  figure: (props) => <>{props.children}</>,
   h2: (props) => <h2 {...props} {...stylex.props(typography.lg, styles.h2)} />,
   h3: (props) => <h3 {...props} {...stylex.props(typography.md, styles.h3)} />,
   h4: (props) => (
@@ -263,6 +304,7 @@ const components: MarkdownComponents = {
   hr: (props) => <hr {...props} {...stylex.props(styles.hr)} />,
   img: (props) => <img {...props} {...stylex.props(styles.img)} />,
   li: (props) => <li {...props} {...stylex.props(styles.li)} />,
+  "md-install": Install,
   ol: (props) => <ol {...props} {...stylex.props(styles.ol)} />,
   p: (props) => <p {...props} {...stylex.props(styles.p)} />,
   pre: Pre,
