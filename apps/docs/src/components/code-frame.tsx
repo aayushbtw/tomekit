@@ -1,4 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
+import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ReactNode } from "react";
 
 import { CopyButton } from "#/components/copy-button";
@@ -11,16 +12,11 @@ interface CodeFrameProps {
   /** The header's left side: tabs, or a language and filename. */
   header: ReactNode;
   label: string;
+  style?: StyleXStyles;
   text: string | (() => string);
 }
 
 const styles = stylex.create({
-  frame: {
-    marginBlockEnd: {
-      ":last-child": 0,
-      default: space.px24,
-    },
-  },
   header: {
     alignItems: "center",
     color: colors.textMuted,
@@ -36,9 +32,9 @@ const styles = stylex.create({
   },
 });
 
-function CodeFrame({ children, header, label, text }: CodeFrameProps) {
+function CodeFrame({ children, header, label, style, text }: CodeFrameProps) {
   return (
-    <div {...stylex.props(styles.frame)}>
+    <div {...stylex.props(style)}>
       <div {...stylex.props(styles.header)}>
         {header}
         <span {...stylex.props(styles.push)}>

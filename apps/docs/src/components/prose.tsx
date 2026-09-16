@@ -67,6 +67,12 @@ const styles = stylex.create({
     // Optical: lifts the smaller mono text onto the prose baseline.
     verticalAlign: "1.5px",
   },
+  codeFrame: {
+    marginBlockEnd: {
+      ":last-child": 0,
+      default: space.px24,
+    },
+  },
   codeInPre: {
     display: "inline-block",
     fontFamily: fonts.mono,
@@ -256,6 +262,7 @@ function Pre({
         )
       }
       label="Copy code"
+      style={styles.codeFrame}
       text={source}
     >
       <InPre value>
@@ -304,7 +311,7 @@ const components: MarkdownComponents = {
   hr: (props) => <hr {...props} {...stylex.props(styles.hr)} />,
   img: (props) => <img {...props} {...stylex.props(styles.img)} />,
   li: (props) => <li {...props} {...stylex.props(styles.li)} />,
-  "md-install": Install,
+  "md-install": (props) => <Install {...props} style={styles.codeFrame} />,
   ol: (props) => <ol {...props} {...stylex.props(styles.ol)} />,
   p: (props) => <p {...props} {...stylex.props(styles.p)} />,
   pre: Pre,

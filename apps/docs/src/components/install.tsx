@@ -1,5 +1,6 @@
 import { Tabs } from "@base-ui/react/tabs";
 import * as stylex from "@stylexjs/stylex";
+import type { StyleXStyles } from "@stylexjs/stylex";
 import { useSyncExternalStore } from "react";
 
 import { CodeFrame } from "#/components/code-frame";
@@ -30,6 +31,7 @@ import { typography } from "../typography";
 interface InstallProps {
   /** Package names, separated by spaces, as written in the Markdown attribute. */
   packages?: string;
+  style?: StyleXStyles;
 }
 
 const styles = stylex.create({
@@ -79,7 +81,7 @@ const styles = stylex.create({
   },
 });
 
-function Install({ packages = "tomekit" }: InstallProps) {
+function Install({ packages = "tomekit", style }: InstallProps) {
   const selected = useSyncExternalStore(
     subscribePackageManager,
     packageManager,
@@ -94,7 +96,7 @@ function Install({ packages = "tomekit" }: InstallProps) {
         }
       }}
       value={selected}
-      {...stylex.props(typography.xs)}
+      {...stylex.props(typography.xs, style)}
     >
       <CodeFrame
         header={
