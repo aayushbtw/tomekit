@@ -20,6 +20,8 @@ catalog:
   "@base-ui/react": ^1.8.0
   "@cloudflare/vite-plugin": ^1.54.9
   wrangler: ^4.131.2
+  "@changesets/changelog-github": ^1.0.1
+  "@changesets/cli": ^3.0.3
 allowBuilds:
   esbuild: true
   lightningcss: true

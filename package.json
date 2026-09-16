@@ -6,9 +6,12 @@
     "build": "vp run -r build",
     "check": "vp check",
     "fix": "vp check --fix",
-    "test": "vp run -r test"
+    "test": "vp run -r test",
+    "release": "GITHUB_TOKEN=$(gh auth token) changeset version && vp fmt"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "catalog:",
+    "@changesets/cli": "catalog:",
     "@oxlint/plugins": "1.81.0",
     "@types/node": "catalog:",
     "typescript": "catalog:",

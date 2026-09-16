@@ -2,10 +2,16 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths: [packages/tomekit/package.json]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
-  contents: read
+  # gh release create pushes the tag.
+  contents: write
   # npm Trusted Publishing exchanges this token for a short-lived publish token.
   id-token: write
 
@@ -14,26 +20,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Find what is unreleased
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node -p "require('./packages/tomekit/package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if npm view "tomekit@$version" version | grep -q .; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+          if gh release view "v$version" > /dev/null 2>&1; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Read the notes from CHANGELOG.md
+        if: steps.version.outputs.released != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          awk -v heading="## $VERSION" '$0 == heading { found = 1; next } /^## / && found { exit } found' packages/tomekit/CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          if ! grep -q . "$RUNNER_TEMP/notes.md"; then
+            echo "packages/tomekit/CHANGELOG.md has no \"## $VERSION\" section"
+            exit 1
+          fi
       - uses: actions/setup-node@v5
+        if: steps.version.outputs.published != 'true'
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
           # setup-vp installs pnpm and caches it; setup-node would look for pnpm before it exists.
           package-manager-cache: false
       - uses: voidzero-dev/setup-vp@v1.20.0
+        if: steps.version.outputs.published != 'true'
         with:
           node-manager: false
           cache: true
           run-install: true
-      - name: Check the tag matches package.json
-        run: |
-          version="v$(node -p "require('./packages/tomekit/package.json').version")"
-          if [ "$version" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match package.json $version"
-            exit 1
-          fi
       # Trusted Publishing needs npm 11.5.1 or later.
       - run: npm install -g npm@latest
+        if: steps.version.outputs.published != 'true'
       # prepublishOnly runs vp check, vp test and vp pack first.
       - run: npm publish
+        if: steps.version.outputs.published != 'true'
         working-directory: packages/tomekit
+      - name: Tag and create the GitHub Release
+        if: steps.version.outputs.released != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md"
