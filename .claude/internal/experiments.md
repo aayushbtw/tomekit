@@ -13,6 +13,9 @@ Designs that were tried and failed, and measurements behind a decision, so nobod
 - **Editor suggestions inside a transform's returned object:** removing `then` broke async suggestions or types in every shape, and `NoInfer<TransformResult>` in the return type gives no suggestions while the output is still being inferred.
 - **Constraining `defineConfig`'s inline transform output**, even with `PromiseLike` and the symbol-keyed `Skipped`: loses every inline transform's output type through the two intersected mapped types. Tested twice.
 
+- **A readable message when `defineCollection`'s transform returns the wrong shape** (2026-09-16): dropping the `TransformOutput` constraint and typing the return as `TOutput & Check<TOutput>`, with or without `NoInfer` on the check, put the message on the first line but inferred only `Skipped` from a transform returning `skip()` or `{ metadata }`. The first line also printed the whole function type with the message in it twice.
+- **A readable message when `load` returns an array** (2026-09-16): a `[Symbol.iterator]?: "message"` member declared before `entries` on `LoadResult` works, but only on the 4th line; the first line always names `LoadResult<…>`, since `load` isn't generic. Not worth an odd member on a public type.
+
 ## Config
 
 - **References on each collection instead of the top level** (2026-09-15): checking paths and names lost every transform's output type, whether as an intersection, inside `NoInfer`, or as a constraint on the generic.
