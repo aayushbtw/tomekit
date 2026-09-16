@@ -76,7 +76,7 @@ post.metadata.date; // Date, because the schema coerced it
 post.body; // "The first post."
 ```
 
-Both names are checked: `"posts"` comes from your config and `"hello-world"` from your files, so a typo is a type error, not a missing page. Read `collections` from server code only, or every document ships to the browser.
+Both names are checked: `"posts"` comes from your config and `"hello-world"` from your files, so a typo is a type error, not a missing page. Content is read when Vite builds, so a new post shows up after a rebuild. Read `collections` from server code only, or every document ships to the browser.
 
 That is the whole setup. [Collections](/collections) covers loaders and schemas, [Transform](/transform) does the parsing once, at build time, and [TanStack Start](/tanstack-start) puts both into a blog.
 

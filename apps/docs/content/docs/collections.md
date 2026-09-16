@@ -154,6 +154,7 @@ export default defineConfig({
 ```
 
 - A path goes through nested objects and arrays, eg `sections.author`. TypeScript accepts only paths to strings or arrays of strings, and names from `collections`.
+- A path goes at most 5 levels deep and never into a `Date`, `Map`, `Set`, `RegExp` or `URL`. A key that contains `.` can't be part of a path.
 - Every slug must belong to a document that `collections.get("authors")` returns, so a skipped or broken author doesn't count. Otherwise `vite build` fails, pointing at the file and line. Dev leaves the post out and shows the error in the overlay.
 - The check runs on documents after `transform`, and only on strings, so a transform can replace a slug with something else.
 
