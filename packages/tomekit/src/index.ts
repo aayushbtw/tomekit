@@ -489,6 +489,17 @@ type WithSlug<TDocument, TSlug extends string> = TDocument extends {
   : TDocument;
 
 /**
+ * `unknown` for a schema that produces an object; otherwise a message, which
+ * TypeScript shows as the type the schema is not assignable to.
+ *
+ * @internal
+ */
+type ObjectSchema<TSchema> =
+  TSchema extends StandardSchema<object>
+    ? unknown
+    : "schema must produce an object, eg z.strictObject({ title: z.string() })";
+
+/**
  * Defines a collection outside the config, eg in its own file, with
  * `transform` typed from its schema.
  *
@@ -505,12 +516,16 @@ type WithSlug<TDocument, TSlug extends string> = TDocument extends {
  * ```
  */
 function defineCollection<
-  TSchema extends StandardSchema<object>,
+  TSchema extends StandardSchema,
   TOutput extends TransformOutput = TransformOutput,
   TFile extends FileInfo | undefined = FileInfo | undefined,
 >(
-  collection: CollectionConfig<TSchema, TOutput, TFile>
-): CollectionConfig<TSchema, TOutput, TFile> {
+  collection: Omit<
+    CollectionConfig<Extract<TSchema, StandardSchema<object>>, TOutput, TFile>,
+    "schema"
+  > & { schema: TSchema & ObjectSchema<TSchema> }
+): CollectionConfig<Extract<TSchema, StandardSchema<object>>, TOutput, TFile>;
+function defineCollection(collection: CollectionConfig): CollectionConfig {
   return collection;
 }
 
@@ -597,7 +612,7 @@ function defineConfig<
        * @buildError A misspelled key, with a strict schema like `z.strictObject`.
        * @notCaught A misspelled key, with `z.object`, which drops it.
        */
-      schema: TSchemas[TName] & StandardSchema<object>;
+      schema: TSchemas[TName] & ObjectSchema<TSchemas[TName]>;
     };
   } & {
     [TName in keyof TFiles]: {

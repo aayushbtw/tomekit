@@ -143,7 +143,7 @@ export default defineConfig({
     },
   },
   "The schema doesn't produce an object.": {
-    message: "not assignable to type 'StandardSchema<object>'",
+    message: "schema must produce an object",
     files: {
       "content/posts/hello.md": HELLO,
       "tomekit.config.ts": posts("z.string()"),
