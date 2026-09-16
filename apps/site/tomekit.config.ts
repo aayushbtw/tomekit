@@ -1,3 +1,5 @@
+import type { ComponentNode } from "@tanstack/markdown";
+import { commentComponentsExtension } from "@tanstack/markdown/extensions/comment-components";
 import { collectMarkdownHeadings } from "@tanstack/markdown/extensions/headings";
 import { parseMarkdown } from "@tanstack/markdown/parser";
 import { defineConfig, directory } from "tomekit";
@@ -7,11 +9,20 @@ import { z } from "zod";
 import { apiReference, apiReferenceWatch } from "./src/lib/api-reference";
 import { sections } from "./src/lib/sections";
 
+// A component with no `tagName` renders as one generic element for every name, so
+// the components map cannot tell `install` from anything else. Naming the tag is what
+// makes it addressable.
+function transformComponent(node: ComponentNode): ComponentNode {
+  return { ...node, properties: node.attributes, tagName: `md-${node.name}` };
+}
+
+const extensions = [commentComponentsExtension({ transformComponent })];
+
 function withHeadings<TMetadata extends object>({
   body,
   metadata,
 }: Source<TMetadata>) {
-  const document = parseMarkdown(body, { headingIds: true });
+  const document = parseMarkdown(body, { extensions, headingIds: true });
 
   const headings = collectMarkdownHeadings(document).flatMap(
     ({ id, level, text }) => (level === 2 ? [{ id, text }] : [])
@@ -40,7 +51,7 @@ export default defineConfig({
       schema: z.object({
         description: z.string(),
         order: z.number(),
-        section: z.enum(sections),
+        section: z.enum(sections).optional(),
         title: z.string(),
       }),
       transform: withHeadings,

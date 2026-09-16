@@ -1,7 +1,7 @@
 ---
-title: Reading content
+title: Reading
 description: Get collections, documents and slugs.
-section: Guides
+section: Concepts
 order: 3
 ---
 

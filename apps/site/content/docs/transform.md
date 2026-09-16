@@ -1,7 +1,7 @@
 ---
 title: Transform
 description: Parse Markdown once, at build time.
-section: Guides
+section: Concepts
 order: 2
 ---
 

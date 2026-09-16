@@ -1,7 +1,7 @@
 ---
 title: Errors
 description: How problems in content and config are reported.
-section: Guides
+section: Concepts
 order: 4
 ---
 

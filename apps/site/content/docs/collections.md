@@ -1,11 +1,20 @@
 ---
-title: Collections and schemas
+title: Collections
 description: Group entries under one schema, from files or any loader.
-section: Guides
+section: Concepts
 order: 1
 ---
 
-A collection has a `loader`, which says where its entries come from, and a `schema`, which validates each entry's metadata.
+A collection is a named set of documents: `posts`, `authors`, `docs`. Everything in it comes from one `loader`, which says where its entries come from, and passes one `schema`, which validates each entry's metadata. The name you give it in `defineConfig` is the name you read it by, `collections.get("posts")`.
+
+A document is one validated entry. Every document in every collection has the same four fields, and only their types differ:
+
+- `slug`: its key inside the collection, eg `hello-world`
+- `metadata`: the schema's output, eg a file's frontmatter
+- `body`: the text under the frontmatter, or whatever `transform` returned
+- `file`: `{ name, path }`, or `undefined` when the entry came from no file
+
+So a folder of Markdown and rows from an API are read the same way, and a field from your schema can never clash with a field tomekit sets.
 
 ## Loaders
 
