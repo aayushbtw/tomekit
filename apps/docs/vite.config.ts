@@ -12,7 +12,11 @@ const config = defineConfig({
     return [
       tomekit(),
       cloudflare({ viteEnvironment: { name: "ssr" } }),
-      tanstackStart({ prerender: { crawlLinks: true, enabled: true } }),
+      tanstackStart({
+        // Crawling only follows links, and no page links to these.
+        pages: [{ path: "/robots.txt" }, { path: "/sitemap.xml" }],
+        prerender: { crawlLinks: true, enabled: true },
+      }),
       // Before the React plugin, or Fast Refresh breaks.
       stylex({ useCSSLayers: true }),
       viteReact(),
