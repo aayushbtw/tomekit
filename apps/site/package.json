@@ -10,6 +10,7 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@base-ui/react": "catalog:",
     "@fontsource-variable/inter": "catalog:",
     "@radix-ui/colors": "catalog:",
     "@stylexjs/stylex": "catalog:",

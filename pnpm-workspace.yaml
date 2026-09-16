@@ -17,6 +17,7 @@ catalog:
   "@microsoft/tsdoc": ^0.16.0
   oxc-parser: ^0.150.0
   "@vitest/coverage-v8": 4.1.11
+  "@base-ui/react": ^1.8.0
 allowBuilds:
   esbuild: true
   lightningcss: true
