@@ -5,6 +5,8 @@ import type { DocumentOf } from "tomekit/content";
 
 import { sections } from "#/lib/sections";
 
+type Section = DocumentOf<"docs">["metadata"]["section"];
+
 /** A reference page's route params: its index page's slug, its kind's folder and its name. */
 interface ReferenceParams {
   kind: string;
@@ -12,9 +14,14 @@ interface ReferenceParams {
   slug: string;
 }
 
+/** A page with no section is a link of its own, above the sections. */
+function sectionRank(section: Section) {
+  return section === undefined ? -1 : sections.indexOf(section);
+}
+
 function compareDocs(a: DocumentOf<"docs">, b: DocumentOf<"docs">) {
   const bySection =
-    sections.indexOf(a.metadata.section) - sections.indexOf(b.metadata.section);
+    sectionRank(a.metadata.section) - sectionRank(b.metadata.section);
 
   return bySection === 0 ? a.metadata.order - b.metadata.order : bySection;
 }
@@ -30,14 +37,20 @@ function pageLink(doc: DocumentOf<"docs"> | undefined) {
 const getNav = createServerFn({ method: "GET" }).handler(() => {
   const docs = sortedDocs();
 
-  return sections.map((section) => ({
-    pages: docs.flatMap((doc) =>
+  function pagesIn(section: Section) {
+    return docs.flatMap((doc) =>
       doc.metadata.section === section
         ? [{ slug: doc.slug, title: doc.metadata.title }]
         : []
-    ),
-    section,
-  }));
+    );
+  }
+
+  const groups = [
+    { pages: pagesIn(undefined), section: undefined },
+    ...sections.map((section) => ({ pages: pagesIn(section), section })),
+  ];
+
+  return groups.filter((group) => group.pages.length > 0);
 });
 
 const getDoc = createServerFn({ method: "GET" })

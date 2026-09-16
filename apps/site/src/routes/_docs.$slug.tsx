@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_docs/$slug")({
   },
   loader: ({ params }) => getDoc({ data: params.slug }),
   head: ({ loaderData }) => ({
-    meta: [{ title: `${loaderData?.metadata.title ?? "Docs"} · tomekit` }],
+    meta: [{ title: `${loaderData?.metadata.title ?? "Docs"} | tomekit` }],
   }),
   component: Doc,
 });

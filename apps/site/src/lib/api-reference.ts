@@ -832,7 +832,7 @@ function apiReference(root: string): ApiReference {
       metadata: {
         description: entryPoint.description,
         order: entryPoint.order,
-        section: "API reference",
+        section: "API",
         title: entryPoint.title,
       },
       slug: entryPoint.slug,

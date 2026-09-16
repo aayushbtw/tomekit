@@ -1,3 +1,6 @@
-const sections = ["Getting started", "Guides", "API reference"] as const;
+const sections = ["Examples", "Concepts", "API"] as const;
 
-export { sections };
+/** Sections whose links render as plain text, with no icon in front. */
+const sectionsWithoutIcons: string[] = ["API"];
+
+export { sections, sectionsWithoutIcons };

@@ -7,7 +7,7 @@ import { getReference } from "#/lib/docs";
 export const Route = createFileRoute("/_docs/$slug_/$kind/$name")({
   loader: ({ params }) => getReference({ data: params }),
   head: ({ loaderData }) => ({
-    meta: [{ title: `${loaderData?.metadata.name ?? "Reference"} · tomekit` }],
+    meta: [{ title: `${loaderData?.metadata.name ?? "Reference"} | tomekit` }],
   }),
   component: Reference,
 });

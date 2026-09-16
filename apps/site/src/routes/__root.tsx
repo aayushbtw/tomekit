@@ -3,8 +3,6 @@ import { createThemeCss } from "@tanstack/highlight/theme";
 import { githubDarkTheme } from "@tanstack/highlight/themes/github-dark";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
-import { Header } from "#/components/header";
-
 // Relative, not `#/`: the StyleX compiler can't resolve package import aliases.
 import { colors, fonts } from "../tokens.stylex";
 
@@ -65,7 +63,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body {...stylex.props(styles.body)}>
-        <Header />
         {children}
 
         <Scripts />

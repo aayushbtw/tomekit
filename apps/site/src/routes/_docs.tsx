@@ -1,6 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
+import { Header } from "#/components/header";
 import { Sidebar } from "#/components/sidebar";
 import { getNav } from "#/lib/docs";
 
@@ -25,9 +26,12 @@ function DocsLayout() {
   const nav = Route.useLoaderData();
 
   return (
-    <div {...stylex.props(styles.layout)}>
-      <Sidebar nav={nav} />
-      <Outlet />
-    </div>
+    <>
+      <Header nav={nav} />
+      <div {...stylex.props(styles.layout)}>
+        <Sidebar nav={nav} />
+        <Outlet />
+      </div>
+    </>
   );
 }

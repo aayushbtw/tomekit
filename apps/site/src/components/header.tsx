@@ -1,35 +1,17 @@
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
 
-import {
-  colors,
-  durations,
-  layout,
-  radii,
-  space,
-  weights,
-  zIndices,
-} from "../tokens.stylex";
-import { typography } from "../typography";
+import type { Nav } from "#/components/docs-nav";
+import { Logo } from "#/components/logo";
+import { NavDrawer } from "#/components/nav-drawer";
+
+import { colors, layout, zIndices } from "../tokens.stylex";
+
+interface HeaderProps {
+  nav: Nav[];
+}
 
 const styles = stylex.create({
-  github: {
-    alignItems: "center",
-    backgroundColor: {
-      ":hover": colors.fill,
-      default: "transparent",
-    },
-    borderRadius: radii.sm,
-    color: {
-      ":hover": colors.textPrimary,
-      default: colors.textMuted,
-    },
-    display: "flex",
-    height: layout.itemHeight,
-    paddingInline: space.px10,
-    transitionDuration: durations.fast,
-    transitionProperty: "color, background-color",
-  },
   header: {
     backgroundColor: colors.background,
     height: layout.pageTop,
@@ -48,24 +30,20 @@ const styles = stylex.create({
     paddingInline: layout.pagePadding,
   },
   logo: {
+    alignItems: "center",
     color: colors.textPrimary,
-    fontVariationSettings: weights.semibold,
+    display: "flex",
   },
 });
 
-function Header() {
+function Header({ nav }: HeaderProps) {
   return (
     <header {...stylex.props(styles.header)}>
       <div {...stylex.props(styles.inner)}>
-        <Link to="/" {...stylex.props(typography.base, styles.logo)}>
-          tomekit
+        <Link aria-label="tomekit home" to="/" {...stylex.props(styles.logo)}>
+          <Logo />
         </Link>
-        <a
-          href="https://github.com/aayushbtw/tomekit"
-          {...stylex.props(typography.sm, styles.github)}
-        >
-          GitHub
-        </a>
+        <NavDrawer nav={nav} />
       </div>
     </header>
   );
