@@ -1,3 +1,4 @@
+import { cloudflare } from "@cloudflare/vite-plugin";
 import stylex from "@stylexjs/unplugin/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
@@ -10,6 +11,7 @@ const config = defineConfig({
 
     return [
       tomekit(),
+      cloudflare({ viteEnvironment: { name: "ssr" } }),
       tanstackStart({ prerender: { crawlLinks: true, enabled: true } }),
       // Before the React plugin, or Fast Refresh breaks.
       stylex({ useCSSLayers: true }),

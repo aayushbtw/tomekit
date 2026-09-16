@@ -18,9 +18,12 @@ catalog:
   oxc-parser: ^0.150.0
   "@vitest/coverage-v8": 4.1.11
   "@base-ui/react": ^1.8.0
+  "@cloudflare/vite-plugin": ^1.54.9
+  wrangler: ^4.131.2
 allowBuilds:
   esbuild: true
   lightningcss: true
+  workerd: true
 overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
