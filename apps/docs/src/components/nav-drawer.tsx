@@ -10,6 +10,7 @@ import {
   colors,
   durations,
   layout,
+  radii,
   space,
   weights,
 } from "#/styles/tokens.stylex";
@@ -18,6 +19,88 @@ import { typography } from "#/styles/typography";
 interface NavDrawerProps {
   nav: Nav[];
 }
+
+// Keeps the sheet's background under the screen's bottom edge, so a bounced swipe never shows the page behind it.
+const bleed = "3rem";
+
+const ease = "cubic-bezier(0.32, 0.72, 0, 1)";
+
+// Transitions read Base UI's `--drawer-swipe-*` variables and `data-*` states.
+const drawer = stylex.create({
+  backdrop: {
+    backgroundColor: "var(--black-a8)",
+    inset: 0,
+    opacity: {
+      ":is([data-starting-style], [data-ending-style])": 0,
+      default: "calc(1 - var(--drawer-swipe-progress, 0))",
+    },
+    position: "fixed",
+    transitionDuration: "450ms",
+    transitionProperty: "opacity",
+    transitionTimingFunction: ease,
+  },
+  content: {
+    display: "flex",
+    flex: 1,
+    flexDirection: "column",
+    minHeight: 0,
+  },
+  // The bar is the close button, so its row carries the hit area.
+  handle: {
+    alignItems: "center",
+    backgroundColor: "transparent",
+    display: "flex",
+    flexShrink: 0,
+    height: layout.itemHeight,
+    justifyContent: "center",
+    marginBlockEnd: space.px8,
+  },
+  handleBar: {
+    backgroundColor: colors.borderStrong,
+    borderRadius: 999,
+    height: 4,
+    width: 36,
+  },
+  popup: {
+    backgroundColor: colors.background,
+    borderStartEndRadius: radii.lg,
+    borderStartStartRadius: radii.lg,
+    borderTopColor: colors.border,
+    borderTopStyle: "solid",
+    borderTopWidth: 1,
+    display: "flex",
+    flexDirection: "column",
+    marginBlockEnd: `calc(-1 * ${bleed})`,
+    maxHeight: `calc(85dvh + ${bleed})`,
+    outline: 0,
+    overflow: "hidden",
+    paddingBlockEnd: `calc(${bleed} + env(safe-area-inset-bottom, 0px))`,
+    paddingBlockStart: space.px8,
+    paddingInline: space.px24,
+    transform: {
+      ":is([data-starting-style], [data-ending-style])": `translateY(calc(100% - ${bleed} + 2px))`,
+      default: "translateY(var(--drawer-swipe-movement-y))",
+    },
+    transitionDuration: {
+      // A flick closes faster than a drag.
+      ":is([data-ending-style]):not([data-swiping])":
+        "calc(var(--drawer-swipe-strength) * 400ms)",
+      // Following a finger, not animating to it.
+      ":is([data-swiping])": "0ms",
+      default: "450ms",
+    },
+    transitionProperty: "transform",
+    transitionTimingFunction: ease,
+    width: "100%",
+    willChange: "transform",
+  },
+  viewport: {
+    alignItems: "flex-end",
+    display: "flex",
+    inset: 0,
+    position: "fixed",
+  },
+});
 
 const styles = stylex.create({
   title: {
@@ -77,16 +160,16 @@ function NavDrawer({ nav }: NavDrawerProps) {
         </svg>
       </Drawer.Trigger>
       <Drawer.Portal>
-        <Drawer.Backdrop className="drawer-backdrop" />
-        <Drawer.Viewport className="drawer-viewport">
-          <Drawer.Popup className="drawer-popup">
+        <Drawer.Backdrop {...stylex.props(drawer.backdrop)} />
+        <Drawer.Viewport {...stylex.props(drawer.viewport)}>
+          <Drawer.Popup {...stylex.props(drawer.popup)}>
             <Drawer.Close
               aria-label="Close the docs navigation"
-              className="drawer-handle"
+              {...stylex.props(drawer.handle)}
             >
-              <span className="drawer-handle-bar" />
+              <span {...stylex.props(drawer.handleBar)} />
             </Drawer.Close>
-            <Drawer.Content className="drawer-content">
+            <Drawer.Content {...stylex.props(drawer.content)}>
               <Drawer.Title {...stylex.props(typography.base, styles.title)}>
                 Docs
               </Drawer.Title>
