@@ -23,7 +23,6 @@ import {
   layout,
   radii,
   space,
-  weights,
 } from "#/styles/tokens.stylex";
 import { typography } from "#/styles/typography";
 
@@ -61,18 +60,13 @@ const styles = stylex.create({
     },
     cursor: "pointer",
     display: "flex",
-    fontVariationSettings: {
-      ":hover": weights.medium,
-      default: weights.regular,
-    },
     gap: space.px6,
     height: layout.itemHeight,
     transitionDuration: durations.fast,
-    transitionProperty: "color, font-variation-settings",
+    transitionProperty: "color",
   },
   selected: {
     color: colors.textPrimary,
-    fontVariationSettings: weights.medium,
   },
   tabs: {
     display: "flex",

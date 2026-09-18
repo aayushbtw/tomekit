@@ -27,7 +27,6 @@ interface DocsNavProps {
 const styles = stylex.create({
   active: {
     color: colors.textPrimary,
-    fontVariationSettings: weights.medium,
   },
   footer: {
     alignItems: "center",
@@ -67,14 +66,10 @@ const styles = stylex.create({
       default: colors.textMuted,
     },
     display: "flex",
-    fontVariationSettings: {
-      ":hover": weights.medium,
-      default: weights.regular,
-    },
     gap: space.px8,
     height: layout.itemHeight,
     transitionDuration: durations.fast,
-    transitionProperty: "color, font-variation-settings",
+    transitionProperty: "color",
   },
   nav: {
     display: "flex",
