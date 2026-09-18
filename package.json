@@ -10,9 +10,9 @@
     "release": "GITHUB_TOKEN=$(gh auth token) changeset version && vp fmt"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "catalog:",
-    "@changesets/cli": "catalog:",
-    "@oxlint/plugins": "1.81.0",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
+    "@oxlint/plugins": "1.79.0",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

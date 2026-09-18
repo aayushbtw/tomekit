@@ -51,7 +51,7 @@
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:",
-    "zod": "^4.6.2"
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "vite": ">=8.0.0"
