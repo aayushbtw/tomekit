@@ -5,11 +5,10 @@ import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
 import { NotFound } from "#/components/not-found";
 import { site } from "#/lib/site";
-
 // Relative, not `#/`: the StyleX compiler can't resolve package import aliases.
-import { colors, fonts } from "../tokens.stylex";
+import { colors, fonts } from "#/styles/tokens.stylex";
 
-import appCss from "../styles.css?url";
+import appCss from "#/styles/styles.css?url";
 
 // The prose `pre` replaces the highlighter's class names but keeps `data-lang`.
 const highlightCss = createThemeCss({

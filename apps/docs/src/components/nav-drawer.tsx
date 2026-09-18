@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 
 import { DocsNav } from "#/components/docs-nav";
 import type { Nav } from "#/components/docs-nav";
-
 import {
   below,
   colors,
@@ -13,8 +12,8 @@ import {
   layout,
   space,
   weights,
-} from "../tokens.stylex";
-import { typography } from "../typography";
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
 
 interface NavDrawerProps {
   nav: Nav[];

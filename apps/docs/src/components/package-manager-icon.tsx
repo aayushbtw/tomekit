@@ -2,8 +2,7 @@ import * as stylex from "@stylexjs/stylex";
 import type { ComponentType } from "react";
 
 import type { PackageManager } from "#/lib/package-manager";
-
-import { radii } from "../tokens.stylex";
+import { radii } from "#/styles/tokens.stylex";
 
 interface PackageManagerIconProps {
   manager: PackageManager;

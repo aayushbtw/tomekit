@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { cloudflare } from "@cloudflare/vite-plugin";
 import stylex from "@stylexjs/unplugin/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -18,7 +20,10 @@ const config = defineConfig({
         prerender: { crawlLinks: true, enabled: true },
       }),
       // Before the React plugin, or Fast Refresh breaks.
-      stylex({ useCSSLayers: true }),
+      stylex({
+        aliases: { "#/*": [path.join(import.meta.dirname, "src/*")] },
+        useCSSLayers: true,
+      }),
       viteReact(),
     ];
   }),

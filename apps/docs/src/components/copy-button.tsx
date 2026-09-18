@@ -1,7 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { useEffect, useState } from "react";
 
-import { colors, durations, layout, radii } from "../tokens.stylex";
+import { colors, durations, layout, radii } from "#/styles/tokens.stylex";
 
 interface CopyButtonProps {
   /** Announced to screen readers, eg "Copy install command". */

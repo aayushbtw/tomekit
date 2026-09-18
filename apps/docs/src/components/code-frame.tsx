@@ -3,8 +3,7 @@ import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ReactNode } from "react";
 
 import { CopyButton } from "#/components/copy-button";
-
-import { colors, layout, space } from "../tokens.stylex";
+import { colors, layout, space } from "#/styles/tokens.stylex";
 
 interface CodeFrameProps {
   /** The bordered box under the header. */

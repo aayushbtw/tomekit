@@ -2,7 +2,6 @@ import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
 
 import { docLink, homeSlug } from "#/lib/links";
-
 import {
   below,
   colors,
@@ -13,8 +12,8 @@ import {
   lineHeights,
   space,
   weights,
-} from "../tokens.stylex";
-import { typography } from "../typography";
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
 
 const styles = stylex.create({
   description: {

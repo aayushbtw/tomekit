@@ -6,9 +6,14 @@ import { GithubIcon } from "#/components/github-icon";
 import { docLink, homeSlug } from "#/lib/links";
 import { sectionsWithoutIcons } from "#/lib/sections";
 import { site } from "#/lib/site";
-
-import { colors, durations, layout, space, weights } from "../tokens.stylex";
-import { typography } from "../typography";
+import {
+  colors,
+  durations,
+  layout,
+  space,
+  weights,
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
 
 interface Nav {
   pages: { slug: string; title: string }[];

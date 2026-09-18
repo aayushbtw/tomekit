@@ -2,8 +2,7 @@ import * as stylex from "@stylexjs/stylex";
 
 import { DocsNav } from "#/components/docs-nav";
 import type { Nav } from "#/components/docs-nav";
-
-import { below, layout } from "../tokens.stylex";
+import { below, layout } from "#/styles/tokens.stylex";
 
 interface SidebarProps {
   nav: Nav[];

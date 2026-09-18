@@ -10,8 +10,8 @@ import {
   space,
   weights,
   zIndices,
-} from "../tokens.stylex";
-import { typography } from "../typography";
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
 
 interface Heading {
   id: string;

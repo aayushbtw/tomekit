@@ -2,7 +2,6 @@ import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
 
 import { docLink } from "#/lib/links";
-
 import {
   borderWidths,
   colors,
@@ -11,8 +10,8 @@ import {
   shadows,
   space,
   weights,
-} from "../tokens.stylex";
-import { typography } from "../typography";
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
 
 interface PageLink {
   slug: string;

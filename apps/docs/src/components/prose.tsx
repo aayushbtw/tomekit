@@ -11,7 +11,6 @@ import { CodeFrame } from "#/components/code-frame";
 import { FileIcon } from "#/components/file-icon";
 import { Install } from "#/components/install";
 import { highlightCode } from "#/lib/highlight";
-
 import {
   borderWidths,
   colors,
@@ -25,8 +24,8 @@ import {
   space,
   tableRow,
   weights,
-} from "../tokens.stylex";
-import { typography } from "../typography";
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
 
 interface ProseProps {
   body: MarkdownProps["children"];

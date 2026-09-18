@@ -10,8 +10,9 @@ import {
   lineHeights,
   space,
   weights,
-} from "../tokens.stylex";
-import { typography } from "../typography";
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
+
 import { Prose } from "./prose";
 import { Toc } from "./toc";
 

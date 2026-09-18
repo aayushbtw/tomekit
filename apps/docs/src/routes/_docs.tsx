@@ -4,8 +4,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { Header } from "#/components/header";
 import { Sidebar } from "#/components/sidebar";
 import { getNav } from "#/lib/docs";
-
-import { layout } from "../tokens.stylex";
+import { layout } from "#/styles/tokens.stylex";
 
 export const Route = createFileRoute("/_docs")({
   loader: () => getNav(),

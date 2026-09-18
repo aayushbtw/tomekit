@@ -14,7 +14,6 @@ import {
   selectPackageManager,
   subscribePackageManager,
 } from "#/lib/package-manager";
-
 import {
   borderWidths,
   colors,
@@ -25,8 +24,8 @@ import {
   radii,
   space,
   weights,
-} from "../tokens.stylex";
-import { typography } from "../typography";
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
 
 interface InstallProps {
   /** Package names, separated by spaces, as written in the Markdown attribute. */

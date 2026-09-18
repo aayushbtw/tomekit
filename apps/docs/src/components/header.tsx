@@ -4,8 +4,7 @@ import { Link } from "@tanstack/react-router";
 import type { Nav } from "#/components/docs-nav";
 import { Logo } from "#/components/logo";
 import { NavDrawer } from "#/components/nav-drawer";
-
-import { colors, layout, zIndices } from "../tokens.stylex";
+import { colors, layout, zIndices } from "#/styles/tokens.stylex";
 
 interface HeaderProps {
   nav: Nav[];

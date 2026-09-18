@@ -1,6 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
 
-import { fontSizes, letterSpacings, lineHeights } from "./tokens.stylex";
+import { fontSizes, letterSpacings, lineHeights } from "#/styles/tokens.stylex";
 
 const typography = stylex.create({
   base: {
