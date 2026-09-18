@@ -37,7 +37,10 @@
   }
 
   html {
+    /* iOS Safari otherwise enlarges text in horizontally scrolling code blocks. */
+    -webkit-text-size-adjust: 100%;
     overscroll-behavior-y: none;
+    text-size-adjust: 100%;
     scrollbar-width: none;
   }
 
