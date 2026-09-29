@@ -151,8 +151,10 @@ function connect(dev: ViteDevServer) {
 }
 
 async function start(files: Record<string, string>, options?: ServerOptions) {
-  globalThis.tomekitDev = undefined;
-  globalThis.tomekitRuns = 0;
+  onTestFinished(() => {
+    globalThis.tomekitDev = undefined;
+    globalThis.tomekitRuns = 0;
+  });
 
   const project = await createProject({
     "src/read.ts": 'export { collections } from "tomekit/content";\n',

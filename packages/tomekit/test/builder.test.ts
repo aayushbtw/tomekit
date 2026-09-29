@@ -1,7 +1,7 @@
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
-import { describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 
 import { ContentBuilder } from "../src/builder";
 import { ConfigLoadError } from "../src/errors";
@@ -194,11 +194,13 @@ function gate() {
 const HELLO = "---\ntitle: Hello\n---\n";
 
 async function createBuilder(files: Record<string, string>) {
-  globalThis.tomekitGate = undefined;
-  globalThis.tomekitImports = 0;
-  globalThis.tomekitLoads = 0;
-  globalThis.tomekitStarted = false;
-  globalThis.tomekitTransforms = 0;
+  onTestFinished(() => {
+    globalThis.tomekitGate = undefined;
+    globalThis.tomekitImports = 0;
+    globalThis.tomekitLoads = 0;
+    globalThis.tomekitStarted = false;
+    globalThis.tomekitTransforms = 0;
+  });
 
   const project = await createProject({
     "tomekit.config.ts": config,
