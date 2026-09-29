@@ -4,7 +4,7 @@
       {
         "hooks": [
           {
-            "command": "pnpm run fix --hook",
+            "command": "jq -r '.tool_input.file_path' | xargs vp fmt --no-error-on-unmatched-pattern",
             "type": "command"
           }
         ],

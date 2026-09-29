@@ -11,7 +11,7 @@
     "**/routeTree.gen.ts": true
   },
   "biome.enabled": false,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
   "[javascript]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
@@ -46,31 +46,10 @@
   "editor.formatOnPaste": true,
   "emmet.showExpandedAbbreviation": "never",
   "js/ts.tsdk.promptToUseWorkspaceVersion": true,
-  "[astro]": {
-    "editor.defaultFormatter": "astro-build.astro-vscode"
-  },
   "[css]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
-  "[graphql]": {
-    "editor.defaultFormatter": "oxc.oxc-vscode"
-  },
-  "[handlebars]": {
-    "editor.defaultFormatter": "oxc.oxc-vscode"
-  },
   "[html]": {
-    "editor.defaultFormatter": "oxc.oxc-vscode"
-  },
-  "[less]": {
-    "editor.defaultFormatter": "oxc.oxc-vscode"
-  },
-  "[scss]": {
-    "editor.defaultFormatter": "oxc.oxc-vscode"
-  },
-  "[vue-html]": {
-    "editor.defaultFormatter": "oxc.oxc-vscode"
-  },
-  "[vue]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   }
 }

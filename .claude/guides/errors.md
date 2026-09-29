@@ -7,4 +7,3 @@
 - **Warnings state the consequence**: `directory "x" has no files, so the collection is empty`.
 - Only the adapter adds the `[tomekit]` prefix and talks to the logger.
 - **Every thrown error is a class in `src/errors/`**, one per file, exported from `src/errors/index.ts`. No `throw new Error(...)` in `src/`. Classes extend a category (`ConfigError`, `ContentError`, `TransformError`, `PluginError`), which extends `TomekitError`. Each sets `name` explicitly, and its constructor takes data and builds the message. Add a class per distinct failure, not per call site. Wrapped errors go in `cause`.
-

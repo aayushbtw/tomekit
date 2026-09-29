@@ -15,4 +15,3 @@ Everything users import from `tomekit`, `tomekit/content`, `tomekit/content-modu
 
 - `@param` / `@returns` only when they say something the name and type don't.
 - Internal functions get no TSDoc unless they have a contract the types can't express.
-

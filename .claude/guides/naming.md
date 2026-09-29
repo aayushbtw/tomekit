@@ -26,7 +26,7 @@ One word per concept, used everywhere that concept appears: code, generated type
 
 Methods, like `Map`, each named after what it returns. Each level has the members its concept needs, not a shared generic set.
 
-| | `collections` | A collection |
+|  | `collections` | A collection |
 | --- | --- | --- |
 | List keys | `names()`: collection names, config order | `slugs()`: slugs, loader order |
 | One item | `get(name)`: a collection | `get(slug)`: a document |
