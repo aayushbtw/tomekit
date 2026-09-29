@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { ContentBuilder } from "../src/builder";
 import { ConfigLoadError } from "../src/errors";
-import { createProject, QUERY, SOURCE } from "./project";
+import { createProject, SOURCE } from "./project";
 
 // Counts `load` runs on `globalThis`, which the config shares with the test
 // even though Vite imports it separately.
@@ -178,14 +178,7 @@ afterEach(async () => {
   await cleanup?.();
 });
 
-interface BuilderSetup {
-  types?: string | false;
-}
-
-async function createBuilder(
-  files: Record<string, string>,
-  { types = false }: BuilderSetup = {}
-) {
+async function createBuilder(files: Record<string, string>) {
   const project = await createProject({
     "tomekit.config.ts": config,
     ...files,
@@ -198,8 +191,6 @@ async function createBuilder(
     dev: false,
     rebuilds: true,
     root: project.root,
-    runtime: QUERY,
-    types: types === false ? false : path.join(project.root, types),
   });
 
   function changed(file: string) {
@@ -310,15 +301,12 @@ describe("ContentBuilder", () => {
   });
 
   it("leaves out a document whose reference breaks, until the other collection has the slug", async () => {
-    const { builder, changed, project } = await createBuilder(
-      {
-        "content/authors/ada.md": "Ada\n",
-        "content/posts/hello.md": "---\nauthor: ada\n---\n",
-        "content/posts/typo.md": "---\nauthor: adaa\n---\n",
-        "tomekit.config.ts": referencing,
-      },
-      { types: ".tomekit" }
-    );
+    const { builder, changed, project } = await createBuilder({
+      "content/authors/ada.md": "Ada\n",
+      "content/posts/hello.md": "---\nauthor: ada\n---\n",
+      "content/posts/typo.md": "---\nauthor: adaa\n---\n",
+      "tomekit.config.ts": referencing,
+    });
 
     const broken = await builder.load();
     const types = path.join(project.root, ".tomekit", "content.d.ts");
@@ -434,14 +422,32 @@ describe("ContentBuilder", () => {
     expect(globalThis.tomekitImports).toBe(1);
   });
 
-  it("warns about an unmapped tsconfig only on the first build", async () => {
-    const { builder, changed } = await createBuilder(
-      {
-        "content/posts/hello.md": HELLO,
-        "tsconfig.json": '{ "compilerOptions": { "strict": true } }',
-      },
-      { types: ".tomekit" }
+  it("writes a module to .tomekit that imports nothing and serves the same documents", async () => {
+    const { builder, project } = await createBuilder({
+      "content/posts/hello.md": HELLO,
+    });
+
+    const build = await builder.load();
+    const file = path.join(project.root, ".tomekit", "content.js");
+    const code = await readFile(file, "utf-8");
+
+    expect(code).toBe(build.code);
+    expect(code).not.toMatch(/\bimport\b/u);
+
+    // Evaluated by Node, not Vite, as a script outside the plugin would.
+    const content: unknown = await import(
+      /* @vite-ignore */ `data:text/javascript,${encodeURIComponent(code)}`
     );
+
+    expect(content).toHaveProperty("posts");
+    expect(content).toHaveProperty("collections");
+  });
+
+  it("warns about an unmapped tsconfig only on the first build", async () => {
+    const { builder, changed } = await createBuilder({
+      "content/posts/hello.md": HELLO,
+      "tsconfig.json": '{ "compilerOptions": { "strict": true } }',
+    });
 
     const first = await builder.load();
     changed("content/posts/hello.md");

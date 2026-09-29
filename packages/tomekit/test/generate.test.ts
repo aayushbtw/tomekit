@@ -96,6 +96,45 @@ describe("writeTypes", () => {
     );
   });
 
+  it("replaces the file whole, so a reader never sees half of it", async () => {
+    const root = await project();
+    const configPath = path.join(root, "tomekit.config.ts");
+    const file = path.join(root, "content.d.ts");
+
+    function many(count: number) {
+      return [
+        {
+          name: "posts",
+          slugs: Array.from({ length: count }, (_, index) => `post-${index}`),
+        },
+      ];
+    }
+
+    await writeTypes(root, configPath, many(100_000));
+    const complete = new Set([await readFile(file, "utf-8")]);
+    let writing = true;
+
+    const written = (async () => {
+      for (const count of [200_000, 100_000, 200_000]) {
+        await writeTypes(root, configPath, many(count));
+        complete.add(await readFile(file, "utf-8"));
+      }
+
+      writing = false;
+    })();
+
+    const reads: string[] = [];
+
+    while (writing) {
+      reads.push(await readFile(file, "utf-8"));
+    }
+
+    await written;
+
+    expect(reads.length).toBeGreaterThan(0);
+    expect(reads.every((read) => complete.has(read))).toBe(true);
+  });
+
   it("writes nothing when the types are unchanged", async () => {
     const root = await project();
     const directory = path.join(root, ".tomekit");

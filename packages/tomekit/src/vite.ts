@@ -9,12 +9,6 @@ import type { ContentError } from "./errors";
 
 const RESOLVED_ID = `\0${MODULE_ID}`;
 
-// Imported by path, so the runtime needs no public export. `.ts` when running from source.
-const RUNTIME = path
-  .join(import.meta.dirname, `query${path.extname(import.meta.filename)}`)
-  .split(path.sep)
-  .join("/");
-
 /** Options for the {@link tomekit} Vite plugin. */
 interface TomekitOptions {
   /**
@@ -23,14 +17,6 @@ interface TomekitOptions {
    * @default "tomekit.config.ts"
    */
   config?: "tomekit.config.ts" | (string & Record<never, never>);
-  /**
-   * The folder generated types are written to, relative to the Vite root, or
-   * `false` to skip them. Map `tomekit/content*` to `<types>/content*` in your
-   * tsconfig `paths`.
-   *
-   * @default ".tomekit"
-   */
-  types?: ".tomekit" | false | (string & Record<never, never>);
 }
 
 /**
@@ -51,7 +37,6 @@ interface TomekitOptions {
  */
 function tomekit({
   config = "tomekit.config.ts",
-  types = ".tomekit",
 }: TomekitOptions = {}): Plugin {
   // Hook context lives in closure variables, the usual plugin shape. Content state belongs in ContentBuilder.
   let builder: ContentBuilder | undefined;
@@ -191,8 +176,6 @@ function tomekit({
         dev: resolved.command === "serve",
         rebuilds: resolved.command === "serve" || resolved.build.watch !== null,
         root,
-        runtime: RUNTIME,
-        types: types === false ? false : path.resolve(root, types),
       });
     },
 

@@ -12,13 +12,15 @@ import {
   MissingDefaultExportError,
 } from "./errors";
 import type { ContentError } from "./errors";
-import { writeTypes } from "./generate";
+import { contentModule, writeModule, writeTypes } from "./generate";
 import type { Config } from "./index";
 import { checkReferences } from "./reference";
-import { listSource, PURE } from "./serialize";
 import { isPlainObject } from "./value";
 
 const MODULE_ID = "tomekit/content";
+
+/** The folder, relative to the root, that holds `content.js` and `content.d.ts`. */
+const OUTPUT = ".tomekit";
 
 /** The generated module and what happened while building it. */
 interface Build {
@@ -34,15 +36,11 @@ interface Build {
 interface BuilderOptions {
   /** Absolute path of the config file. */
   configPath: string;
-  /** Whether the Vite dev server is running. Passed to loaders and transforms. */
+  /** Whether content rebuilds on change for development, in the Vite dev server or `tomekit watch`. Passed to loaders and transforms. */
   dev: boolean;
-  /** Whether this builder builds more than once, in dev or `vite build --watch`, so caching entries pays off. */
+  /** Whether this builder builds more than once, in dev, `vite build --watch` or `tomekit watch`, so caching entries pays off. */
   rebuilds: boolean;
   root: string;
-  /** Absolute path of the runtime the generated module imports. */
-  runtime: string;
-  /** Absolute path of the types folder, or `false` to skip them. */
-  types: string | false;
 }
 
 const GLOB_CHARACTER = /[*?[{]/u;
@@ -190,7 +188,7 @@ class ContentBuilder {
   }
 
   async #run(): Promise<Build> {
-    const { configPath, dev, rebuilds, root, runtime, types } = this.#options;
+    const { configPath, dev, rebuilds, root } = this.#options;
     this.#config ??= this.#importConfig();
     const imported = this.#config;
     let config: Config;
@@ -279,43 +277,46 @@ class ContentBuilder {
     }));
 
     const warnings = loaded.flatMap((collection) => collection.warnings);
+
+    const code = contentModule(
+      collections.map(({ documents, name }) => ({
+        name,
+        serialized: documents.map(({ serialized }) => serialized),
+      }))
+    );
+
     let typesWritten: string | undefined;
 
-    if (types !== false) {
+    // A build a change made stale leaves the files to the build after it.
+    if (this.#version === version) {
+      const directory = path.join(root, OUTPUT);
+
       const generated = collections.map(({ documents, name }) => ({
         name,
         slugs: documents.map((document) => document.slug),
       }));
 
-      if (await writeTypes(types, configPath, generated)) {
-        typesWritten = path.relative(root, types);
-      }
+      const [types] = await Promise.all([
+        writeTypes(directory, configPath, generated),
+        writeModule(directory, code),
+      ]);
 
-      if (!this.#checkedTsconfig) {
-        this.#checkedTsconfig = true;
-        const warning = await this.#checkTsconfig(types);
-
-        if (warning !== undefined) {
-          warnings.push(warning);
-        }
+      if (types) {
+        typesWritten = OUTPUT;
       }
     }
 
-    // One export per collection, so a page bundles only the collections it imports.
-    const exports = collections.map(({ documents, name }) => {
-      const list = listSource(documents.map(({ serialized }) => serialized));
+    if (!this.#checkedTsconfig) {
+      this.#checkedTsconfig = true;
+      const warning = await this.#checkTsconfig();
 
-      return `export const ${name} = ${PURE}_createCollection(${list});`;
-    });
-
-    const names = collections.map(({ name }) => name).join(",");
+      if (warning !== undefined) {
+        warnings.push(warning);
+      }
+    }
 
     return {
-      // Aliased with "_", which no collection name starts with, so a collection can't shadow them.
-      code: `import { createCollection as _createCollection, createCollections as _createCollections } from ${JSON.stringify(runtime)};
-${exports.join("\n")}
-export const collections = ${PURE}_createCollections({${names}});
-`,
+      code,
       errors: [
         ...loaded.flatMap((collection) => collection.errors),
         ...references.errors,
@@ -326,7 +327,7 @@ export const collections = ${PURE}_createCollections({${names}});
   }
 
   /** A warning when the root tsconfig does not map `tomekit/content` to the generated types. */
-  async #checkTsconfig(types: string): Promise<string | undefined> {
+  async #checkTsconfig(): Promise<string | undefined> {
     const { root } = this.#options;
     let source: string;
 
@@ -345,10 +346,8 @@ export const collections = ${PURE}_createCollections({${names}});
       return undefined;
     }
 
-    const target = `./${path.relative(root, types).split(path.sep).join("/")}/content*`;
-
-    return `tsconfig.json does not map "${MODULE_ID}", so its imports have no collection types. Add "paths": { "${MODULE_ID}*": ["${target}"] } to compilerOptions.`;
+    return `tsconfig.json does not map "${MODULE_ID}", so its imports have no collection types. Add "paths": { "${MODULE_ID}*": ["./${OUTPUT}/content*"] } to compilerOptions.`;
   }
 }
 
-export { type Build, ContentBuilder, MODULE_ID };
+export { type Build, ContentBuilder, MODULE_ID, OUTPUT };
