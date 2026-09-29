@@ -50,7 +50,12 @@ const styles = stylex.create({
     transitionProperty: "color",
   },
   version: {
-    color: colors.textFaint,
+    color: {
+      ":hover": colors.textPrimary,
+      default: colors.textFaint,
+    },
+    transitionDuration: durations.fast,
+    transitionProperty: "color",
   },
   label: {
     alignItems: "center",
@@ -126,9 +131,12 @@ function DocsNav({ nav }: DocsNavProps) {
           <GithubIcon />
           GitHub
         </a>
-        <span {...stylex.props(typography.sm, styles.version)}>
+        <a
+          href={`https://www.npmjs.com/package/${site.name}`}
+          {...stylex.props(typography.sm, styles.version)}
+        >
           v{site.version}
-        </span>
+        </a>
       </div>
     </>
   );
