@@ -5,7 +5,13 @@ export default defineConfig({
     // js-yaml is bundled so tomekit installs with no dependencies; anything else bundled by accident fails the build.
     deps: { onlyBundle: ["js-yaml"], resolveDepSubpath: true },
     dts: true,
-    entry: ["src/index.ts", "src/content.ts", "src/register.ts", "src/vite.ts"],
+    entry: [
+      "src/bin.ts",
+      "src/content.ts",
+      "src/index.ts",
+      "src/register.ts",
+      "src/vite.ts",
+    ],
     platform: "node",
   },
   test: {

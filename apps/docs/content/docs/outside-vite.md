@@ -62,3 +62,14 @@ Bun reads the `tomekit/content*` path in `tsconfig.json`, so it imports `.tomeki
 ```sh
 bun --preload tomekit/register scripts/feed.ts
 ```
+
+## The tomekit command
+
+For a tool that reads the `tsconfig.json` path but can't preload a module, build the file with the `tomekit` command first:
+
+```sh
+tomekit build   # build once; exits 1 on broken content
+tomekit watch   # build, then rebuild on every change, with dev set to true
+```
+
+Both read `tomekit.config.ts` from the current folder, or the file `--config` names. `tomekit build` also checks content in CI without a Vite build.
