@@ -143,7 +143,7 @@ describe("loadCollection", () => {
     expect(warnings).toStrictEqual(["posts: the API is slow"]);
     expect(messages(errors)).toStrictEqual([
       "a.md:2:3: bad YAML",
-      'collections.get("posts").get("missing"): no such page',
+      'posts.get("missing"): no such page',
     ]);
   });
 
@@ -172,8 +172,8 @@ describe("loadCollection", () => {
     );
 
     expect(messages([...thrown.errors, ...array.errors])).toStrictEqual([
-      'collections.get("posts"): the loader failed: API is down',
-      'collections.get("posts"): the loader\'s `load` must return an object with an `entries` array, eg `{ entries: [] }`',
+      "posts: the loader failed: API is down",
+      "posts: the loader's `load` must return an object with an `entries` array, eg `{ entries: [] }`",
     ]);
   });
 
@@ -192,9 +192,7 @@ describe("loadCollection", () => {
     );
 
     expect(messages(errors)).toStrictEqual([
-      expect.stringMatching(
-        /^collections\.get\("posts"\)\.get\("code"\): title: /u
-      ),
+      expect.stringMatching(/^posts\.get\("code"\): title: /u),
       expect.stringMatching(/^content\/posts\/hello\.md:2:1: title: /u),
     ]);
   });
@@ -211,8 +209,8 @@ describe("loadCollection", () => {
     );
 
     expect(messages(errors)).toStrictEqual([
-      'collections.get("posts"): slug must be a non-empty string, got ""',
-      'collections.get("posts"): slug must be a non-empty string, got 1',
+      'posts: slug must be a non-empty string, got ""',
+      "posts: slug must be a non-empty string, got 1",
     ]);
   });
 
@@ -228,7 +226,7 @@ describe("loadCollection", () => {
 
     expect(outputs(documents)).toMatchObject([{ metadata: { title: "A" } }]);
     expect(messages(errors)).toStrictEqual([
-      'collections.get("posts").get("same"): slug "same" is already used by another entry. Return a unique slug from the loader',
+      'posts.get("same"): slug "same" is already used by another entry. Return a unique slug from the loader',
     ]);
   });
 
@@ -351,7 +349,7 @@ describe("loadCollection", () => {
         /^content\/posts\/hello\.md: cannot write an instance of Author at metadata\.list\[0\] into content/u
       ),
       expect.stringMatching(
-        /^collections\.get\("posts"\)\.get\("b"\): cannot write an instance of Author at author/u
+        /^posts\.get\("b"\): cannot write an instance of Author at author/u
       ),
     ]);
   });
@@ -428,7 +426,7 @@ describe("loadCollection", () => {
 
     expect(documents).toStrictEqual([]);
     expect(messages(errors)).toStrictEqual([
-      'collections.get("posts").get("a"): a has no date. Add one',
+      'posts.get("a"): a has no date. Add one',
     ]);
   });
 

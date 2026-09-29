@@ -303,7 +303,7 @@ describe("directory", () => {
     expect(documents).toStrictEqual([]);
     expect(warnings).toStrictEqual([]);
     expect(messages(errors)).toStrictEqual([
-      'collections.get("blogPosts"): directory "content/post" does not exist. Create it, or fix the path passed to `directory()`',
+      'blogPosts: directory "content/post" does not exist. Create it, or fix the path passed to `directory()`',
     ]);
   });
 
@@ -317,7 +317,7 @@ describe("directory", () => {
     );
 
     expect(messages(errors)).toStrictEqual([
-      'collections.get("posts"): "content/posts.md" is a file, not a directory. Pass the folder that holds it, eg `directory("content")`',
+      'posts: "content/posts.md" is a file, not a directory. Pass the folder that holds it, eg `directory("content")`',
     ]);
   });
 
@@ -333,7 +333,7 @@ describe("directory", () => {
 
       expect(messages(errors)).toStrictEqual([
         expect.stringMatching(
-          /^collections\.get\("posts"\): directory "content\/posts" can't be read: EACCES: /u
+          /^posts: directory "content\/posts" can't be read: EACCES: /u
         ),
       ]);
       expect(errors[0]?.cause).toBeInstanceOf(Error);
@@ -349,7 +349,7 @@ describe("directory", () => {
 
     expect(errors).toStrictEqual([]);
     expect(warnings).toStrictEqual([
-      'posts: directory "content/posts" has no files, so collections.get("posts") is empty',
+      'posts: directory "content/posts" has no files, so the collection is empty',
     ]);
   });
 
@@ -363,7 +363,7 @@ describe("directory", () => {
 
     expect(errors).toStrictEqual([]);
     expect(warnings).toStrictEqual([
-      'posts: no files in "content/posts" match "**/*.md", but it has 2 other files, so collections.get("posts") is empty',
+      'posts: no files in "content/posts" match "**/*.md", but it has 2 other files, so the collection is empty',
     ]);
   });
 

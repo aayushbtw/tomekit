@@ -357,9 +357,7 @@ describe("tomekit()", () => {
     expect(overlay?.err.loc?.file).toBe(
       path.join(project.root, "tomekit.config.ts")
     );
-    expect(overlay?.err.message).toContain(
-      'collections.get("pages").get("0"): title:'
-    );
+    expect(overlay?.err.message).toContain('pages.get("0"): title:');
   });
 
   it("fails on collection names it cannot generate types for", async () => {

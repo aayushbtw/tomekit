@@ -141,7 +141,7 @@ interface LoadContext {
  * const pages: Loader = {
  *   load: () => ({ entries: [], issues: [{ message: "draft has no title. Add one", slug: "draft" }] }),
  * };
- * // collections.get("pages").get("draft"): draft has no title. Add one
+ * // pages.get("draft"): draft has no title. Add one
  * ```
  */
 interface LoadIssue {
@@ -179,7 +179,7 @@ interface LoadResult<
   entries: readonly Entry<TFile>[];
   /** Entries that could not be loaded. The rest still load. */
   issues?: readonly LoadIssue[];
-  /** Printed as they are. Say what happens because of them, eg `directory "x" has no files, so collections.get("x") is empty`. */
+  /** Printed as they are. Say what happens because of them, eg `directory "x" has no files, so the collection is empty`. */
   warnings?: readonly string[];
 }
 

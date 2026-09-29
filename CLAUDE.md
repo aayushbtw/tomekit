@@ -43,7 +43,7 @@ Pure modules, one class that owns state, and a thin adapter, each in its own fil
 - **Collect, don't stop.** Report every broken file in one pass.
 - **Point at the source.** A content problem is a `ContentError` printed as `file:line:column: message`, with `file` relative to the root. When a key is missing, point at the deepest parent that exists. With no frontmatter at all, leave line and column out.
 - **Messages name the fix.** Say what went wrong, then what to do: ``transform returned "url", but it can only return `metadata` and `body`. Put derived values inside `metadata` instead``.
-- **Warnings state the consequence**: `directory "x" has no files, so collections.get("x") is empty`.
+- **Warnings state the consequence**: `directory "x" has no files, so the collection is empty`.
 - Only the adapter adds the `[tomekit]` prefix and talks to the logger. Lower layers return plain strings.
 - **Every thrown error is a class in `src/errors/`**, one per file, exported from `src/errors/index.ts`. No `throw new Error(...)` in `src/`. Classes extend a category (`ConfigError`, `ContentError`, `TransformError`, `PluginError`), which extends `TomekitError`. Each sets `name` explicitly, and its constructor takes data and builds the message, so the wording lives with the class. Add a class per distinct failure, not per call site.
 - An error that wraps another passes it as `cause`.

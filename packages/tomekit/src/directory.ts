@@ -223,7 +223,6 @@ function directory(
       const files = await filesIn(absolute, includes, excludes);
 
       if (files.length === 0) {
-        const empty = `collections.get(${JSON.stringify(collection)}) is empty`;
         // Node's glob skips dotfiles, so a folder holding only `.gitkeep` counts as empty.
         const { length: others } = await filesIn(absolute, ["**/*"]);
 
@@ -231,8 +230,8 @@ function directory(
           entries: [],
           warnings: [
             others === 0
-              ? `${collection}: directory "${folder}" has no files, so ${empty}`
-              : `${collection}: no files in "${folder}" match ${JSON.stringify(include)}, but it has ${others} other ${others === 1 ? "file" : "files"}, so ${empty}`,
+              ? `${collection}: directory "${folder}" has no files, so the collection is empty`
+              : `${collection}: no files in "${folder}" match ${JSON.stringify(include)}, but it has ${others} other ${others === 1 ? "file" : "files"}, so the collection is empty`,
           ],
         };
       }

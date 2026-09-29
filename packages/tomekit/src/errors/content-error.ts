@@ -20,14 +20,14 @@ function label({ collection = "", file, slug }: ContentSubject): string {
     return file;
   }
 
-  const name = `collections.get(${JSON.stringify(collection)})`;
-
-  return slug === undefined ? name : `${name}.get(${JSON.stringify(slug)})`;
+  return slug === undefined
+    ? collection
+    : `${collection}.get(${JSON.stringify(slug)})`;
 }
 
 /**
  * A problem with one entry, printed as `file:line:column: message`, or as
- * `collections.get("name").get("slug"): message` for an entry without a file.
+ * `posts.get("slug"): message` for an entry without a file.
  */
 class ContentError extends TomekitError {
   override name = "ContentError";

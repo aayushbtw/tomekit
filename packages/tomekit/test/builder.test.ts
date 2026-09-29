@@ -378,7 +378,7 @@ describe("ContentBuilder", () => {
     const broken = await builder.load();
 
     expect(broken.errors.map((error) => error.message)).toStrictEqual([
-      'collections.get("data"): the loader failed: broken data',
+      "data: the loader failed: broken data",
     ]);
     expect(changed("data/pages.json")).toBe(true);
   });

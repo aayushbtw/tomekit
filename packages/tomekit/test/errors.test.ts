@@ -79,10 +79,10 @@ describe("errors", () => {
     expect(
       new ContentError({ collection: "pages", slug: "a" }, { message: "bad" })
         .message
-    ).toBe('collections.get("pages").get("a"): bad');
+    ).toBe('pages.get("a"): bad');
     expect(
       new ContentError({ collection: "pages" }, { message: "bad" }).message
-    ).toBe('collections.get("pages"): bad');
+    ).toBe("pages: bad");
   });
 
   it("counts files, not errors, in a broken build", () => {

@@ -16,7 +16,7 @@ content/posts/hello.md:2:1: title: Invalid input: expected string, received unde
 content/posts/typo.md:2:1: author: no document in collection "authors" has the slug "adaa". Fix the slug, or add a document with it to "authors"
 ```
 
-An entry from a loader without a file is named by its collection and slug instead: `collections.get("pages").get("about"): message`.
+An entry from a loader without a file is named by its collection and slug instead: `pages.get("about"): message`.
 
 - `vite build` fails, listing every broken file.
 - The dev server logs the errors, shows them in the error overlay at the first one's location, and keeps serving everything else. Broken documents are left out until you fix them.
@@ -26,8 +26,8 @@ An entry from a loader without a file is named by its collection and slug instea
 Warnings don't stop anything. Each one says what happens because of it:
 
 ```
-posts: directory "content/posts" has no files, so collections.get("posts") is empty
-posts: no files in "content/posts" match "**/*.md", but it has 12 other files, so collections.get("posts") is empty
+posts: directory "content/posts" has no files, so the collection is empty
+posts: no files in "content/posts" match "**/*.md", but it has 12 other files, so the collection is empty
 ```
 
 ## Config errors

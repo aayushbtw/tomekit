@@ -125,7 +125,7 @@ describe("checkReferences", () => {
     expect(
       check([authors, posts], { posts: { author: "authors" } }).messages
     ).toStrictEqual([
-      'collections.get("posts").get("hello"): author: no document in collection "authors" has the slug "adaa". Fix the slug, or add a document with it to "authors"',
+      'posts.get("hello"): author: no document in collection "authors" has the slug "adaa". Fix the slug, or add a document with it to "authors"',
     ]);
   });
 
@@ -145,9 +145,9 @@ describe("checkReferences", () => {
     expect(
       check([people, posts], { posts: { authors: "people" } }).messages
     ).toStrictEqual([
-      'collections.get("posts").get("hello"): authors.0: "draft" in collection "people" is skipped (draft). Point at a document that is not skipped',
-      'collections.get("posts").get("hello"): authors.1: "hidden" in collection "people" is skipped. Point at a document that is not skipped',
-      'collections.get("posts").get("hello"): authors.2: "broken" in collection "people" has errors, so it is left out. Fix those first',
+      'posts.get("hello"): authors.0: "draft" in collection "people" is skipped (draft). Point at a document that is not skipped',
+      'posts.get("hello"): authors.1: "hidden" in collection "people" is skipped. Point at a document that is not skipped',
+      'posts.get("hello"): authors.2: "broken" in collection "people" has errors, so it is left out. Fix those first',
     ]);
   });
 
@@ -168,8 +168,8 @@ describe("checkReferences", () => {
     ).toStrictEqual({
       leftOut: { people: ["ada"], posts: ["hello"] },
       messages: [
-        'collections.get("people").get("ada"): mentor: no document in collection "people" has the slug "nobody". Fix the slug, or add a document with it to "people"',
-        'collections.get("posts").get("hello"): author: "ada" in collection "people" has errors, so it is left out. Fix those first',
+        'people.get("ada"): mentor: no document in collection "people" has the slug "nobody". Fix the slug, or add a document with it to "people"',
+        'posts.get("hello"): author: "ada" in collection "people" has errors, so it is left out. Fix those first',
       ],
     });
   });
