@@ -230,6 +230,29 @@ describe("tomekit()", () => {
     expect(globalThis.tomekitRuns).toBe(2);
   });
 
+  it("reloads the browser when content changes, even though only server code imports it", async () => {
+    const {
+      change,
+      project,
+      server: dev,
+    } = await start({ "content/posts/hello.md": HELLO });
+
+    const sent: HotPayload[] = [];
+    dev.environments.client.hot.send = (payload: HotPayload) => {
+      sent.push(payload);
+    };
+
+    await loadPosts(dev);
+    await project.write({ "content/posts/later.md": LATER });
+    change("content/posts/later.md");
+
+    await expect
+      .poll(() => sent.some(({ type }) => type === "full-reload"))
+      .toBe(true);
+    // Lets the rebuild finish before the project is deleted.
+    await loadPosts(dev);
+  });
+
   it("ignores changes to files outside the collection", async () => {
     const {
       change,

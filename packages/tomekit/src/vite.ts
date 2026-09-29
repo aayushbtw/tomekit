@@ -138,7 +138,7 @@ function tomekit({
 
     void rebuild();
 
-    for (const environment of Object.values(dev.environments)) {
+    const importers = Object.values(dev.environments).filter((environment) => {
       const modules = [...environment.moduleGraph.idToModuleMap].flatMap(
         ([id, module]) => (id.startsWith(RESOLVED_ID) ? [module] : [])
       );
@@ -147,9 +147,15 @@ function tomekit({
         environment.moduleGraph.invalidateModule(module);
       }
 
-      if (modules.length > 0) {
-        environment.hot.send({ type: "full-reload" });
-      }
+      return modules.length > 0;
+    });
+
+    // The browser too, even when only server code imports the content: the page it shows was rendered from it.
+    for (const environment of new Set([
+      ...importers,
+      dev.environments.client,
+    ])) {
+      environment.hot.send({ type: "full-reload" });
     }
   }
 
