@@ -8,6 +8,7 @@ import { createContext, use, useRef } from "react";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { CodeFrame } from "#/components/code-frame";
+import { CopyButton } from "#/components/copy-button";
 import { FileIcon } from "#/components/file-icon";
 import { Install } from "#/components/install";
 import { highlightCode } from "#/lib/highlight";
@@ -286,6 +287,21 @@ function Code(props: ComponentPropsWithoutRef<"code">) {
   );
 }
 
+interface PromptProps {
+  /** The prompt, taken from the block's code at build time. */
+  text?: string;
+}
+
+function Prompt({ text = "" }: PromptProps) {
+  return (
+    <div {...stylex.props(styles.codeFrame)}>
+      <CopyButton label="Copy prompt" text={text}>
+        Copy prompt
+      </CopyButton>
+    </div>
+  );
+}
+
 function Table(props: ComponentPropsWithoutRef<"table">) {
   return (
     <div {...stylex.props(styles.tableScroll)}>
@@ -311,6 +327,7 @@ const components: MarkdownComponents = {
   img: (props) => <img {...props} {...stylex.props(styles.img)} />,
   li: (props) => <li {...props} {...stylex.props(styles.li)} />,
   "md-install": (props) => <Install {...props} style={styles.codeFrame} />,
+  "md-prompt": (props) => <Prompt {...props} />,
   ol: (props) => <ol {...props} {...stylex.props(styles.ol)} />,
   p: (props) => <p {...props} {...stylex.props(styles.p)} />,
   pre: Pre,

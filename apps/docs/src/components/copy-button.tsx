@@ -1,9 +1,20 @@
 import * as stylex from "@stylexjs/stylex";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 
-import { colors, durations, layout, radii } from "#/styles/tokens.stylex";
+import {
+  borderWidths,
+  colors,
+  durations,
+  layout,
+  radii,
+  space,
+} from "#/styles/tokens.stylex";
+import { typography } from "#/styles/typography";
 
 interface CopyButtonProps {
+  /** Shown next to the icon. Without it, the button is icon only. */
+  children?: ReactNode;
   /** Announced to screen readers, eg "Copy install command". */
   label: string;
   /** A function is resolved at click time, for text that only exists in the DOM. */
@@ -42,6 +53,14 @@ const styles = stylex.create({
   icon: {
     height: 16,
     width: 16,
+  },
+  labeled: {
+    borderColor: colors.border,
+    borderStyle: "solid",
+    borderWidth: borderWidths.thin,
+    gap: space.px6,
+    paddingInline: space.px10,
+    width: "auto",
   },
   // Both icons share one grid cell so they cross over in place.
   layer: {
@@ -104,7 +123,7 @@ function CheckIcon() {
   );
 }
 
-function CopyButton({ label, text }: CopyButtonProps) {
+function CopyButton({ children, label, text }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -133,7 +152,10 @@ function CopyButton({ label, text }: CopyButtonProps) {
       aria-label={copied ? "Copied" : label}
       onClick={() => void copy()}
       type="button"
-      {...stylex.props(styles.button)}
+      {...stylex.props(
+        styles.button,
+        children !== undefined && [typography.xs, styles.labeled]
+      )}
     >
       <span {...stylex.props(styles.stack)}>
         <span
@@ -147,6 +169,7 @@ function CopyButton({ label, text }: CopyButtonProps) {
           <CopyIcon />
         </span>
       </span>
+      {children}
     </button>
   );
 }

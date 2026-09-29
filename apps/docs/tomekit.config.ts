@@ -11,9 +11,18 @@ import { sections } from "./src/lib/sections";
 
 // A component with no `tagName` renders as one generic element for every name, so
 // the components map cannot tell `install` from anything else. Naming the tag is what
-// makes it addressable.
+// makes it addressable. A block's code becomes `text`, so a component can copy it
+// without rendering it.
 function transformComponent(node: ComponentNode): ComponentNode {
-  return { ...node, properties: node.attributes, tagName: `md-${node.name}` };
+  const text = node.children
+    .flatMap((child) => (child.type === "code" ? [child.value] : []))
+    .join("\n");
+
+  return {
+    ...node,
+    properties: { ...node.attributes, ...(text && { text }) },
+    tagName: `md-${node.name}`,
+  };
 }
 
 const extensions = [commentComponentsExtension({ transformComponent })];

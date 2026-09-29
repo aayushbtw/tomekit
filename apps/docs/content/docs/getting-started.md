@@ -9,9 +9,11 @@ tomekit parses and validates your Markdown while Vite builds, then serves it as 
 
 ## With an agent
 
-To have a coding agent set it up, give it this prompt:
+Paste this prompt into your coding agent. It installs tomekit, sets up a first collection, and points your `AGENTS.md` at the guide the package ships, so later sessions read it too.
 
-```text title="Prompt"
+<!-- ::start:prompt -->
+
+```text
 Set up tomekit (https://tomekit.aayush.cv), typed Markdown content collections for Vite, in this project.
 
 1. Install the npm package `tomekit` with this project's package manager, eg `pnpm add tomekit`. Check `package.json` for a Standard Schema validator (`zod`, `valibot` or `arktype`) and use it. Install `zod` only if none is there.
@@ -32,7 +34,9 @@ Set up tomekit (https://tomekit.aayush.cv), typed Markdown content collections f
 7. Run the project's build, eg `pnpm build`, and fix every error it reports until it passes.
 ```
 
-Step 6 keeps the guide in front of agents in later sessions, see [AI agents](/agents). To set it up yourself, read on.
+<!-- ::end:prompt -->
+
+See [AI agents](/agents) for what the package ships. To set it up yourself, read on.
 
 ## Install
 
