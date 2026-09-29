@@ -6,17 +6,17 @@ Goal: the best API and DX, fully typed, fast. The one real consumer is `../portf
 
 ## Commands
 
-A Vite+ monorepo: the library is `packages/tomekit`, apps go in `apps/`. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts. Paths below are relative to `packages/tomekit` unless they say otherwise.
+A Vite+ monorepo: use `vp` (`vp install`, `vpx`) and run package.json scripts with `vpr <script>`, never `pnpm`, `npm` or `npx`. The library is `packages/tomekit`, apps go in `apps/`. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts. Paths below are relative to `packages/tomekit` unless they say otherwise.
 
 ```sh
-pnpm check   # format + lint + typecheck for the whole repo (vp check); `pnpm fix` autofixes
-pnpm test    # vitest in every package (vp run -r test)
-pnpm build   # every package; the library runs vp pack → packages/tomekit/dist
+vpr check   # format + lint + typecheck for the whole repo (vp check); `vpr fix` autofixes
+vpr test    # vitest in every package (vp run -r test)
+vpr build   # every package; the library runs vp pack → packages/tomekit/dist
 ```
 
 Shared fmt and lint config lives in the root `vite.config.ts`; package-specific lint rules go in its `overrides` with workspace globs, since Vite+ ignores `lint` in package configs. Each package's own `vite.config.ts` holds only its build, test or app config.
 
-Before calling a change done, run `pnpm check` and `pnpm test`. For changes to runtime output or generated types, also check the portfolio: `pnpm build`, then in `../portfolio` temporarily set the `tomekit` dependency to `file:../tomekit/packages/tomekit` and run `pnpm install && pnpm exec vp build && pnpm exec tsc --noEmit`. Afterwards restore its `package.json` and `pnpm-lock.yaml` to what they were, and run `pnpm install` again. Its uncommitted files belong to the user, so never revert them.
+Before calling a change done, run `vpr check` and `vpr test`. For changes to runtime output or generated types, also check the portfolio: `vpr build`, then in `../portfolio` temporarily set the `tomekit` dependency to `file:../tomekit/packages/tomekit` and run `vp install && vp build && vpx tsc --noEmit`. Afterwards restore its `package.json` and `pnpm-lock.yaml` to what they were, and run `vp install` again. Its uncommitted files belong to the user, so never revert them.
 
 ## Structure
 
@@ -35,7 +35,7 @@ Pure modules, one class that owns state, and a thin adapter, each in its own fil
 - Name each file after its one concern (`parse.ts`, `serialize.ts`). Split a file when it takes on a second concern, not when it gets long.
 - State lives in a class with `#private` fields and `readonly` where possible, not in `let`s inside a closure.
 - Keep one explicit `export { ... }` list at the bottom of each file. No `export *` barrels, since the public surface is only what `package.json` `exports` lists.
-- One test file per source module in `test/` (`collection.ts` → `collection.test.ts`). Type-level tests go in `<module>.test-d.ts` (`query.ts` → `query.test-d.ts`), which `pnpm check` type-checks and Vitest never runs.
+- One test file per source module in `test/` (`collection.ts` → `collection.test.ts`). Type-level tests go in `<module>.test-d.ts` (`query.ts` → `query.test-d.ts`), which `vpr check` type-checks and Vitest never runs.
 
 ## Errors
 
@@ -78,7 +78,7 @@ Lint is oxlint with anti-slop (vendored in the root `tools/oxlint/anti-slop/`) a
 - Unknown input is checked once at its boundary with an assertion or type predicate (eg `assertContentValue`), then handled as a named type. No `typeof`; tell primitives apart by boxing them (`new Object(value) instanceof Number`).
 - A parameter typed `unknown` is only allowed when it is named `cause` or is a type predicate's subject.
 
-The linter enforces most of these, so match them up front instead of relying on `pnpm fix`:
+The linter enforces most of these, so match them up front instead of relying on `vpr fix`:
 
 - Use `interface` for object shapes, including reshaped ones (`interface A extends Omit<B, "k"> {}`). Use `type` only for unions, function types and mapped or conditional types.
 - Types inferred from user schemas are wrapped once in `Prettify` (`{ [K in keyof T]: T[K] } & {}`), so errors print the flat fields instead of nested helper names. Use `PrettifyIfPlainObject` where a value might be an array or a built-in (Date, Map, Set, RegExp), which must keep their own type. Don't generate named interfaces to work around this.
