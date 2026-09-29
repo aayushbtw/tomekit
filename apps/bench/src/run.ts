@@ -24,11 +24,20 @@ function isResult(value: unknown): value is Result {
 }
 
 /** Each sample runs in its own process, so no tool keeps a cache or a watcher from the last one. */
-async function sample(root: string, tool: Tool, mode: Mode): Promise<Result> {
-  const { stdout } = await run(process.execPath, [MEASURE, tool, mode], {
-    cwd: root,
-    maxBuffer: 64 * 1024 * 1024,
-  });
+async function sample(
+  root: string,
+  scenario: Scenario,
+  tool: Tool,
+  mode: Mode
+): Promise<Result> {
+  const { stdout } = await run(
+    process.execPath,
+    [MEASURE, tool, mode, scenario],
+    {
+      cwd: root,
+      maxBuffer: 64 * 1024 * 1024,
+    }
+  );
 
   const result: unknown = JSON.parse(stdout.trim().split("\n").at(-1) ?? "");
 
@@ -41,6 +50,7 @@ async function sample(root: string, tool: Tool, mode: Mode): Promise<Result> {
 
 async function samples(
   root: string,
+  scenario: Scenario,
   tool: Tool,
   mode: Mode,
   count: number
@@ -49,7 +59,7 @@ async function samples(
 
   // One after another: parallel samples would compete for the CPU.
   for (let index = 0; index < count; index += 1) {
-    results.push(await sample(root, tool, mode));
+    results.push(await sample(root, scenario, tool, mode));
   }
 
   return results;
@@ -117,9 +127,9 @@ for (const size of SIZES) {
     const rows: Row[] = [];
 
     for (const tool of TOOLS) {
-      const cold = await samples(root, tool, "cold", count);
-      const warm = await samples(root, tool, "warm", count);
-      const dev = await sample(root, tool, "dev");
+      const cold = await samples(root, scenario, tool, "cold", count);
+      const warm = await samples(root, scenario, tool, "warm", count);
+      const dev = await sample(root, scenario, tool, "dev");
       rows.push({ cold, dev, tool, warm });
     }
 

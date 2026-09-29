@@ -4,11 +4,15 @@ import { setTimeout as wait } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 
 import contentCollections from "@content-collections/vite";
+import mdx from "@mdx-js/rollup";
+import remarkFrontmatter from "remark-frontmatter";
 import { tomekit } from "tomekit/vite";
 import { build as velite } from "velite";
 import { build, createServer, isRunnableDevEnvironment } from "vite";
 import type { Plugin, RunnableDevEnvironment } from "vite";
 
+import { SCENARIOS } from "./fixtures.ts";
+import type { Scenario } from "./fixtures.ts";
 import { isMode, isTool, MODES, TOOLS } from "./tools.ts";
 import type { Mode, Result, Tool } from "./tools.ts";
 
@@ -28,7 +32,9 @@ const EDITS = 10;
 
 const TIMEOUT = 30_000;
 
-const EDITED = "content/posts/post-00000.md";
+function isScenario(value: string): value is Scenario {
+  return SCENARIOS.some((scenario) => scenario === value);
+}
 
 function isPost(value: unknown): value is Post {
   return (
@@ -66,10 +72,20 @@ function velitePlugin(dev: boolean): Plugin {
   };
 }
 
-function pluginsFor(tool: Tool, dev: boolean): Plugin[] {
+function pluginsFor(tool: Tool, scenario: Scenario, dev: boolean): Plugin[] {
   switch (tool) {
     case "tomekit": {
-      return [tomekit()];
+      if (scenario !== "mdx") {
+        return [tomekit()];
+      }
+
+      // tomekit leaves compiling MDX to the bundler, as its docs set it up.
+      const compileMdx: Plugin = {
+        enforce: "pre",
+        ...mdx({ remarkPlugins: [remarkFrontmatter] }),
+      };
+
+      return [compileMdx, tomekit()];
     }
 
     case "content-collections": {
@@ -104,7 +120,7 @@ function memory(): number {
   return Math.round(process.resourceUsage().maxRSS / 1024);
 }
 
-async function measureBuild(tool: Tool): Promise<Result> {
+async function measureBuild(tool: Tool, scenario: Scenario): Promise<Result> {
   const outDir = path.resolve("dist", tool);
   const start = performance.now();
 
@@ -117,7 +133,7 @@ async function measureBuild(tool: Tool): Promise<Result> {
     },
     configFile: false,
     logLevel: "silent",
-    plugins: pluginsFor(tool, false),
+    plugins: pluginsFor(tool, scenario, false),
     publicDir: false,
     root: process.cwd(),
   });
@@ -177,14 +193,15 @@ async function served(
   return { failures, served: false };
 }
 
-async function measureDev(tool: Tool): Promise<Result> {
+async function measureDev(tool: Tool, scenario: Scenario): Promise<Result> {
+  const edited = `content/posts/post-00000.${scenario === "mdx" ? "mdx" : "md"}`;
   const start = performance.now();
 
   const server = await createServer({
     appType: "custom",
     configFile: false,
     logLevel: "silent",
-    plugins: pluginsFor(tool, true),
+    plugins: pluginsFor(tool, scenario, true),
     root: process.cwd(),
     server: { middlewareMode: true },
   });
@@ -197,7 +214,7 @@ async function measureDev(tool: Tool): Promise<Result> {
 
   const posts = await postsFrom(environment, tool);
   const ms = performance.now() - start;
-  const original = await readFile(EDITED, "utf-8");
+  const original = await readFile(edited, "utf-8");
   const updates: number[] = [];
   let failures = 0;
 
@@ -208,7 +225,7 @@ async function measureDev(tool: Tool): Promise<Result> {
       const title = `Edited ${edit}`;
       const written = performance.now();
       await writeFile(
-        EDITED,
+        edited,
         original.replace(/^title: .*$/mu, `title: ${title}`)
       );
 
@@ -220,30 +237,36 @@ async function measureDev(tool: Tool): Promise<Result> {
       );
     }
   } finally {
-    await writeFile(EDITED, original);
+    await writeFile(edited, original);
     await server.close();
   }
 
   return { documents: posts.length, failures, memory: memory(), ms, updates };
 }
 
-async function measure(tool: Tool, mode: Mode): Promise<Result> {
+async function measure(
+  tool: Tool,
+  mode: Mode,
+  scenario: Scenario
+): Promise<Result> {
   if (mode !== "warm") {
     await rm(OUTPUTS[tool], { force: true, recursive: true });
   }
 
-  return mode === "dev" ? measureDev(tool) : measureBuild(tool);
+  return mode === "dev"
+    ? measureDev(tool, scenario)
+    : measureBuild(tool, scenario);
 }
 
-const [tool = "", mode = ""] = process.argv.slice(2);
+const [tool = "", mode = "", scenario = ""] = process.argv.slice(2);
 
-if (!isTool(tool) || !isMode(mode)) {
+if (!isTool(tool) || !isMode(mode) || !isScenario(scenario)) {
   throw new TypeError(
-    `usage: measure.ts <${TOOLS.join("|")}> <${MODES.join("|")}>`
+    `usage: measure.ts <${TOOLS.join("|")}> <${MODES.join("|")}> <${SCENARIOS.join("|")}>`
   );
 }
 
-const result = await measure(tool, mode);
+const result = await measure(tool, mode, scenario);
 
 // The runner reads the last line; tools may log before it.
 console.log(JSON.stringify(result));

@@ -8,6 +8,7 @@ const ignorePatterns = [
   "**/routeTree.gen.ts",
   // Only valid inside a generated fixture, where each tool's module exists.
   "apps/bench/template/entries/**",
+  "apps/bench/template/*/entry-*.ts",
   ".agent/**",
   ".agents/**",
   ".claude/**",

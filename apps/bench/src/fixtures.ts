@@ -3,9 +3,13 @@ import path from "node:path";
 
 const BENCH = path.resolve(import.meta.dirname, "..");
 
-const SCENARIOS = ["plain", "markdown"] as const;
+const SCENARIOS = ["plain", "markdown", "mdx"] as const;
 
-/** `plain` validates frontmatter only; `markdown` also renders each body to HTML with the same library in every tool. */
+/**
+ * `plain` validates frontmatter only; `markdown` also renders each body to HTML
+ * with the same library in every tool; `mdx` compiles each body to something a
+ * page can render, the way each tool's docs recommend.
+ */
 type Scenario = (typeof SCENARIOS)[number];
 
 function post(index: number): string {
@@ -52,7 +56,15 @@ export function add(a: number, b: number): number {
 
 /** A project folder with `size` posts, the templates for `scenario` and every tool's entry. */
 async function fixture(size: number, scenario: Scenario): Promise<string> {
-  const root = path.join(BENCH, ".fixtures", String(size));
+  // Its own folder, since its files have another extension.
+  const extension = scenario === "mdx" ? "mdx" : "md";
+
+  const root = path.join(
+    BENCH,
+    ".fixtures",
+    extension === "mdx" ? `${size}-mdx` : String(size)
+  );
+
   const posts = path.join(root, "content", "posts");
   await mkdir(posts, { recursive: true });
   const existing = await readdir(posts);
@@ -61,7 +73,10 @@ async function fixture(size: number, scenario: Scenario): Promise<string> {
     await Promise.all(
       Array.from({ length: size }, (_, index) =>
         writeFile(
-          path.join(posts, `post-${String(index).padStart(5, "0")}.md`),
+          path.join(
+            posts,
+            `post-${String(index).padStart(5, "0")}.${extension}`
+          ),
           post(index)
         )
       )
