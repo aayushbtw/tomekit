@@ -6,7 +6,7 @@ import { pageHead } from "#/lib/head";
 import { homeSlug } from "#/lib/links";
 
 export const Route = createFileRoute("/_docs/")({
-  loader: () => getDoc({ data: homeSlug }),
+  loader: async () => await getDoc({ data: homeSlug }),
   head: ({ match }) => pageHead({ pathname: match.pathname }),
   component: Home,
 });

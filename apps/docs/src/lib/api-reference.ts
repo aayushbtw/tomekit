@@ -309,7 +309,7 @@ function resolveExport(file: string, name: string): Resolved | undefined {
     return undefined;
   }
 
-  const source = imported.source.replace(/\.mjs$/, ".d.mts");
+  const source = imported.source.replace(/\.mjs$/u, ".d.mts");
 
   return resolveExport(
     path.join(path.dirname(parsed.file), source),
@@ -353,7 +353,7 @@ function withoutComments(parsed: Module, span: Span) {
     .split("\n")
     .filter((line) => line.trim() !== "")
     .join("\n")
-    .replace(/^declare /, "");
+    .replace(/^declare /u, "");
 }
 
 function linkMarkdown(link: DocLinkTag) {
@@ -397,7 +397,7 @@ function markdown(node: DocNode): string {
   const children = node.getChildNodes().map(markdown).join("");
 
   return node instanceof DocParagraph
-    ? `${children.replaceAll(/ +/g, " ").trim()}\n\n`
+    ? `${children.replaceAll(/ +/gu, " ").trim()}\n\n`
     : children;
 }
 
@@ -429,14 +429,14 @@ function plainText(node: DocNode): string {
 }
 
 function tidy(value: string) {
-  return value.replaceAll(/\n{3,}/g, "\n\n").trim();
+  return value.replaceAll(/\n{3,}/gu, "\n\n").trim();
 }
 
 function parseDoc(comment: string): Doc {
   const { docComment: parsed } = parser.parseString(comment);
 
   const summaryText = plainText(parsed.summarySection)
-    .replaceAll(/\s+/g, " ")
+    .replaceAll(/\s+/gu, " ")
     .trim();
 
   const blocks = parsed.customBlocks;
@@ -499,19 +499,21 @@ function typeMarkdown(type: string) {
   const parts: string[] = [];
   let plain = "";
 
-  const tokens = type.replaceAll(/\s+/g, " ").split(/(\b[A-Za-z_]\w*\b)/);
+  const tokens = type
+    .replaceAll(/\s+/gu, " ")
+    .split(/(?<name>\b[A-Za-z_]\w*\b)/u);
 
   for (const [index, token] of tokens.entries()) {
-    const url = links.get(token);
+    const link = links.get(token);
     // A name followed by `:` or `?:` is a property key, not a reference to the export.
-    const isKey = /^\??\s*:/.test(tokens[index + 1] ?? "");
+    const isKey = /^\??\s*:/u.test(tokens[index + 1] ?? "");
 
-    if (url === undefined || isKey) {
+    if (link === undefined || isKey) {
       plain += token;
       continue;
     }
 
-    parts.push(codeRun(plain), `[${inlineCode(token)}](${url})`);
+    parts.push(codeRun(plain), `[${inlineCode(token)}](${link})`);
     plain = "";
   }
 
@@ -543,7 +545,7 @@ function lineOf(parsed: Module, start: number) {
 
 function definedIn(declaration: SourceDeclaration, start: number) {
   const line = lineOf(declaration.source, start);
-  const label = declaration.file.replace(/^src\//, "");
+  const label = declaration.file.replace(/^src\//u, "");
 
   return `Defined in: [${label}:${line}](${repository}/${declaration.file}#L${line})`;
 }
@@ -569,7 +571,9 @@ function sourceDeclaration({ nodes, parsed }: Resolved, packageRoot: string) {
     return;
   }
 
-  const file = region.value.slice("#region ".length).replace(/\.d\.ts$/, ".ts");
+  const file = region.value
+    .slice("#region ".length)
+    .replace(/\.d\.ts$/u, ".ts");
 
   const source = loadModule(path.join(packageRoot, file));
   const node = source.declarations.get(name)?.[0];
@@ -729,7 +733,7 @@ function parameterSections(item: Item, node: FunctionNode) {
       .slice(param.start, annotation ? annotation.start : param.end)
       .trim();
 
-    const name = binding.replace(/\?$/, "");
+    const name = binding.replace(/\?$/u, "");
 
     sections.push(
       `### ${binding}`,

@@ -1,5 +1,4 @@
 import * as stylex from "@stylexjs/stylex";
-import type { ComponentType } from "react";
 
 interface DocIconProps {
   slug: string;
@@ -133,18 +132,39 @@ function TransformIcon() {
   );
 }
 
-const icons = new Map<string, ComponentType>([
-  ["collections", CollectionsIcon],
-  ["errors", ErrorsIcon],
-  ["getting-started", GettingStartedIcon],
-  ["reading", ReadingIcon],
-  ["tanstack-start", TanstackStartIcon],
-  ["transform", TransformIcon],
-]);
+function Glyph({ slug }: DocIconProps) {
+  switch (slug) {
+    case "collections": {
+      return <CollectionsIcon />;
+    }
+
+    case "errors": {
+      return <ErrorsIcon />;
+    }
+
+    case "getting-started": {
+      return <GettingStartedIcon />;
+    }
+
+    case "reading": {
+      return <ReadingIcon />;
+    }
+
+    case "tanstack-start": {
+      return <TanstackStartIcon />;
+    }
+
+    case "transform": {
+      return <TransformIcon />;
+    }
+
+    default: {
+      return <FallbackIcon />;
+    }
+  }
+}
 
 function DocIcon({ slug }: DocIconProps) {
-  const Icon = icons.get(slug) ?? FallbackIcon;
-
   return (
     <svg
       aria-hidden="true"
@@ -153,7 +173,7 @@ function DocIcon({ slug }: DocIconProps) {
       {...stylex.props(styles.icon)}
       xmlns="http://www.w3.org/2000/svg"
     >
-      <Icon />
+      <Glyph slug={slug} />
     </svg>
   );
 }

@@ -40,7 +40,7 @@ function isPost(value: unknown): value is Post {
   return (
     value instanceof Object &&
     "title" in value &&
-    new Object(value.title) instanceof String
+    String(value.title) === value.title
   );
 }
 
@@ -106,11 +106,15 @@ async function sizeOf(folder: string): Promise<number> {
   const files = await readdir(folder, { recursive: true, withFileTypes: true });
 
   const sizes = await Promise.all(
-    files.map(async (file) =>
-      file.isFile()
-        ? (await stat(path.join(file.parentPath, file.name))).size
-        : 0
-    )
+    files.map(async (file) => {
+      if (!file.isFile()) {
+        return 0;
+      }
+
+      const stats = await stat(path.join(file.parentPath, file.name));
+
+      return stats.size;
+    })
   );
 
   return sizes.reduce((total, size) => total + size, 0);
@@ -283,8 +287,8 @@ async function measure(
   }
 
   return mode === "dev"
-    ? measureDev(tool, scenario)
-    : measureBuild(tool, scenario);
+    ? await measureDev(tool, scenario)
+    : await measureBuild(tool, scenario);
 }
 
 const [tool = "", mode = "", scenario = ""] = process.argv.slice(2);

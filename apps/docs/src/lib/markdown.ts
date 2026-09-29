@@ -14,15 +14,15 @@ function markdownUrl(slug: string) {
 function agentMarkdown(body: string) {
   return body
     .replaceAll(
-      /\]\(\/([^)#\s]*)(#[^)]*)?\)/g,
+      /\]\(\/(?<path>[^)#\s]*)(?<hash>#[^)]*)?\)/gu,
       (_link, path: string, hash = "") =>
         `](${markdownUrl(path === "" ? homeSlug : path)}${hash})`
     )
     .replaceAll(
-      /<!-- ::install packages="([^"]+)" -->/g,
-      "```sh\nnpm install $1\n```"
+      /<!-- ::install packages="(?<packages>[^"]+)" -->/gu,
+      "```sh\nnpm install $<packages>\n```"
     )
-    .replaceAll(/<!-- ::(?:start|end):copy[^>]*-->\n+/g, "");
+    .replaceAll(/<!-- ::(?:start|end):copy[^>]*-->\n+/gu, "");
 }
 
 export { agentMarkdown, markdownPath, markdownUrl };

@@ -55,7 +55,7 @@ const styles = stylex.create({
 async function pageMarkdown(path: string) {
   const response = await fetch(path);
 
-  return response.text();
+  return await response.text();
 }
 
 function MarkdownIcon() {
@@ -86,7 +86,7 @@ function PageActions({ slug }: PageActionsProps) {
       <CopyButton
         label="Copy as Markdown"
         style={[typography.sm, styles.item]}
-        text={() => pageMarkdown(path)}
+        text={async () => await pageMarkdown(path)}
       >
         Copy as Markdown
       </CopyButton>

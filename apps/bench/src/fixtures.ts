@@ -71,15 +71,15 @@ async function fixture(size: number, scenario: Scenario): Promise<string> {
 
   if (existing.length !== size) {
     await Promise.all(
-      Array.from({ length: size }, (_, index) =>
-        writeFile(
+      Array.from({ length: size }, async (_, index) => {
+        await writeFile(
           path.join(
             posts,
             `post-${String(index).padStart(5, "0")}.${extension}`
           ),
           post(index)
-        )
-      )
+        );
+      })
     );
   }
 

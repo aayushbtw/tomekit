@@ -111,7 +111,7 @@ function Install({ packages = "tomekit", style }: InstallProps) {
           </Tabs.List>
         }
         label="Copy install command"
-        text={`${commands[selected]} ${packages}`}
+        text={() => `${commands[selected]} ${packages}`}
       >
         {managers.map((manager) => {
           const command = `${commands[manager]} ${packages}`;

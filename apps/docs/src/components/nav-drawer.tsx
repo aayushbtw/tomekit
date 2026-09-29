@@ -1,7 +1,7 @@
 import { Drawer } from "@base-ui/react/drawer";
 import * as stylex from "@stylexjs/stylex";
 import { useLocation } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { DocsNav } from "#/components/docs-nav";
 import type { Nav } from "#/components/docs-nav";
@@ -132,16 +132,17 @@ const styles = stylex.create({
 });
 
 function NavDrawer({ nav }: NavDrawerProps) {
-  const [open, setOpen] = useState(false);
   const pathname = useLocation({ select: (location) => location.pathname });
-
-  // A link inside the drawer navigates without closing it.
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  // The page the drawer was opened on: a link inside it navigates without closing it, so it stays open only there.
+  const [openOn, setOpenOn] = useState<string | undefined>();
 
   return (
-    <Drawer.Root onOpenChange={setOpen} open={open}>
+    <Drawer.Root
+      onOpenChange={(open) => {
+        setOpenOn(open ? pathname : undefined);
+      }}
+      open={openOn === pathname}
+    >
       <Drawer.Trigger
         aria-label="Open the docs navigation"
         {...stylex.props(styles.trigger)}

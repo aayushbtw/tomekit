@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_docs/$slug")({
       throw redirect({ to: "/" });
     }
   },
-  loader: ({ params }) => getDoc({ data: params.slug }),
+  loader: async ({ params }) => await getDoc({ data: params.slug }),
   head: ({ loaderData, match }) =>
     pageHead({
       description: loaderData?.metadata.description,

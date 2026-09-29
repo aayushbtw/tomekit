@@ -1,5 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
-import type { ComponentType } from "react";
+import type { ReactElement } from "react";
 
 import type { PackageManager } from "#/lib/package-manager";
 import { radii } from "#/styles/tokens.stylex";
@@ -149,17 +149,15 @@ function YarnIcon() {
   );
 }
 
-const icons = new Map<PackageManager, ComponentType>([
-  ["bun", BunIcon],
-  ["npm", NpmIcon],
-  ["pnpm", PnpmIcon],
-  ["yarn", YarnIcon],
-]);
+const icons: Record<PackageManager, ReactElement> = {
+  bun: <BunIcon />,
+  npm: <NpmIcon />,
+  pnpm: <PnpmIcon />,
+  yarn: <YarnIcon />,
+};
 
 function PackageManagerIcon({ manager }: PackageManagerIconProps) {
-  const Icon = icons.get(manager);
-
-  return Icon === undefined ? null : <Icon />;
+  return icons[manager];
 }
 
 export { PackageManagerIcon };

@@ -298,7 +298,7 @@ interface CopyProps {
 function Copy({ label = "Copy", text = "" }: CopyProps) {
   return (
     <div {...stylex.props(styles.codeFrame)}>
-      <CopyButton label={label} text={text}>
+      <CopyButton label={label} text={() => text}>
         {label}
       </CopyButton>
     </div>
@@ -314,20 +314,36 @@ function Table(props: ComponentPropsWithoutRef<"table">) {
 }
 
 const components: MarkdownComponents = {
-  a: (props) => <a {...props} {...stylex.props(styles.a)} />,
+  a: ({ children, ...props }) => (
+    <a {...props} {...stylex.props(styles.a)}>
+      {children}
+    </a>
+  ),
   blockquote: (props) => (
     <blockquote {...props} {...stylex.props(styles.blockquote)} />
   ),
   code: Code,
   figcaption: () => null,
   figure: (props) => <>{props.children}</>,
-  h2: (props) => <h2 {...props} {...stylex.props(typography.lg, styles.h2)} />,
-  h3: (props) => <h3 {...props} {...stylex.props(typography.md, styles.h3)} />,
-  h4: (props) => (
-    <h4 {...props} {...stylex.props(typography.base, styles.h4)} />
+  h2: ({ children, ...props }) => (
+    <h2 {...props} {...stylex.props(typography.lg, styles.h2)}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 {...props} {...stylex.props(typography.md, styles.h3)}>
+      {children}
+    </h3>
+  ),
+  h4: ({ children, ...props }) => (
+    <h4 {...props} {...stylex.props(typography.base, styles.h4)}>
+      {children}
+    </h4>
   ),
   hr: (props) => <hr {...props} {...stylex.props(styles.hr)} />,
-  img: (props) => <img {...props} {...stylex.props(styles.img)} />,
+  img: ({ alt = "", ...props }) => (
+    <img alt={alt} {...props} {...stylex.props(styles.img)} />
+  ),
   li: (props) => <li {...props} {...stylex.props(styles.li)} />,
   "md-install": (props) => <Install {...props} style={styles.codeFrame} />,
   "md-copy": (props) => <Copy {...props} />,

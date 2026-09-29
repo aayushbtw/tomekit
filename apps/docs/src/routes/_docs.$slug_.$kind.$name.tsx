@@ -6,7 +6,7 @@ import { pageHead } from "#/lib/head";
 
 // Not sorted: `loader` must come before `head` and `component`, which infer `loaderData` from it.
 export const Route = createFileRoute("/_docs/$slug_/$kind/$name")({
-  loader: ({ params }) => getReference({ data: params }),
+  loader: async ({ params }) => await getReference({ data: params }),
   head: ({ loaderData, match }) =>
     pageHead({
       description: loaderData?.metadata.description,

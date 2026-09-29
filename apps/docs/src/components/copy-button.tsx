@@ -20,8 +20,8 @@ interface CopyButtonProps {
   label: string;
   /** Applied last, eg to drop the labeled button's border. */
   style?: StyleXStyles;
-  /** A function is resolved at click time, eg for text in the DOM or text fetched on click. */
-  text: string | (() => string | Promise<string>);
+  /** Called at click time, so the text can come from the DOM or be fetched on click. */
+  text: () => string | Promise<string>;
 }
 
 async function textBlob(text: Promise<string>) {
@@ -134,18 +134,20 @@ function CopyButton({ children, label, style, text }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!copied) {
-      return;
-    }
+    const timer = copied
+      ? setTimeout(() => {
+          setCopied(false);
+        }, copiedFor)
+      : undefined;
 
-    const timer = setTimeout(() => setCopied(false), copiedFor);
-
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [copied]);
 
   async function copy() {
     try {
-      const value = text instanceof Function ? text() : text;
+      const value = text();
 
       // Pending text goes in as a promise, so Safari still counts the write as part of the click.
       await (value instanceof Promise
@@ -162,7 +164,9 @@ function CopyButton({ children, label, style, text }: CopyButtonProps) {
   return (
     <button
       aria-label={copied ? "Copied" : label}
-      onClick={() => void copy()}
+      onClick={() => {
+        void copy();
+      }}
       type="button"
       {...stylex.props(
         styles.button,

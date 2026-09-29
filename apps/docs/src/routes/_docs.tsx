@@ -7,7 +7,7 @@ import { getNav } from "#/lib/docs";
 import { layout } from "#/styles/tokens.stylex";
 
 export const Route = createFileRoute("/_docs")({
-  loader: () => getNav(),
+  loader: async () => await getNav(),
   component: DocsLayout,
 });
 

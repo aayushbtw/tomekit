@@ -12,7 +12,7 @@ interface CodeFrameProps {
   header: ReactNode;
   label: string;
   style?: StyleXStyles;
-  text: string | (() => string);
+  text: () => string;
 }
 
 const styles = stylex.create({
