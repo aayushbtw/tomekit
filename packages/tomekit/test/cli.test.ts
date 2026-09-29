@@ -89,11 +89,11 @@ describe("tomekit build", () => {
     const { root } = await setup({ "content/posts/hello.md": HELLO });
     const { lines, logger } = recorder();
 
-    expect(await run(["build"], { logger, root })).toBe(0);
+    await expect(run(["build"], { logger, root })).resolves.toBe(0);
     expect((await importModule(root)).slugs()).toStrictEqual(["hello"]);
-    expect(
-      await readFile(path.join(root, ".tomekit", "content.d.ts"), "utf-8")
-    ).toContain('  "posts": "hello";');
+    await expect(
+      readFile(path.join(root, ".tomekit", "content.d.ts"), "utf-8")
+    ).resolves.toContain('  "posts": "hello";');
     expect(lines.join("\n")).toContain("[tomekit] built .tomekit/content.js");
   });
 
@@ -105,7 +105,7 @@ describe("tomekit build", () => {
 
     const { lines, logger } = recorder();
 
-    expect(await run(["build"], { logger, root })).toBe(1);
+    await expect(run(["build"], { logger, root })).resolves.toBe(1);
     expect(lines.join("\n")).toContain(
       "[tomekit] 2 content files have errors:"
     );
@@ -120,18 +120,18 @@ describe("tomekit build", () => {
 
     const { logger } = recorder();
 
-    expect(
-      await run(["build", "--config", "settings/tomekit.config.ts"], {
+    await expect(
+      run(["build", "--config", "settings/tomekit.config.ts"], {
         logger,
         root,
       })
-    ).toBe(0);
+    ).resolves.toBe(0);
   });
 
   it("shows the usage for an unknown command", async () => {
     const { lines, logger } = recorder();
 
-    expect(await run(["serve"], { logger, root: "/" })).toBe(1);
+    await expect(run(["serve"], { logger, root: "/" })).resolves.toBe(1);
     expect(lines.join("\n")).toContain('Unknown command "serve".');
     expect(lines.join("\n")).toContain("Usage: tomekit <command>");
   });
@@ -142,13 +142,13 @@ describe("tomekit watch", () => {
     const project = await setup({ "content/posts/hello.md": HELLO });
     const { logger } = recorder();
 
-    expect(
-      await run(["watch"], {
+    await expect(
+      run(["watch"], {
         logger,
         root: project.root,
         signal: controller.signal,
       })
-    ).toBe(0);
+    ).resolves.toBe(0);
 
     await project.write({
       "content/posts/later.md": "---\ntitle: Later\n---\n",

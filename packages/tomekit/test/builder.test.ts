@@ -225,7 +225,7 @@ async function createBuilder(files: Record<string, string>) {
   return { builder, changed, project };
 }
 
-describe("ContentBuilder", () => {
+describe(ContentBuilder, () => {
   it("shares one build between callers until something changes", async () => {
     const { builder, changed, project } = await createBuilder({
       "content/posts/hello.md": HELLO,
@@ -365,7 +365,9 @@ export default defineConfig({
     expect(broken.errors.map((error) => error.message)).toStrictEqual([
       'content/posts/typo.md:2:1: author: no document in collection "authors" has the slug "adaa". Fix the slug, or add a document with it to "authors"',
     ]);
-    expect(await readFile(types, "utf-8")).toContain('  "posts": "hello";');
+    await expect(readFile(types, "utf-8")).resolves.toContain(
+      '  "posts": "hello";'
+    );
 
     await project.write({ "content/authors/adaa.md": "Adaa\n" });
     changed("content/authors/adaa.md");
@@ -373,7 +375,7 @@ export default defineConfig({
 
     expect(fixed.errors).toStrictEqual([]);
     expect(fixed.code).toContain('"typo"');
-    expect(await readFile(types, "utf-8")).toContain(
+    await expect(readFile(types, "utf-8")).resolves.toContain(
       '  "posts": "hello" | "typo";'
     );
   });
@@ -464,7 +466,7 @@ export default defineConfig({
     release();
 
     await expect(failing).rejects.toThrow(ConfigLoadError);
-    expect(await builder.load()).toBe(replacing);
+    await expect(builder.load()).resolves.toBe(replacing);
 
     changed("content/posts/new.md");
     await builder.load();
@@ -586,7 +588,10 @@ describe("the cache in .tomekit", () => {
 
     await write({ ".tomekit/cache/build/posts.json": "{ not json" });
 
-    expect(await build(root)).toStrictEqual({ ...cold, transforms: 2 });
+    await expect(build(root)).resolves.toStrictEqual({
+      ...cold,
+      transforms: 2,
+    });
   });
 
   it("reruns a transform whose module file is gone", async () => {

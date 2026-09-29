@@ -97,11 +97,13 @@ async function filesIn(
   // Globs match folders too, eg `archive.md/`. `stat` follows symlinks, so a linked file still loads.
   const found = await Promise.all(
     matches.map(async (file) => {
-      const stats = await stat(path.join(directory, file), {
-        bigint: true,
-      }).catch(() => undefined);
+      try {
+        const stats = await stat(path.join(directory, file), { bigint: true });
 
-      return stats === undefined || stats.isFile() ? [{ file, stats }] : [];
+        return stats.isFile() ? [{ file, stats }] : [];
+      } catch {
+        return [{ file, stats: undefined }];
+      }
     })
   );
 

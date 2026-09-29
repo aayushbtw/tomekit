@@ -42,7 +42,7 @@ async function build(): Promise<string> {
 
   const logger: CliLogger = { error: record, info: record, warn: record };
 
-  expect(await run(["build"], { logger, root: project.root })).toBe(0);
+  await expect(run(["build"], { logger, root: project.root })).resolves.toBe(0);
 
   return lines.join("\n");
 }
@@ -77,7 +77,7 @@ describe("TOMEKIT_PROFILE", () => {
   it.each([undefined, "", "0"])("is off when set to %j", async (value) => {
     vi.stubEnv("TOMEKIT_PROFILE", value);
 
-    expect(await build()).not.toContain("profile");
+    await expect(build()).resolves.not.toContain("profile");
     expect(performance.getEntriesByName("tomekit")).toHaveLength(0);
   });
 });

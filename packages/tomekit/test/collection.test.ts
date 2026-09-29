@@ -50,7 +50,7 @@ function messages(errors: readonly Error[]) {
   return errors.map((error) => error.message);
 }
 
-describe("loadCollection", () => {
+describe(loadCollection, () => {
   it("builds documents in the loader's order, with or without a file", async () => {
     const { documents } = await loadCollection(
       "posts",

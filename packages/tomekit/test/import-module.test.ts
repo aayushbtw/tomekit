@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { createImportModule } from "../src/import-module";
 
-describe("createImportModule", () => {
+describe(createImportModule, () => {
   it("imports each module once, however often it is asked for", async () => {
     let imports = 0;
 

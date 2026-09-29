@@ -19,7 +19,7 @@ async function project() {
   return created.root;
 }
 
-describe("writeTypes", () => {
+describe(writeTypes, () => {
   it("writes one file with every collection's name and slugs", async () => {
     const root = await project();
     const directory = path.join(root, ".tomekit");
@@ -34,7 +34,7 @@ describe("writeTypes", () => {
     );
 
     expect(changed).toBe(true);
-    expect(await readdir(directory)).toStrictEqual(["content.d.ts"]);
+    await expect(readdir(directory)).resolves.toStrictEqual(["content.d.ts"]);
     const types = await readFile(path.join(directory, "content.d.ts"), "utf-8");
     expect(types).toContain('import type config from "../tomekit.config";');
     expect(types).toContain('export type CollectionName = "posts" | "notes";');
@@ -91,9 +91,9 @@ describe("writeTypes", () => {
       { name: "posts", slugs: [] },
     ]);
 
-    expect(await readFile(path.join(root, "content.d.ts"), "utf-8")).toContain(
-      'import type config from "./tomekit.config";'
-    );
+    await expect(
+      readFile(path.join(root, "content.d.ts"), "utf-8")
+    ).resolves.toContain('import type config from "./tomekit.config";');
   });
 
   it("replaces the file whole, so a reader never sees half of it", async () => {
@@ -143,11 +143,13 @@ describe("writeTypes", () => {
 
     await writeTypes(directory, configPath, [posts]);
 
-    expect(await writeTypes(directory, configPath, [posts])).toBe(false);
-    expect(
-      await writeTypes(directory, configPath, [
+    await expect(writeTypes(directory, configPath, [posts])).resolves.toBe(
+      false
+    );
+    await expect(
+      writeTypes(directory, configPath, [
         { name: "posts", slugs: ["hello", "later"] },
       ])
-    ).toBe(true);
+    ).resolves.toBe(true);
   });
 });

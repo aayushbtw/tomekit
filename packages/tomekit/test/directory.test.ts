@@ -38,7 +38,7 @@ function messages(errors: readonly Error[]) {
   return errors.map((error) => error.message);
 }
 
-describe("directory", () => {
+describe(directory, () => {
   it("builds slug, metadata, body and file, in file name order", async () => {
     const root = await project({
       "content/posts/b.md":

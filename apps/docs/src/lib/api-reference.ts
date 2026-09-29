@@ -212,7 +212,7 @@ function declaredName(statement: Statement) {
     }
 
     default: {
-      return undefined;
+      return;
     }
   }
 }
@@ -264,7 +264,7 @@ function loadModule(file: string) {
     return cached;
   }
 
-  const code = readFileSync(file, "utf8");
+  const code = readFileSync(file, "utf-8");
 
   const { comments, program } = parseSync(file, code, {
     lang: file.endsWith(".d.mts") ? "dts" : "ts",
@@ -329,7 +329,7 @@ function docComment(parsed: Module, start: number) {
     comment === undefined ||
     parsed.code.slice(comment.end, start).trim() !== ""
   ) {
-    return undefined;
+    return;
   }
 
   return `/*${comment.value}*/`;
@@ -397,7 +397,7 @@ function markdown(node: DocNode): string {
   const children = node.getChildNodes().map(markdown).join("");
 
   return node instanceof DocParagraph
-    ? `${children.replace(/ +/g, " ").trim()}\n\n`
+    ? `${children.replaceAll(/ +/g, " ").trim()}\n\n`
     : children;
 }
 
@@ -429,14 +429,14 @@ function plainText(node: DocNode): string {
 }
 
 function tidy(value: string) {
-  return value.replace(/\n{3,}/g, "\n\n").trim();
+  return value.replaceAll(/\n{3,}/g, "\n\n").trim();
 }
 
 function parseDoc(comment: string): Doc {
   const { docComment: parsed } = parser.parseString(comment);
 
   const summaryText = plainText(parsed.summarySection)
-    .replace(/\s+/g, " ")
+    .replaceAll(/\s+/g, " ")
     .trim();
 
   const blocks = parsed.customBlocks;
@@ -499,7 +499,7 @@ function typeMarkdown(type: string) {
   const parts: string[] = [];
   let plain = "";
 
-  const tokens = type.replace(/\s+/g, " ").split(/(\b[A-Za-z_]\w*\b)/);
+  const tokens = type.replaceAll(/\s+/g, " ").split(/(\b[A-Za-z_]\w*\b)/);
 
   for (const [index, token] of tokens.entries()) {
     const url = links.get(token);
@@ -552,7 +552,7 @@ function sourceDeclaration({ nodes, parsed }: Resolved, packageRoot: string) {
   const [first] = nodes;
 
   if (first === undefined) {
-    return undefined;
+    return;
   }
 
   // The build keeps `//#region src/<file>.d.ts` markers around each source file's declarations.
@@ -566,7 +566,7 @@ function sourceDeclaration({ nodes, parsed }: Resolved, packageRoot: string) {
   const name = declaredName(first);
 
   if (region === undefined || name === undefined) {
-    return undefined;
+    return;
   }
 
   const file = region.value.slice("#region ".length).replace(/\.d\.ts$/, ".ts");
@@ -594,7 +594,7 @@ function memberName(member: Member) {
     member.computed ||
     member.key.type !== "Identifier"
   ) {
-    return undefined;
+    return;
   }
 
   return member.key.name;
@@ -616,7 +616,7 @@ function memberCategory(member: Member) {
     }
 
     default: {
-      return undefined;
+      return;
     }
   }
 }

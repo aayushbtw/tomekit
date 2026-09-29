@@ -18,7 +18,7 @@ const source: Source<object> = {
   slug: "a",
 };
 
-describe("assertTransformResult", () => {
+describe(assertTransformResult, () => {
   it("accepts an object with metadata, body, both or neither", () => {
     for (const result of [
       {},
@@ -55,7 +55,7 @@ describe("assertTransformResult", () => {
   });
 });
 
-describe("buildDocument", () => {
+describe(buildDocument, () => {
   it("keeps whatever the result leaves out", () => {
     expect(buildDocument(source, {}, "/root")).toStrictEqual({
       document: source,

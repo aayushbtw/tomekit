@@ -27,7 +27,7 @@ function resolve(specifier: string) {
   );
 }
 
-describe("contentHooks", () => {
+describe(contentHooks, () => {
   it("sends tomekit/content to the generated module", () => {
     expect(resolve("tomekit/content")).toStrictEqual({
       format: "module",

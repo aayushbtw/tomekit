@@ -7,7 +7,7 @@ const collection = createCollection([
   { slug: "a", title: "Alpha" },
 ]);
 
-describe("createCollection", () => {
+describe(createCollection, () => {
   it("keeps documents and slugs in the order given", () => {
     expect(collection.documents().map((post) => post.title)).toStrictEqual([
       "Beta",
@@ -31,7 +31,7 @@ describe("createCollection", () => {
   });
 });
 
-describe("createCollections", () => {
+describe(createCollections, () => {
   const collections = createCollections({
     notes: createCollection([
       { slug: "a", title: "A" },

@@ -6,7 +6,7 @@ interface Cyclic {
   self?: Cyclic;
 }
 
-describe("isPlainObject", () => {
+describe(isPlainObject, () => {
   it("accepts object literals and objects without a prototype", () => {
     expect(isPlainObject({ a: 1 })).toBe(true);
     expect(isPlainObject(Object.create(null))).toBe(true);
@@ -29,7 +29,7 @@ describe("isPlainObject", () => {
   });
 });
 
-describe("assertContentValue", () => {
+describe(assertContentValue, () => {
   it("accepts every value tomekit can write", () => {
     const nullPrototype = { __proto__: null, a: 1 };
 

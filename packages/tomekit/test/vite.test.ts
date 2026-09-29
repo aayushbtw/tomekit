@@ -74,12 +74,9 @@ export default defineConfig({
 });
 `;
 
-function pages(...titles: (string | undefined)[]) {
+function pages(...metadata: object[]) {
   return JSON.stringify(
-    titles.map((title, index) => ({
-      metadata: title === undefined ? {} : { title },
-      slug: String(index),
-    }))
+    metadata.map((entry, index) => ({ metadata: entry, slug: String(index) }))
   );
 }
 
@@ -401,14 +398,14 @@ describe("tomekit()", () => {
 
   it("reruns a loader when a file it watches changes", async () => {
     const { project, server: dev } = await start({
-      "data/pages.json": pages("One"),
+      "data/pages.json": pages({ title: "One" }),
       "tomekit.config.ts": loaderConfig,
     });
 
     const before = (await loadCollections(dev)).get("pages")?.get("0");
     expect(before?.metadata.title).toBe("One");
 
-    await project.write({ "data/pages.json": pages("Two") });
+    await project.write({ "data/pages.json": pages({ title: "Two" }) });
 
     await expect
       .poll(
@@ -420,7 +417,7 @@ describe("tomekit()", () => {
 
   it("points the overlay at the config for an entry without a file", async () => {
     const { project, server: dev } = await start({
-      "data/pages.json": pages("One"),
+      "data/pages.json": pages({ title: "One" }),
       "tomekit.config.ts": loaderConfig,
     });
 
@@ -429,7 +426,7 @@ describe("tomekit()", () => {
       sent.push(payload);
     };
 
-    await project.write({ "data/pages.json": pages(undefined) });
+    await project.write({ "data/pages.json": pages({}) });
     await expect
       .poll(() => sent.some((payload) => payload.type === "error"))
       .toBe(true);
@@ -720,7 +717,7 @@ export default async () => (await importModule(posts.get("hello").body)).default
 
     await expect(result).rejects.toThrow("1 content file has errors:");
     // The bundler wraps plugin errors and keeps the originals under `errors`.
-    const failure: unknown = await result.catch((cause: unknown) => cause);
+    const failure: unknown = await result.catch((error: unknown) => error);
 
     expect(failure).toHaveProperty(["errors", 0, "name"], "BrokenContentError");
   });

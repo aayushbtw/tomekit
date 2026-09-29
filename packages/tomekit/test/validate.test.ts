@@ -6,11 +6,13 @@ import { validate } from "../src/validate";
 
 const titled = z.object({ title: z.string() });
 
-describe("validate", () => {
+describe(validate, () => {
   it("builds the source, with an empty body by default", async () => {
     const entry: Entry = { metadata: { title: "A" }, slug: "a" };
 
-    expect(await validate(entry, { title: "A" }, titled)).toStrictEqual({
+    await expect(
+      validate(entry, { title: "A" }, titled)
+    ).resolves.toStrictEqual({
       source: {
         body: "",
         file: undefined,

@@ -25,7 +25,7 @@ function pageLink(doc: DocumentOf<"docs"> | undefined) {
 const getNav = createServerFn({ method: "GET" }).handler(() => {
   const ordered = sortedDocs();
 
-  function pagesIn(section: Section) {
+  function pagesIn(section?: Section) {
     return ordered.flatMap((doc) =>
       doc.metadata.section === section
         ? [{ slug: doc.slug, title: doc.metadata.title }]
@@ -34,7 +34,7 @@ const getNav = createServerFn({ method: "GET" }).handler(() => {
   }
 
   const groups = [
-    { pages: pagesIn(undefined), section: undefined },
+    { pages: pagesIn(), section: undefined },
     ...sections.map((section) => ({ pages: pagesIn(section), section })),
   ];
 

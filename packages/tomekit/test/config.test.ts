@@ -15,7 +15,7 @@ function issues(...names: string[]) {
   });
 }
 
-describe("configIssues", () => {
+describe(configIssues, () => {
   it("accepts letters, digits and underscores that start with a letter", () => {
     expect(
       issues("posts", "blogPosts", "case_studies", "v2", "index")

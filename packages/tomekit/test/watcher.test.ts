@@ -14,7 +14,7 @@ afterEach(async () => {
   await cleanup?.();
 });
 
-describe("FileWatcher", () => {
+describe(FileWatcher, () => {
   it("reports changes, but none from ignored or dot folders", async () => {
     const project = await createProject({
       "content/.cache/a.md": "",
@@ -49,7 +49,7 @@ describe("FileWatcher", () => {
   });
 });
 
-describe("ignored", () => {
+describe(ignored, () => {
   it("skips a whole folder a folder/** pattern leaves out, so Linux never watches it", () => {
     const patterns = [path.join("/root", "node_modules/**")];
 

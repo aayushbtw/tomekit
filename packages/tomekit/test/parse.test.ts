@@ -18,7 +18,7 @@ function entryOf(text: string, file?: string) {
   return result.entry;
 }
 
-describe("parse", () => {
+describe(parse, () => {
   it("reads frontmatter and body written with CRLF line endings", () => {
     expect(entryOf("---\r\ntitle: Hello\r\n---\r\nBody")).toMatchObject({
       body: "Body",

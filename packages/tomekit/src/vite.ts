@@ -274,7 +274,7 @@ function tomekit({
       }
 
       if (id !== MODULES_ID) {
-        return undefined;
+        return;
       }
 
       await load();

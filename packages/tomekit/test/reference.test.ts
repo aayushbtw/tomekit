@@ -69,7 +69,7 @@ function check(
   };
 }
 
-describe("checkReferences", () => {
+describe(checkReferences, () => {
   it("accepts slugs that exist, in arrays, nested objects and optional fields", () => {
     const posts = collection("posts", [
       document("posts", "hello", {

@@ -96,7 +96,7 @@ const styles = stylex.create({
 
 function activeHeadingId(headings: Heading[]) {
   const elements = headings.flatMap(({ id }) => {
-    const element = document.getElementById(id);
+    const element = document.querySelector(`#${CSS.escape(id)}`);
 
     return element ? [element] : [];
   });
