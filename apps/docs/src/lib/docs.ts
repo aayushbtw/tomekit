@@ -1,7 +1,7 @@
 import { notFound, rootRouteId } from "@tanstack/react-router";
 import type { NotFoundError } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { collections } from "tomekit/content";
+import { docs, reference } from "tomekit/content";
 import type { DocumentOf } from "tomekit/content";
 
 import { sections } from "#/lib/sections";
@@ -31,7 +31,7 @@ function compareDocs(a: DocumentOf<"docs">, b: DocumentOf<"docs">) {
 }
 
 function sortedDocs() {
-  return collections.get("docs").documents().toSorted(compareDocs);
+  return docs.documents().toSorted(compareDocs);
 }
 
 function pageLink(doc: DocumentOf<"docs"> | undefined) {
@@ -39,10 +39,10 @@ function pageLink(doc: DocumentOf<"docs"> | undefined) {
 }
 
 const getNav = createServerFn({ method: "GET" }).handler(() => {
-  const docs = sortedDocs();
+  const ordered = sortedDocs();
 
   function pagesIn(section: Section) {
-    return docs.flatMap((doc) =>
+    return ordered.flatMap((doc) =>
       doc.metadata.section === section
         ? [{ slug: doc.slug, title: doc.metadata.title }]
         : []
@@ -60,26 +60,26 @@ const getNav = createServerFn({ method: "GET" }).handler(() => {
 const getDoc = createServerFn({ method: "GET" })
   .validator((slug: string) => slug)
   .handler(({ data: slug }) => {
-    const doc = collections.get("docs").get(slug);
+    const doc = docs.get(slug);
 
     if (!doc) {
       throw notFound(notFoundHere);
     }
 
-    const docs = sortedDocs();
-    const index = docs.findIndex((entry) => entry.slug === doc.slug);
+    const ordered = sortedDocs();
+    const index = ordered.findIndex((entry) => entry.slug === doc.slug);
 
     return {
       ...doc,
-      next: pageLink(docs.at(index + 1)),
-      previous: index > 0 ? pageLink(docs.at(index - 1)) : undefined,
+      next: pageLink(ordered.at(index + 1)),
+      previous: index > 0 ? pageLink(ordered.at(index - 1)) : undefined,
     };
   });
 
 const getReference = createServerFn({ method: "GET" })
   .validator((params: ReferenceParams) => params)
   .handler(({ data: { kind, name, slug } }) => {
-    const page = collections.get("reference").get(`${slug}/${kind}/${name}`);
+    const page = reference.get(`${slug}/${kind}/${name}`);
 
     if (!page) {
       throw notFound(notFoundHere);

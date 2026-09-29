@@ -1,19 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { collections } from "tomekit/content";
+import { docs, reference } from "tomekit/content";
 
 import { homeSlug } from "#/lib/links";
 import { site } from "#/lib/site";
 
 function sitemap() {
   const paths = [
-    ...collections
-      .get("docs")
+    ...docs
       .documents()
       .map((doc) => (doc.slug === homeSlug ? "/" : `/${doc.slug}`)),
-    ...collections
-      .get("reference")
-      .documents()
-      .map((page) => `/${page.slug}`),
+    ...reference.documents().map((page) => `/${page.slug}`),
   ];
 
   const urls = paths.map(
