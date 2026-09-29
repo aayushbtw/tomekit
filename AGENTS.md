@@ -4,17 +4,19 @@ Fully typed content collections for Markdown. Content is parsed and validated at
 
 ## Commands
 
-A Vite+ monorepo: `vp install`, `vpx`, and `vpr <script>` for package.json scripts, never `pnpm`, `npm` or `npx`. The library is `packages/tomekit`, apps are in `apps/`, and `examples/` holds standalone framework apps that depend on the published `tomekit`. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts. Paths below are relative to `packages/tomekit` unless they say otherwise.
+Vite+ monorepo: `vp` and `vpx`, never `pnpm`, `npm` or `npx`. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts.
 
 ```sh
-vpr check   # format + lint + typecheck for the whole repo; `vpr fix` autofixes
+vpr check   # format + lint + typecheck; `vpr fix` autofixes
 vpr test    # vitest in every package
 vpr build   # every package
 ```
 
-Shared fmt and lint config lives in the root `vite.config.ts`; package-specific lint rules go in its `overrides`, since Vite+ ignores `lint` in package configs.
+Run `check` and `test` before calling a change done.
 
-Before calling a change done, run `vpr check` and `vpr test`. For changes to runtime output or generated types, also `vpr build`, then in each of `examples/*` temporarily set `tomekit` to `file:../../packages/tomekit` and run `vp install && vpr build && vpr check`. Afterwards restore its `package.json` and delete the lockfile and `node_modules` it created.
+- `packages/tomekit` is the library; paths below are relative to it. `apps/` holds the docs and bench.
+- `examples/` are standalone apps on the published `tomekit`. When runtime output or generated types change, `vpr build`, point each one's `tomekit` at `file:../../packages/tomekit`, run `vp install && vpr build && vpr check`, then restore its `package.json` and delete the lockfile and `node_modules` it created.
+- Fmt and lint config lives in the root `vite.config.ts`; package-specific lint rules go in its `overrides`, since Vite+ ignores `lint` in package configs.
 
 ## Structure
 
