@@ -2,14 +2,19 @@
 
 Fully typed content collections for Markdown.
 
-## Support
+Import your Markdown as typed data. Every file is parsed and validated at build time, so nothing parses at runtime. [Read the docs](https://tomekit.aayush.cv).
 
-Vite 8+, TypeScript 7+ and Node 24+.
+## Why tomekit
+
+- **Type safe.** Collections, slugs and metadata are typed, so `posts.get("hello-wrld")` doesn't compile.
+- **Fast.** Parsed once at build time, transforms cached, and pages ship only the collections they import.
+- **Strict.** Broken content and broken references fail the build, each at its `file:line:column`.
+- **Runs anywhere.** Your bundler compiles MDX, so there's no `eval`, Cloudflare Workers included.
 
 ## Quick start
 
 ```sh
-pnpm add tomekit
+pnpm add tomekit zod
 ```
 
 **1. Define a collection** in `tomekit.config.ts`:
@@ -49,24 +54,38 @@ export default defineConfig({
 }
 ```
 
-**4. Read your content:**
+**4. Write a post** in `content/posts/hello-world.md`:
+
+```md
+---
+title: Hello world
+---
+
+The first post.
+```
+
+**5. Read it** from server code:
 
 ```ts
 import { posts } from "tomekit/content";
 
 const post = posts.get("hello-world");
 
-post.metadata.title; // string
-post.body; // the Markdown
+post.metadata.title; // "Hello world"
+post.body; // "The first post."
 ```
+
+To render the body, see [Transform](https://tomekit.aayush.cv/transform) and [MDX](https://tomekit.aayush.cv/mdx).
 
 ## Examples
 
-A small blog per framework, each one opens in StackBlitz:
+- TanStack Start: [guide](https://tomekit.aayush.cv/tanstack-start), [StackBlitz](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/tanstack-start)
+- React Router: [guide](https://tomekit.aayush.cv/react-router), [StackBlitz](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/react-router)
+- SolidStart: [guide](https://tomekit.aayush.cv/solid-start), [StackBlitz](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/solid-start)
 
-- [TanStack Start](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/tanstack-start)
-- [React Router](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/react-router)
-- [SolidStart](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/solid-start)
+## Requirements
+
+Vite 8, TypeScript 7 and Node 24, or later.
 
 ## License
 
