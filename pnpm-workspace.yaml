@@ -13,6 +13,7 @@ catalog:
 allowBuilds:
   esbuild: true
   lightningcss: true
+  sharp: false
   workerd: true
 overrides:
   vite@*: "catalog:"

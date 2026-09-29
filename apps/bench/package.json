@@ -1,0 +1,20 @@
+{
+  "name": "bench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "node src/run.ts"
+  },
+  "devDependencies": {
+    "@content-collections/core": "^0.15.3",
+    "@content-collections/vite": "^0.3.1",
+    "@types/node": "catalog:",
+    "marked": "^18.0.14",
+    "tomekit": "workspace:*",
+    "typescript": "catalog:",
+    "velite": "^0.4.0",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "zod": "catalog:"
+  }
+}

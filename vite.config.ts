@@ -6,6 +6,8 @@ const ignorePatterns = [
   "**/node_modules",
   "**/pnpm-lock.yaml",
   "**/routeTree.gen.ts",
+  // Only valid inside a generated fixture, where each tool's module exists.
+  "apps/bench/template/entries/**",
   ".agent/**",
   ".agents/**",
   ".claude/**",
