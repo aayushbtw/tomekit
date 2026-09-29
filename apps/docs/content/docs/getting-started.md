@@ -7,6 +7,22 @@ order: 1
 
 tomekit parses and validates your Markdown while Vite builds, then serves it as a generated module. Your pages read typed data, and nothing parses Markdown at runtime.
 
+## With an agent
+
+To have a coding agent set it up, give it this prompt:
+
+```text title="Prompt"
+Set up tomekit in this project:
+
+1. Install tomekit and zod with this project's package manager.
+2. Read node_modules/tomekit/dist/AGENTS.md completely, and follow its Setup section.
+3. Add this line to AGENTS.md at the project root, creating the file if needed:
+   This project uses tomekit for content. Before writing code that touches `tomekit.config.ts` or imports from `tomekit`, read `node_modules/tomekit/dist/AGENTS.md` completely, and follow its links when needed.
+4. Run the build and fix every error it reports.
+```
+
+The last step keeps the guide in front of agents in later sessions, see [AI agents](/agents). To set it up yourself, read on.
+
 ## Install
 
 <!-- ::install packages="tomekit zod" -->
