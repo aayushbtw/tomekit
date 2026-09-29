@@ -227,7 +227,8 @@ function tomekit({
       try {
         const build = await load();
 
-        return build.code;
+        // No source map: generated data maps to nothing, and Vite would otherwise inline one as big as the module.
+        return { code: build.code, map: { mappings: "" } };
       } finally {
         // For `vite build --watch`; the dev server watches through `configureServer`.
         for (const file of builder?.watchFiles ?? []) {
