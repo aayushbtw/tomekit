@@ -1,5 +1,13 @@
 # tomekit
 
+## 0.8.1
+
+### Patch Changes
+
+- Ship a guide for coding agents as `tomekit/dist/AGENTS.md`, matching the installed version. Point a project's `AGENTS.md` at `node_modules/tomekit/dist/AGENTS.md` so agents read it before writing tomekit code.
+
+- Fix the dev server failing with `Failed to resolve import "<content folder>" from "tomekit/content"` after a content change, when `tomekit/content` is in the browser bundle.
+
 ## 0.8.0
 
 ### Minor Changes
