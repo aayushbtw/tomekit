@@ -5,7 +5,7 @@ section: Frameworks
 order: 1
 ---
 
-A blog with posts and authors, parsed at build time and read through server functions. This site is built the same way.
+A blog with posts and authors, parsed at build time and read through server functions. This site is built the same way. For a smaller one with posts only, [open the example in StackBlitz](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/tanstack-start).
 
 ## The content
 
