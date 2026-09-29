@@ -15,7 +15,7 @@ vpr build   # every package
 Run `check` and `test` before calling a change done.
 
 - `packages/tomekit` is the library. `apps/` holds the docs and bench.
-- `examples/` are standalone apps on the published `tomekit`. When runtime output or generated types change, `vpr build`, point each one's `tomekit` at `file:../../packages/tomekit`, run `vp install && vpr build && vpr check`, then restore its `package.json` and delete the lockfile and `node_modules` it created.
+- `examples/` are standalone apps on the published `tomekit`. When runtime output or generated types change, `vpr build`, copy each example to the scratchpad (inside the repo, `vpr` runs the root's scripts instead), point its `tomekit` at `file:<repo>/packages/tomekit`, and run `vp install && vpr build && vpr check`.
 - Fmt and lint are Ultracite's presets, extended in the root `vite.config.ts`. Package-specific rules go in its `overrides`, since Vite+ ignores `lint` in package configs.
 
 - User-facing behavior, including what fails at compile time, build time or not at all, is documented in `apps/docs/content/docs`, in the same change as the code.
