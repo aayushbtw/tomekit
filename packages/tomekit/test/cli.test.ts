@@ -62,7 +62,8 @@ interface Posts {
 }
 
 function hasPosts(module: unknown): module is { posts: Posts } {
-  return module instanceof Object && "posts" in module;
+  // A module namespace has no prototype, so `instanceof Object` is false for it.
+  return "posts" in Object(module);
 }
 
 // Evaluated by Node, not Vite, as a script outside the plugin would.
