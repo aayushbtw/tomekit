@@ -13,6 +13,7 @@ import {
 } from "#/styles/tokens.stylex";
 import { typography } from "#/styles/typography";
 
+import { PageActions } from "./page-actions";
 import { Prose } from "./prose";
 import { Toc } from "./toc";
 
@@ -22,6 +23,8 @@ interface ArticleProps {
   children?: ReactNode;
   description: string | undefined;
   headings: ComponentProps<typeof Toc>["headings"];
+  /** The page's slug, for its Markdown actions. */
+  slug: string;
   title: string;
 }
 
@@ -63,6 +66,7 @@ function Article({
   children,
   description,
   headings,
+  slug,
   title,
 }: ArticleProps) {
   return (
@@ -74,6 +78,7 @@ function Article({
             {description}
           </p>
         )}
+        <PageActions slug={slug} />
         <Prose body={body} />
         {children}
       </article>

@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_docs/$slug_/$kind/$name")({
 });
 
 function Reference() {
-  const { body, metadata } = Route.useLoaderData();
+  const { body, metadata, slug } = Route.useLoaderData();
   const call = metadata.kind === "Function" ? "()" : "";
 
   return (
@@ -25,6 +25,7 @@ function Reference() {
       body={body}
       description={undefined}
       headings={metadata.headings}
+      slug={slug}
       title={`${metadata.kind}: ${metadata.name}${call}`}
     />
   );

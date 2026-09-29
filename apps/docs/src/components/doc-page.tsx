@@ -6,12 +6,15 @@ interface DocPageProps {
   doc: Awaited<ReturnType<typeof getDoc>>;
 }
 
-function DocPage({ doc: { body, metadata, next, previous } }: DocPageProps) {
+function DocPage({
+  doc: { body, metadata, next, previous, slug },
+}: DocPageProps) {
   return (
     <Article
       body={body}
       description={metadata.description}
       headings={metadata.headings}
+      slug={slug}
       title={metadata.title}
     >
       <PageNav next={next} previous={previous} />

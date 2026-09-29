@@ -1,4 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
+import type { StyleXStyles } from "@stylexjs/stylex";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -17,8 +18,14 @@ interface CopyButtonProps {
   children?: ReactNode;
   /** Announced to screen readers, eg "Copy install command". */
   label: string;
-  /** A function is resolved at click time, for text that only exists in the DOM. */
-  text: string | (() => string);
+  /** Applied last, eg to drop the labeled button's border. */
+  style?: StyleXStyles;
+  /** A function is resolved at click time, eg for text in the DOM or text fetched on click. */
+  text: string | (() => string | Promise<string>);
+}
+
+async function textBlob(text: Promise<string>) {
+  return new Blob([await text], { type: "text/plain" });
 }
 
 const copiedFor = 2000;
@@ -123,7 +130,7 @@ function CheckIcon() {
   );
 }
 
-function CopyButton({ children, label, text }: CopyButtonProps) {
+function CopyButton({ children, label, style, text }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -138,9 +145,14 @@ function CopyButton({ children, label, text }: CopyButtonProps) {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(
-        text instanceof Function ? text() : text
-      );
+      const value = text instanceof Function ? text() : text;
+
+      // Pending text goes in as a promise, so Safari still counts the write as part of the click.
+      await (value instanceof Promise
+        ? navigator.clipboard.write([
+            new ClipboardItem({ "text/plain": textBlob(value) }),
+          ])
+        : navigator.clipboard.writeText(value));
       setCopied(true);
     } catch {
       // No clipboard, eg an insecure context: the text stays selectable.
@@ -154,7 +166,8 @@ function CopyButton({ children, label, text }: CopyButtonProps) {
       type="button"
       {...stylex.props(
         styles.button,
-        children !== undefined && [typography.xs, styles.labeled]
+        children !== undefined && [typography.xs, styles.labeled],
+        style
       )}
     >
       <span {...stylex.props(styles.stack)}>
