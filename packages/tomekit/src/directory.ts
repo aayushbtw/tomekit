@@ -84,13 +84,13 @@ interface FileResult {
 }
 
 async function filesIn(
-  directory: string,
+  absolute: string,
   include: readonly string[],
   exclude: readonly string[] = []
 ): Promise<Found[]> {
   const matches: string[] = [];
 
-  for await (const match of glob(include, { cwd: directory, exclude })) {
+  for await (const match of glob(include, { cwd: absolute, exclude })) {
     matches.push(match);
   }
 
@@ -98,7 +98,7 @@ async function filesIn(
   const found = await Promise.all(
     matches.map(async (file) => {
       try {
-        const stats = await stat(path.join(directory, file), { bigint: true });
+        const stats = await stat(path.join(absolute, file), { bigint: true });
 
         return stats.isFile() ? [{ file, stats }] : [];
       } catch {
@@ -110,67 +110,16 @@ async function filesIn(
   return found.flat().toSorted((a, b) => (a.file < b.file ? -1 : 1));
 }
 
-/**
- * Each file's last result, reused while its size and times are unchanged, so
- * an edit in dev reads and parses only the files that changed.
- */
-class ParseCache {
-  #results = new Map<string, { result: FileResult; version: string }>();
-
-  async results(
-    directory: string,
-    root: string,
-    files: readonly Found[],
-    profile?: PhaseRecorder
-  ): Promise<FileResult[]> {
-    const next = new Map<string, { result: FileResult; version: string }>();
-
-    const results = await Promise.all(
-      files.map(async ({ file, stats }) => {
-        // ctime too: it changes on every write, even one that keeps the mtime.
-        const version =
-          stats === undefined
-            ? undefined
-            : `${stats.size}:${stats.mtimeNs}:${stats.ctimeNs}`;
-
-        // With the root, since one loader can load from several roots and `filePath` is relative to it.
-        const key = `${root}\0${path.join(directory, file)}`;
-        const cached = this.#results.get(key);
-
-        if (version !== undefined && cached?.version === version) {
-          next.set(key, cached);
-          profile?.reuse("parse");
-
-          return cached.result;
-        }
-
-        const result = await read(directory, root, file, profile);
-
-        // A read error is not cached, so the next load tries again.
-        if (version !== undefined && result.entry !== undefined) {
-          next.set(key, { result, version });
-        }
-
-        return result;
-      })
-    );
-
-    this.#results = next;
-
-    return results;
-  }
-}
-
 async function read(
-  directory: string,
+  absolute: string,
   root: string,
   file: string,
   profile?: PhaseRecorder
 ): Promise<FileResult> {
-  const filePath = path.relative(root, path.join(directory, file));
+  const filePath = path.relative(root, path.join(absolute, file));
 
   try {
-    const text = await readFile(path.join(directory, file), "utf-8");
+    const text = await readFile(path.join(absolute, file), "utf-8");
 
     const parsed = timed(profile, "parse", () =>
       parse({ file, filePath, text })
@@ -187,6 +136,57 @@ async function read(
       filePath,
       issues: [{ cause: error, message }],
     };
+  }
+}
+
+/**
+ * Each file's last result, reused while its size and times are unchanged, so
+ * an edit in dev reads and parses only the files that changed.
+ */
+class ParseCache {
+  #results = new Map<string, { result: FileResult; version: string }>();
+
+  async results(
+    absolute: string,
+    root: string,
+    files: readonly Found[],
+    profile?: PhaseRecorder
+  ): Promise<FileResult[]> {
+    const next = new Map<string, { result: FileResult; version: string }>();
+
+    const results = await Promise.all(
+      files.map(async ({ file, stats }) => {
+        // ctime too: it changes on every write, even one that keeps the mtime.
+        const version =
+          stats === undefined
+            ? undefined
+            : `${stats.size}:${stats.mtimeNs}:${stats.ctimeNs}`;
+
+        // With the root, since one loader can load from several roots and `filePath` is relative to it.
+        const key = `${root}\0${path.join(absolute, file)}`;
+        const cached = this.#results.get(key);
+
+        if (version !== undefined && cached?.version === version) {
+          next.set(key, cached);
+          profile?.reuse("parse");
+
+          return cached.result;
+        }
+
+        const result = await read(absolute, root, file, profile);
+
+        // A read error is not cached, so the next load tries again.
+        if (version !== undefined && result.entry !== undefined) {
+          next.set(key, { result, version });
+        }
+
+        return result;
+      })
+    );
+
+    this.#results = next;
+
+    return results;
   }
 }
 
@@ -271,7 +271,10 @@ function directory(
         }
 
         issues.push(
-          ...result.issues.map((issue) => ({ ...issue, file: result.filePath }))
+          ...result.issues.map((fileIssue) => ({
+            ...fileIssue,
+            file: result.filePath,
+          }))
         );
       }
 

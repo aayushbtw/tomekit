@@ -13,6 +13,7 @@ import type { Event } from "js-yaml";
 
 import type { Issue } from "./errors";
 import type { Entry, FileInfo } from "./index";
+import { isString } from "./kind";
 import { isPlainObject } from "./value";
 
 const FRONTMATTER = /^---\r?\n(?:(?<data>[\s\S]*?)\r?\n)?---(?:\r?\n|$)/u;
@@ -65,7 +66,7 @@ function position(text: string, offset: number): Position {
 }
 
 function isSlug(value: unknown): value is string {
-  return new Object(value) instanceof String && value !== "";
+  return isString(value) && value !== "";
 }
 
 function isCollection(event: Event | undefined): boolean {
@@ -115,6 +116,9 @@ function startOf(events: readonly Event[], index: number): number | undefined {
       return event.anchorStart - 1;
     }
 
+    case undefined:
+    case EVENT_ID.DOCUMENT:
+    case EVENT_ID.POP:
     default: {
       return undefined;
     }

@@ -1,4 +1,5 @@
 import { ContentError } from "./errors";
+import { isString } from "./kind";
 import type { Locate } from "./parse";
 import { Skipped } from "./skipped";
 import { isFields, isList } from "./value";
@@ -61,10 +62,6 @@ function valuesAt(
   }
 
   return valuesAt(value[key], rest, [...keys, key]);
-}
-
-function isString(value: ContentValue): value is string {
-  return new Object(value) instanceof String;
 }
 
 /**

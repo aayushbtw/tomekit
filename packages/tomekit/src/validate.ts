@@ -1,5 +1,6 @@
 import type { Issue } from "./errors";
 import type { Entry, Source, StandardSchema } from "./index";
+import { isObject } from "./kind";
 import type { Locate } from "./parse";
 import { isPlainObject } from "./value";
 import type { ContentValue } from "./value";
@@ -11,7 +12,7 @@ type ValidateResult =
 function isKeyedSegment(
   segment: PropertyKey | { readonly key: PropertyKey }
 ): segment is { readonly key: PropertyKey } {
-  return new Object(segment) === segment;
+  return isObject(segment);
 }
 
 /** Runs the schema on an entry's metadata and builds its source. Issues point at `locate`, when the entry has one. */

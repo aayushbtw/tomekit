@@ -3,6 +3,7 @@ import {
   UnserializableInstanceError,
   UnserializableValueError,
 } from "./errors";
+import { isBigInt, isFunction, isObject, isPrimitive, isSymbol } from "./kind";
 import { isFileModule } from "./module";
 
 const IDENTIFIER = /^[$_\p{ID_Start}][$\p{ID_Continue}]*$/u;
@@ -28,12 +29,9 @@ interface ContentFields {
   readonly [key: string]: ContentValue;
 }
 
-// `new Object(value)` returns an object unchanged and boxes a primitive, so
-// comparing the two, and `instanceof` on the box, tells values apart without `typeof`.
-
 /** Whether a value is an object literal, rather than a primitive, array or instance of a class. */
 function isPlainObject(value: unknown): value is object {
-  if (value === null || value === undefined || new Object(value) !== value) {
+  if (!isObject(value)) {
     return false;
   }
 
@@ -43,10 +41,6 @@ function isPlainObject(value: unknown): value is object {
     !Array.isArray(value) &&
     (prototype === Object.prototype || prototype === null)
   );
-}
-
-function isNumber(value: ContentValue): value is number {
-  return new Object(value) instanceof Number;
 }
 
 function isList(value: ContentValue): value is readonly ContentValue[] {
@@ -66,9 +60,7 @@ function isSet(value: ContentValue): value is ReadonlySet<ContentValue> {
 // Called only on checked values, so an object that is none of the other kinds is a plain object.
 function isFields(value: ContentValue): value is ContentFields {
   return (
-    value !== null &&
-    value !== undefined &&
-    new Object(value) === value &&
+    isObject(value) &&
     !isList(value) &&
     !isMap(value) &&
     !isSet(value) &&
@@ -107,24 +99,21 @@ function assertContentValue(
     return;
   }
 
-  const boxed = new Object(value);
-
-  if (boxed !== value) {
-    if (
-      boxed instanceof Boolean ||
-      boxed instanceof Number ||
-      boxed instanceof String
-    ) {
-      return;
-    }
-
-    throw new UnserializableValueError(
-      boxed instanceof Symbol ? "a symbol" : "a bigint",
-      at
-    );
+  if (isSymbol(value)) {
+    throw new UnserializableValueError("a symbol", at);
   }
 
-  if (boxed instanceof Function) {
+  if (isBigInt(value)) {
+    throw new UnserializableValueError("a bigint", at);
+  }
+
+  if (isPrimitive(value)) {
+    return;
+  }
+
+  const boxed = new Object(value);
+
+  if (isFunction(boxed)) {
     throw new UnserializableValueError("a function", at);
   }
 
@@ -185,7 +174,6 @@ export {
   isFields,
   isList,
   isMap,
-  isNumber,
   isPlainObject,
   isSet,
 };

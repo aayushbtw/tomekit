@@ -5,6 +5,7 @@ import path from "node:path";
 import { isFile } from "./collection";
 import type { BuiltDocument, EntryCache } from "./collection";
 import { replaceFile } from "./generate";
+import { isBoolean, isNumber, isPrimitive, isString } from "./kind";
 import { serialize } from "./serialize";
 import { REASON, Skipped } from "./skipped";
 import {
@@ -12,7 +13,6 @@ import {
   isFields,
   isList,
   isMap,
-  isNumber,
   isPlainObject,
   isSet,
 } from "./value";
@@ -42,7 +42,7 @@ interface EncodedFields {
 }
 
 /** A tag, then the items it needs. */
-interface EncodedList extends ReadonlyArray<Encoded> {}
+type EncodedList = readonly Encoded[];
 
 /** One document in a cache file. */
 interface CacheRecord {
@@ -65,16 +65,8 @@ interface CacheFile {
   key: string;
 }
 
-function isString(value: unknown): value is string {
-  return new Object(value) instanceof String;
-}
-
-function isText(value: Encoded | undefined): value is string {
-  return new Object(value) instanceof String;
-}
-
 function isTime(value: Encoded | undefined): value is number {
-  return new Object(value) instanceof Number && Number.isFinite(value);
+  return isNumber(value) && Number.isFinite(value);
 }
 
 function isEncodedList(value: Encoded): value is EncodedList {
@@ -85,6 +77,10 @@ function isEncodedList(value: Encoded): value is EncodedList {
 function isTagged(list: EncodedList): boolean {
   const [tag, ...items] = list;
   const [first, second] = items;
+
+  if (!isString(tag)) {
+    return false;
+  }
 
   switch (tag) {
     case "a":
@@ -102,7 +98,7 @@ function isTagged(list: EncodedList): boolean {
     }
 
     case "l": {
-      return items.length === 1 && isText(first) && URL.canParse(first);
+      return items.length === 1 && isString(first) && URL.canParse(first);
     }
 
     case "m": {
@@ -110,11 +106,13 @@ function isTagged(list: EncodedList): boolean {
     }
 
     case "n": {
-      return items.length === 1 && isText(first) && SPECIAL_NUMBERS.has(first);
+      return (
+        items.length === 1 && isString(first) && SPECIAL_NUMBERS.has(first)
+      );
     }
 
     case "r": {
-      return items.length === 2 && isText(first) && isText(second);
+      return items.length === 2 && isString(first) && isString(second);
     }
 
     default: {
@@ -128,14 +126,8 @@ function isEncoded(value: unknown): value is Encoded {
     return true;
   }
 
-  const boxed = new Object(value);
-
-  if (boxed !== value) {
-    return (
-      boxed instanceof Boolean ||
-      boxed instanceof Number ||
-      boxed instanceof String
-    );
+  if (isPrimitive(value)) {
+    return isBoolean(value) || isNumber(value) || isString(value);
   }
 
   if (Array.isArray(value)) {
@@ -150,7 +142,7 @@ function isCacheRecord(value: unknown): value is CacheRecord {
     !isPlainObject(value) ||
     !("hash" in value && isString(value.hash)) ||
     !("slug" in value && isString(value.slug)) ||
-    !("setsSlug" in value && new Object(value.setsSlug) instanceof Boolean) ||
+    !("setsSlug" in value && isBoolean(value.setsSlug)) ||
     ("file" in value && !isString(value.file)) ||
     ("module" in value && !isString(value.module))
   ) {
@@ -248,7 +240,7 @@ function encode(value: ContentValue): Encoded {
 
 // `isTagged` checked every list, so the fallback is never used.
 function textOf(value: Encoded | undefined): string {
-  return isText(value) ? value : "";
+  return isString(value) ? value : "";
 }
 
 function isHole(value: Encoded): boolean {
@@ -264,10 +256,10 @@ function decode(value: Encoded): ContentValue {
       : value;
   }
 
-  const [tag, ...items] = value;
+  const [head, ...items] = value;
   const [first = null, second = null] = items;
 
-  switch (tag) {
+  switch (textOf(head)) {
     case "a": {
       const list: ContentValue[] = [];
       list.length = items.length;
@@ -362,36 +354,43 @@ async function readIfPresent(file: string): Promise<Buffer | undefined> {
   }
 }
 
+function foldersUp(directory: string): string[] {
+  const parent = path.dirname(directory);
+
+  return parent === directory ? [directory] : [directory, ...foldersUp(parent)];
+}
+
 /** The lockfiles in the closest folder that has any, from `root` up. */
 async function lockfilesOf(root: string): Promise<Buffer[]> {
-  let directory = root;
+  const levels = await Promise.all(
+    foldersUp(root).map(
+      async (directory) =>
+        await Promise.all(
+          LOCKFILES.map(
+            async (name) => await readIfPresent(path.join(directory, name))
+          )
+        )
+    )
+  );
 
-  while (true) {
-    const found = await Promise.all(
-      LOCKFILES.map((name) => readIfPresent(path.join(directory, name)))
-    );
-
-    const lockfiles = found.filter((text) => text !== undefined);
-    const parent = path.dirname(directory);
-
-    if (lockfiles.length > 0 || parent === directory) {
-      return lockfiles;
-    }
-
-    directory = parent;
-  }
+  return (
+    levels
+      .map((found) => found.filter((text) => text !== undefined))
+      .find((lockfiles) => lockfiles.length > 0) ?? []
+  );
 }
 
 /** tomekit's own code: every module next to this one, so a new version or a local build clears the cache. */
 async function ownCode(): Promise<Buffer[]> {
   const extension = path.extname(import.meta.filename);
 
-  const names = (await readdir(import.meta.dirname))
-    .filter((name) => name.endsWith(extension))
-    .toSorted();
+  const entries = await readdir(import.meta.dirname);
+  const names = entries.filter((name) => name.endsWith(extension)).toSorted();
 
   return await Promise.all(
-    names.map((name) => readFile(path.join(import.meta.dirname, name)))
+    names.map(
+      async (name) => await readFile(path.join(import.meta.dirname, name))
+    )
   );
 }
 

@@ -626,7 +626,6 @@ export {
   type Loader,
   type LoadIssue,
   type LoadResult,
-  type Skipped,
   type Source,
   type StandardSchema,
   type TransformContext,
@@ -640,6 +639,8 @@ export { directory, type DirectoryOptions } from "./directory";
 export { type FileModule, fileModule, type Module } from "./module";
 
 export type { Collection, LookupKey } from "./query";
+
+export type { Skipped } from "./skipped";
 
 export {
   BrokenContentError,

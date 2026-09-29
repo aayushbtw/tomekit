@@ -12,6 +12,7 @@ import type {
   LoadResult,
   Source,
 } from "./index";
+import { isString } from "./kind";
 import { isLocated, LOCATE } from "./parse";
 import type { Locate } from "./parse";
 import { PROFILE, timed } from "./profile";
@@ -102,12 +103,14 @@ function messageOf(cause: unknown): string {
 }
 
 function isSlug(value: unknown): value is string {
-  return new Object(value) instanceof String && value !== "";
+  return isString(value) && value !== "";
 }
 
 async function isFile(file: string): Promise<boolean> {
   try {
-    return (await stat(file)).isFile();
+    const stats = await stat(file);
+
+    return stats.isFile();
   } catch {
     return false;
   }
@@ -117,168 +120,6 @@ function isLoadResult(value: unknown): value is LoadResult {
   return (
     isPlainObject(value) && "entries" in value && Array.isArray(value.entries)
   );
-}
-
-async function loadCollection(
-  name: string,
-  collection: CollectionConfig,
-  root: string,
-  {
-    cache,
-    dev = false,
-    profile,
-    watched = [],
-  }: {
-    cache?: EntryCache;
-    dev?: boolean;
-    profile?: Profile;
-    /** Receives each `watch` call as it happens, so a caller can match changes while `load` runs. */
-    watched?: WatchGroup[];
-  } = {}
-): Promise<CollectionResult> {
-  let loaded: unknown;
-
-  function watch(patterns: Glob | readonly Glob[]) {
-    const list = [patterns].flat();
-
-    watched.push({
-      exclude: list
-        .filter((pattern) => pattern.startsWith("!"))
-        .map((pattern) => path.resolve(root, pattern.slice(1))),
-      include: list
-        .filter((pattern) => !pattern.startsWith("!"))
-        .map((pattern) => path.resolve(root, pattern)),
-    });
-  }
-
-  try {
-    const context: LoadContext = { collection: name, dev, root, watch };
-
-    // Not in `LoadContext`'s type: only `directory()` reads it.
-    if (profile !== undefined) {
-      Object.assign(context, { [PROFILE]: profile });
-    }
-
-    loaded = await collection.loader.load(context);
-  } catch (error) {
-    return {
-      broken: new Set(),
-      cacheChanged: false,
-      documents: [],
-      errors: [
-        new ContentError(
-          { collection: name },
-          { message: `the loader failed: ${messageOf(error)}` },
-          { cause: error }
-        ),
-      ],
-      failed: true,
-      skipped: new Map(),
-      warnings: [],
-      watched,
-    };
-  }
-
-  if (!isLoadResult(loaded)) {
-    return {
-      broken: new Set(),
-      cacheChanged: false,
-      documents: [],
-      errors: [
-        new ContentError(
-          { collection: name },
-          {
-            message:
-              "the loader's `load` must return an object with an `entries` array, eg `{ entries: [] }`",
-          }
-        ),
-      ],
-      failed: true,
-      skipped: new Map(),
-      warnings: [],
-      watched,
-    };
-  }
-
-  const errors = (loaded.issues ?? []).map(
-    ({ cause, file, slug, ...issue }) =>
-      new ContentError({ collection: name, file, slug }, issue, { cause })
-  );
-
-  // An entry a loader reported an issue for is still validated, so all of its problems show, but it is left out.
-  const reported = new Set(
-    (loaded.issues ?? []).map(({ file, slug }) =>
-      file === undefined ? `slug:${slug}` : `file:${file}`
-    )
-  );
-
-  const before = new Map(cache);
-
-  const results = await Promise.all(
-    loaded.entries.map(async (entry) => {
-      const key =
-        entry.file === undefined
-          ? `slug:${entry.slug}`
-          : `file:${entry.file.path}`;
-
-      return await loadEntry(name, collection, entry, {
-        broken: reported.has(key),
-        cache,
-        dev,
-        profile,
-        root,
-      });
-    })
-  );
-
-  const cacheChanged =
-    cache !== undefined && pruneCache(cache, before, loaded.entries);
-
-  const bySlug = new Map<string, BuiltDocument>();
-  const documents: BuiltDocument[] = [];
-  const broken = new Set<string>();
-  const skipped = new Map<string, string | undefined>();
-
-  for (const [index, result] of results.entries()) {
-    if (result.errors) {
-      errors.push(...result.errors);
-      const slug = loaded.entries[index]?.slug;
-
-      if (isSlug(slug)) {
-        broken.add(slug);
-      }
-
-      continue;
-    }
-
-    const { document } = result;
-
-    if (document.output instanceof Skipped) {
-      skipped.set(document.slug, document.output[REASON]);
-      continue;
-    }
-
-    const first = bySlug.get(document.slug);
-
-    if (first !== undefined) {
-      errors.push(duplicateSlug(name, document, first));
-      continue;
-    }
-
-    bySlug.set(document.slug, document);
-    documents.push(document);
-  }
-
-  return {
-    broken,
-    cacheChanged,
-    documents,
-    errors,
-    failed: false,
-    skipped,
-    warnings: [...(loaded.warnings ?? [])],
-    watched,
-  };
 }
 
 /** Drops slugs the loader no longer returns. Returns whether the cache differs from `before`. */
@@ -442,8 +283,10 @@ async function loadEntry(
   }
 
   // Awaited apart from the call, like `transform`.
-  const validating = timed(profile, "validate", () =>
-    validate(entry, metadata, collection.schema, locate)
+  const validating = timed(
+    profile,
+    "validate",
+    async () => await validate(entry, metadata, collection.schema, locate)
   );
 
   const validated = await validating;
@@ -485,6 +328,168 @@ async function loadEntry(
   }
 
   return { document };
+}
+
+async function loadCollection(
+  name: string,
+  collection: CollectionConfig,
+  root: string,
+  {
+    cache,
+    dev = false,
+    profile,
+    watched = [],
+  }: {
+    cache?: EntryCache;
+    dev?: boolean;
+    profile?: Profile;
+    /** Receives each `watch` call as it happens, so a caller can match changes while `load` runs. */
+    watched?: WatchGroup[];
+  } = {}
+): Promise<CollectionResult> {
+  let loaded: unknown;
+
+  function watch(patterns: Glob | readonly Glob[]) {
+    const list = [patterns].flat();
+
+    watched.push({
+      exclude: list
+        .filter((pattern) => pattern.startsWith("!"))
+        .map((pattern) => path.resolve(root, pattern.slice(1))),
+      include: list
+        .filter((pattern) => !pattern.startsWith("!"))
+        .map((pattern) => path.resolve(root, pattern)),
+    });
+  }
+
+  try {
+    const context: LoadContext = { collection: name, dev, root, watch };
+
+    // Not in `LoadContext`'s type: only `directory()` reads it.
+    if (profile !== undefined) {
+      Object.assign(context, { [PROFILE]: profile });
+    }
+
+    loaded = await collection.loader.load(context);
+  } catch (error) {
+    return {
+      broken: new Set(),
+      cacheChanged: false,
+      documents: [],
+      errors: [
+        new ContentError(
+          { collection: name },
+          { message: `the loader failed: ${messageOf(error)}` },
+          { cause: error }
+        ),
+      ],
+      failed: true,
+      skipped: new Map(),
+      warnings: [],
+      watched,
+    };
+  }
+
+  if (!isLoadResult(loaded)) {
+    return {
+      broken: new Set(),
+      cacheChanged: false,
+      documents: [],
+      errors: [
+        new ContentError(
+          { collection: name },
+          {
+            message:
+              "the loader's `load` must return an object with an `entries` array, eg `{ entries: [] }`",
+          }
+        ),
+      ],
+      failed: true,
+      skipped: new Map(),
+      warnings: [],
+      watched,
+    };
+  }
+
+  const errors = (loaded.issues ?? []).map(
+    ({ cause, file, slug, ...issue }) =>
+      new ContentError({ collection: name, file, slug }, issue, { cause })
+  );
+
+  // An entry a loader reported an issue for is still validated, so all of its problems show, but it is left out.
+  const reported = new Set(
+    (loaded.issues ?? []).map(({ file, slug }) =>
+      file === undefined ? `slug:${slug}` : `file:${file}`
+    )
+  );
+
+  const before = new Map(cache);
+
+  const results = await Promise.all(
+    loaded.entries.map(async (entry) => {
+      const key =
+        entry.file === undefined
+          ? `slug:${entry.slug}`
+          : `file:${entry.file.path}`;
+
+      return await loadEntry(name, collection, entry, {
+        broken: reported.has(key),
+        cache,
+        dev,
+        profile,
+        root,
+      });
+    })
+  );
+
+  const cacheChanged =
+    cache !== undefined && pruneCache(cache, before, loaded.entries);
+
+  const bySlug = new Map<string, BuiltDocument>();
+  const documents: BuiltDocument[] = [];
+  const broken = new Set<string>();
+  const skipped = new Map<string, string | undefined>();
+
+  for (const [index, result] of results.entries()) {
+    if (result.errors) {
+      errors.push(...result.errors);
+      const slug = loaded.entries[index]?.slug;
+
+      if (isSlug(slug)) {
+        broken.add(slug);
+      }
+
+      continue;
+    }
+
+    const { document } = result;
+
+    if (document.output instanceof Skipped) {
+      skipped.set(document.slug, document.output[REASON]);
+      continue;
+    }
+
+    const first = bySlug.get(document.slug);
+
+    if (first !== undefined) {
+      errors.push(duplicateSlug(name, document, first));
+      continue;
+    }
+
+    bySlug.set(document.slug, document);
+    documents.push(document);
+  }
+
+  return {
+    broken,
+    cacheChanged,
+    documents,
+    errors,
+    failed: false,
+    skipped,
+    warnings: [...(loaded.warnings ?? [])],
+    watched,
+  };
 }
 
 export {

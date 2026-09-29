@@ -19,7 +19,7 @@ const OPTIONS = {
   config: { default: "tomekit.config.ts", type: "string" },
 } as const;
 
-interface CliLogger extends Pick<Console, "error" | "info" | "warn"> {}
+type CliLogger = Pick<Console, "error" | "info" | "warn">;
 
 interface CliOptions {
   logger: CliLogger;
@@ -55,7 +55,7 @@ function report(build: Build, logger: CliLogger, started: number): boolean {
   return true;
 }
 
-async function build(builder: ContentBuilder, logger: CliLogger) {
+async function buildOnce(builder: ContentBuilder, logger: CliLogger) {
   const started = performance.now();
 
   try {
@@ -71,25 +71,57 @@ async function watch(
   builder: ContentBuilder,
   { logger, signal }: CliOptions
 ): Promise<void> {
+  async function rebuild(watcher: FileWatcher) {
+    await buildOnce(builder, logger);
+    // After every build, since a `load` can watch different files than the last one.
+    watcher.watch(builder.watchTargets);
+  }
+
   const watcher = new FileWatcher((files) => {
     const changed = files.filter((file) => builder.changed(file));
 
     if (changed.length > 0) {
-      void rebuild();
+      void rebuild(watcher);
     }
   });
-
-  async function rebuild() {
-    await build(builder, logger);
-    // After every build, since a `load` can watch different files than the last one.
-    watcher.watch(builder.watchTargets);
-  }
 
   signal?.addEventListener("abort", () => {
     watcher.close();
   });
 
-  await rebuild();
+  await rebuild(watcher);
+}
+
+function parseCommand(args: readonly string[]): Command {
+  let parsed: ReturnType<
+    typeof parseArgs<{ allowPositionals: true; options: typeof OPTIONS }>
+  >;
+
+  try {
+    parsed = parseArgs({
+      allowPositionals: true,
+      args: [...args],
+      options: OPTIONS,
+    });
+  } catch (error) {
+    return { issue: errorMessage(error) };
+  }
+
+  const [command, ...rest] = parsed.positionals;
+
+  if (command === undefined) {
+    return { issue: undefined };
+  }
+
+  if (command !== "build" && command !== "watch") {
+    return { issue: `Unknown command "${command}".` };
+  }
+
+  if (rest.length > 0) {
+    return { issue: `Unexpected argument "${rest.join(" ")}".` };
+  }
+
+  return { command, config: parsed.values.config };
 }
 
 /**
@@ -123,44 +155,12 @@ async function run(args: readonly string[], options: CliOptions) {
     return 0;
   }
 
-  return (await build(builder, logger)) ? 0 : 1;
+  return (await buildOnce(builder, logger)) ? 0 : 1;
 }
 
 type Command =
   | { command: "build" | "watch"; config: string }
   /** `undefined` when no command was given, so only the usage is shown. */
   | { issue: string | undefined };
-
-function parseCommand(args: readonly string[]): Command {
-  let parsed: ReturnType<
-    typeof parseArgs<{ allowPositionals: true; options: typeof OPTIONS }>
-  >;
-
-  try {
-    parsed = parseArgs({
-      allowPositionals: true,
-      args: [...args],
-      options: OPTIONS,
-    });
-  } catch (error) {
-    return { issue: errorMessage(error) };
-  }
-
-  const [command, ...rest] = parsed.positionals;
-
-  if (command === undefined) {
-    return { issue: undefined };
-  }
-
-  if (command !== "build" && command !== "watch") {
-    return { issue: `Unknown command "${command}".` };
-  }
-
-  if (rest.length > 0) {
-    return { issue: `Unexpected argument "${rest.join(" ")}".` };
-  }
-
-  return { command, config: parsed.values.config };
-}
 
 export { type CliLogger, type CliOptions, run };

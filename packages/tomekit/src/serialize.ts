@@ -1,4 +1,5 @@
-import { isFields, isList, isMap, isNumber, isSet } from "./value";
+import { isNumber } from "./kind";
+import { isFields, isList, isMap, isSet } from "./value";
 import type { ContentValue } from "./value";
 
 /** Lets a bundler drop a call whose result is unused, eg a collection nobody imports. */
@@ -39,12 +40,6 @@ function isJson(value: ContentValue): boolean {
     value instanceof URL ||
     value instanceof RegExp
   );
-}
-
-function serialize(value: ContentValue): Serialized {
-  return isJson(value)
-    ? { json: JSON.stringify(value) }
-    : { source: write(value) };
 }
 
 // Single quotes, so the JSON's many `"` need no escaping.
@@ -137,6 +132,12 @@ function write(value: ContentValue): string {
   }
 
   return JSON.stringify(value);
+}
+
+function serialize(value: ContentValue): Serialized {
+  return isJson(value)
+    ? { json: JSON.stringify(value) }
+    : { source: write(value) };
 }
 
 export { listSource, PURE, serialize, type Serialized, sourceOf };

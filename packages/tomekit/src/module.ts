@@ -1,3 +1,5 @@
+import { isObject } from "./kind";
+
 // From the registry, because the config imports `fileModule()` through Vite's module runner, a different copy of this module.
 const MODULE_PATH = Symbol.for("tomekit.modulePath");
 
@@ -49,12 +51,7 @@ function fileModule<TExports>(path: string): FileModule<TExports> {
 }
 
 function isFileModule(value: unknown): value is FileModule {
-  return (
-    value !== null &&
-    value !== undefined &&
-    new Object(value) === value &&
-    MODULE_PATH in value
-  );
+  return isObject(value) && MODULE_PATH in value;
 }
 
 /** The file a module points at, relative to the project root. */

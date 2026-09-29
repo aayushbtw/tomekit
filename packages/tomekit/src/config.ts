@@ -1,4 +1,5 @@
 import type { Config, Loader } from "./index";
+import { isFunction, isString } from "./kind";
 import { isPlainObject } from "./value";
 
 const COLLECTION_NAME = /^[A-Za-z][\dA-Za-z_]*$/u;
@@ -70,9 +71,7 @@ function nameIssue(name: string): string | undefined {
 
 // A JavaScript config, or one written before loaders, can leave `loader` out.
 function isLoader(value: unknown): value is Loader {
-  return (
-    isPlainObject(value) && "load" in value && value.load instanceof Function
-  );
+  return isPlainObject(value) && "load" in value && isFunction(value.load);
 }
 
 function isKeyPath(path: string): boolean {
@@ -120,8 +119,7 @@ function referenceIssues(config: Config): string[] {
         ];
       }
 
-      return new Object(target) instanceof String &&
-        names.includes(String(target))
+      return isString(target) && names.includes(target)
         ? []
         : [
             `${key} must name a collection, got ${JSON.stringify(target)}. Use one of ${choices}.`,

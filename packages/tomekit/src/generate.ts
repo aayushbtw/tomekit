@@ -139,19 +139,6 @@ import type { Module as _Module } from "tomekit";
 export declare function importModule<TExports>(module: _Module<TExports>): Promise<TExports>;
 `;
 
-/** Writes `text` only when it differs from the file, through a temporary file, so a reader never sees half of it. Returns whether it wrote. */
-async function writeChanged(file: string, text: string): Promise<boolean> {
-  const current = await readFile(file, "utf-8").catch(() => null);
-
-  if (current === text) {
-    return false;
-  }
-
-  await replaceFile(file, text);
-
-  return true;
-}
-
 /** Writes through a temporary file and `rename`, so a reader never sees half a file. */
 async function replaceFile(file: string, text: string): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true });
@@ -163,6 +150,19 @@ async function replaceFile(file: string, text: string): Promise<void> {
   } finally {
     await rm(temporary, { force: true });
   }
+}
+
+/** Writes `text` only when it differs from the file, through a temporary file, so a reader never sees half of it. Returns whether it wrote. */
+async function writeChanged(file: string, text: string): Promise<boolean> {
+  const current = await readFile(file, "utf-8").catch(() => null);
+
+  if (current === text) {
+    return false;
+  }
+
+  await replaceFile(file, text);
+
+  return true;
 }
 
 /**
