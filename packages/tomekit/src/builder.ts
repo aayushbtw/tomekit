@@ -19,6 +19,7 @@ import {
   writeTypes,
 } from "./generate";
 import type { Config } from "./index";
+import { isProfiling, Profile } from "./profile";
 import { checkReferences } from "./reference";
 import { isPlainObject } from "./value";
 
@@ -35,6 +36,8 @@ interface Build {
   code: string;
   /** Broken files, left out of `code`. */
   errors: ContentError[];
+  /** Where this build's time went, when `TOMEKIT_PROFILE` is set. */
+  profile: Profile | undefined;
   /** Relative to the root, when this build rewrote them. */
   typesWritten: string | undefined;
   warnings: string[];
@@ -99,6 +102,8 @@ class ContentBuilder {
   #version = 0;
   #build: Promise<Build> | undefined;
   #checkedTsconfig = false;
+  // Read once, so every adapter gets the same answer from the same variable.
+  readonly #profiling = isProfiling();
 
   constructor(options: BuilderOptions) {
     this.#options = options;
@@ -196,6 +201,7 @@ class ContentBuilder {
 
   async #run(): Promise<Build> {
     const { configPath, dev, rebuilds, root } = this.#options;
+    const profile = this.#profiling ? new Profile() : undefined;
     this.#config ??= this.#importConfig();
     const imported = this.#config;
     let config: Config;
@@ -216,6 +222,7 @@ class ContentBuilder {
       throw new InvalidConfigError(path.relative(root, configPath), issues);
     }
 
+    profile?.lap("config");
     const version = this.#version;
 
     const loaded = await Promise.all(
@@ -240,6 +247,7 @@ class ContentBuilder {
           (await loadCollection(name, collection, root, {
             cache,
             dev,
+            profile,
             watched,
           }));
 
@@ -266,6 +274,8 @@ class ContentBuilder {
       })
     );
 
+    profile?.lap("collections");
+
     for (const name of this.#watched.keys()) {
       if (!Object.hasOwn(config.collections, name)) {
         this.#watched.delete(name);
@@ -283,6 +293,7 @@ class ContentBuilder {
       ),
     }));
 
+    profile?.lap("references");
     const warnings = loaded.flatMap((collection) => collection.warnings);
 
     const code = contentModule(
@@ -292,6 +303,7 @@ class ContentBuilder {
       }))
     );
 
+    profile?.lap("generate");
     let typesWritten: string | undefined;
 
     // A build a change made stale leaves the files to the build after it.
@@ -320,6 +332,8 @@ class ContentBuilder {
       }
     }
 
+    profile?.lap("write");
+
     if (!this.#checkedTsconfig) {
       this.#checkedTsconfig = true;
       const warning = await this.#checkTsconfig();
@@ -329,12 +343,17 @@ class ContentBuilder {
       }
     }
 
+    profile?.end(
+      collections.reduce((sum, { documents }) => sum + documents.length, 0)
+    );
+
     return {
       code,
       errors: [
         ...loaded.flatMap((collection) => collection.errors),
         ...references.errors,
       ],
+      profile,
       typesWritten,
       warnings,
     };

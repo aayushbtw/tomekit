@@ -87,6 +87,10 @@ function tomekit({
       logger?.info(`[tomekit] wrote types to ${build.typesWritten}`);
     }
 
+    if (build.profile !== undefined) {
+      logger?.info(`[tomekit] ${build.profile.summary()}`);
+    }
+
     const payload = errorPayload(build.errors);
 
     if (server === undefined || payload === undefined) {

@@ -5,9 +5,17 @@ import path from "node:path";
 import type { Glob } from "./directory";
 import { assertTransformResult, buildDocument } from "./document";
 import { ContentError, MissingModuleError } from "./errors";
-import type { CollectionConfig, Entry, LoadResult, Source } from "./index";
+import type {
+  CollectionConfig,
+  Entry,
+  LoadContext,
+  LoadResult,
+  Source,
+} from "./index";
 import { isLocated, LOCATE } from "./parse";
 import type { Locate } from "./parse";
+import { PROFILE, timed } from "./profile";
+import type { Profile } from "./profile";
 import { serialize } from "./serialize";
 import type { Serialized } from "./serialize";
 import { REASON, Skipped } from "./skipped";
@@ -81,6 +89,13 @@ function entryHashOf(entry: Entry, metadata: ContentValue): string {
   return hash("json" in text ? text.json : text.source);
 }
 
+function metadataOf(entry: Entry): ContentValue {
+  const raw: unknown = entry.metadata ?? {};
+  assertContentValue(raw);
+
+  return raw;
+}
+
 function messageOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
@@ -110,10 +125,12 @@ async function loadCollection(
   {
     cache,
     dev = false,
+    profile,
     watched = [],
   }: {
     cache?: EntryCache;
     dev?: boolean;
+    profile?: Profile;
     /** Receives each `watch` call as it happens, so a caller can match changes while `load` runs. */
     watched?: WatchGroup[];
   } = {}
@@ -134,12 +151,14 @@ async function loadCollection(
   }
 
   try {
-    loaded = await collection.loader.load({
-      collection: name,
-      dev,
-      root,
-      watch,
-    });
+    const context: LoadContext = { collection: name, dev, root, watch };
+
+    // Not in `LoadContext`'s type: only `directory()` reads it.
+    if (profile !== undefined) {
+      Object.assign(context, { [PROFILE]: profile });
+    }
+
+    loaded = await collection.loader.load(context);
   } catch (error) {
     return {
       broken: new Set(),
@@ -201,6 +220,7 @@ async function loadCollection(
         broken: reported.has(key),
         cache,
         dev,
+        profile,
         root,
       });
     })
@@ -304,24 +324,36 @@ async function transformSource(
   name: string,
   collection: CollectionConfig,
   source: Source<object>,
-  { dev, root }: { dev: boolean; root: string }
+  { dev, profile, root }: { dev: boolean; profile?: Profile; root: string }
 ): Promise<Transformed> {
-  const result: unknown = collection.transform
-    ? await collection.transform(source, { collection: name, dev, skip })
-    : {};
+  profile?.run("transform");
+
+  // Awaited apart from the call, so a profile times only the transform's synchronous part, not other entries' work.
+  const pending = timed(profile, "transform", () =>
+    collection.transform
+      ? collection.transform(source, { collection: name, dev, skip })
+      : {}
+  );
+
+  const result: unknown = await pending;
 
   if (result instanceof Skipped) {
     return { module: undefined, output: result, serialized: { source: "" } };
   }
 
-  assertTransformResult(result);
-  const { document, module } = buildDocument(source, result, root);
+  const { document, module } = timed(profile, "serialize", () => {
+    assertTransformResult(result);
+
+    return buildDocument(source, result, root);
+  });
 
   if (module !== undefined && !(await isFile(path.join(root, module)))) {
     throw new MissingModuleError(module);
   }
 
-  return { module, output: document, serialized: serialize(document) };
+  const serialized = timed(profile, "serialize", () => serialize(document));
+
+  return { module, output: document, serialized };
 }
 
 async function loadEntry(
@@ -332,8 +364,15 @@ async function loadEntry(
     broken,
     cache,
     dev,
+    profile,
     root,
-  }: { broken: boolean; cache?: EntryCache; dev: boolean; root: string }
+  }: {
+    broken: boolean;
+    cache?: EntryCache;
+    dev: boolean;
+    profile?: Profile;
+    root: string;
+  }
 ): Promise<EntryResult> {
   const file = entry.file?.path;
   const subject = { collection: name, file, slug: entry.slug };
@@ -362,26 +401,33 @@ async function loadEntry(
   let metadata: ContentValue;
 
   try {
-    const raw: unknown = entry.metadata ?? {};
-    assertContentValue(raw);
-    metadata = raw;
+    metadata = timed(profile, "serialize", () => metadataOf(entry));
   } catch (error) {
     return failure(error);
   }
 
   // Only worth computing when a later build can reuse the result.
   const entryHash =
-    cache === undefined ? undefined : entryHashOf(entry, metadata);
+    cache === undefined
+      ? undefined
+      : timed(profile, "hash", () => entryHashOf(entry, metadata));
 
   const locate = isLocated(entry) ? entry[LOCATE] : undefined;
   const cached = broken ? undefined : cache?.get(entry.slug);
 
   // With the current `locate`, not the cached one: the same data can sit on a different line after an edit.
   if (cached !== undefined && cached.hash === entryHash) {
+    profile?.reuse("transform");
+
     return { document: { ...cached.document, locate } };
   }
 
-  const validated = await validate(entry, metadata, collection.schema, locate);
+  // Awaited apart from the call, like `transform`.
+  const validating = timed(profile, "validate", () =>
+    validate(entry, metadata, collection.schema, locate)
+  );
+
+  const validated = await validating;
 
   if (validated.issues) {
     return {
@@ -400,6 +446,7 @@ async function loadEntry(
   try {
     transformed = await transformSource(name, collection, source, {
       dev,
+      profile,
       root,
     });
   } catch (error) {

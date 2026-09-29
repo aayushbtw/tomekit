@@ -38,6 +38,10 @@ function report(build: Build, logger: CliLogger, started: number): boolean {
     logger.warn(`[tomekit] ${warning}`);
   }
 
+  if (build.profile !== undefined) {
+    logger.info(`[tomekit] ${build.profile.summary()}`);
+  }
+
   if (build.errors.length > 0) {
     logger.error(`[tomekit] ${new BrokenContentError(build.errors).message}`);
 

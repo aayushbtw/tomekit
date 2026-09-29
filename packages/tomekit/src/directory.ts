@@ -5,6 +5,8 @@ import path from "node:path";
 import type { Entry, FileInfo, Loader, LoadIssue } from "./index";
 import { parse } from "./parse";
 import type { LocatedEntry } from "./parse";
+import { isProfiled, PROFILE, timed } from "./profile";
+import type { PhaseRecorder } from "./profile";
 
 const DEFAULT_INCLUDE = "**/*.md";
 
@@ -117,7 +119,8 @@ class ParseCache {
   async results(
     directory: string,
     root: string,
-    files: readonly Found[]
+    files: readonly Found[],
+    profile?: PhaseRecorder
   ): Promise<FileResult[]> {
     const next = new Map<string, { result: FileResult; version: string }>();
 
@@ -135,11 +138,12 @@ class ParseCache {
 
         if (version !== undefined && cached?.version === version) {
           next.set(key, cached);
+          profile?.reuse("parse");
 
           return cached.result;
         }
 
-        const result = await read(directory, root, file);
+        const result = await read(directory, root, file, profile);
 
         // A read error is not cached, so the next load tries again.
         if (version !== undefined && result.entry !== undefined) {
@@ -159,14 +163,21 @@ class ParseCache {
 async function read(
   directory: string,
   root: string,
-  file: string
+  file: string,
+  profile?: PhaseRecorder
 ): Promise<FileResult> {
   const filePath = path.relative(root, path.join(directory, file));
 
   try {
     const text = await readFile(path.join(directory, file), "utf-8");
 
-    return { filePath, ...parse({ file, filePath, text }) };
+    const parsed = timed(profile, "parse", () =>
+      parse({ file, filePath, text })
+    );
+
+    profile?.run("parse");
+
+    return { filePath, ...parsed };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
@@ -205,7 +216,10 @@ function directory(
   const cache = new ParseCache();
 
   return {
-    async load({ collection, root, watch }) {
+    async load(context) {
+      const { collection, root, watch } = context;
+      const profile = isProfiled(context) ? context[PROFILE] : undefined;
+
       // Before any early return, so creating a missing folder still reruns `load`.
       watch([
         ...includes.map((pattern) => path.posix.join(folder, pattern)),
@@ -236,7 +250,7 @@ function directory(
         };
       }
 
-      const results = await cache.results(absolute, root, files);
+      const results = await cache.results(absolute, root, files, profile);
 
       const entries: Entry<FileInfo>[] = [];
       const issues: LoadIssue[] = [];

@@ -26,6 +26,11 @@ try {
     console.warn(`[tomekit] ${warning}`);
   }
 
+  // On stderr, since stdout belongs to the script.
+  if (build.profile !== undefined) {
+    console.error(`[tomekit] ${build.profile.summary()}`);
+  }
+
   if (build.errors.length > 0) {
     throw new BrokenContentError(build.errors);
   }
