@@ -27,7 +27,7 @@ Read the one that applies before starting. All are in `.claude/guides/`:
 - `principles.md`: before designing or recommending anything
 - `naming.md`: before naming anything
 - `structure.md`: before adding a file or moving code between files
-- `code-style.md`: before writing code. Anti-slop lint rules are never turned off or suppressed; change the code
+- `code-style.md`: before writing code
 - `errors.md`: before adding or changing an error, warning or message
 - `tsdoc.md`: before adding or changing a public export or option
 - `releases.md`: before committing a `fix` or `feat`, or releasing
