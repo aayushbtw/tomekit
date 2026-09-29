@@ -8,7 +8,11 @@ export { ContentError, type ContentSubject, type Issue } from "./content-error";
 
 export { InvalidConfigError } from "./invalid-config-error";
 
+export { MisplacedModuleError } from "./misplaced-module-error";
+
 export { MissingDefaultExportError } from "./missing-default-export-error";
+
+export { MissingModuleError } from "./missing-module-error";
 
 export { MissingPluginError } from "./missing-plugin-error";
 

@@ -2,11 +2,15 @@ import * as nodeModule from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { ContentBuilder, MODULE_ID, OUTPUT } from "./builder";
+import { ContentBuilder, MODULE_ID, MODULES_ID, OUTPUT } from "./builder";
 import { BrokenContentError } from "./errors";
 import { contentHooks } from "./hooks";
 
 const root = process.cwd();
+
+function generated(file: string): string {
+  return pathToFileURL(path.join(root, OUTPUT, file)).href;
+}
 
 const builder = new ContentBuilder({
   configPath: path.join(root, "tomekit.config.ts"),
@@ -37,8 +41,10 @@ try {
 if ("registerHooks" in nodeModule) {
   nodeModule.registerHooks(
     contentHooks(
-      import.meta.resolve(MODULE_ID),
-      pathToFileURL(path.join(root, OUTPUT, "content.js")).href
+      new Map([
+        [import.meta.resolve(MODULE_ID), generated("content.js")],
+        [import.meta.resolve(MODULES_ID), generated("content-modules.js")],
+      ])
     )
   );
 }

@@ -55,6 +55,22 @@ export default defineConfig({
 });
 `;
 
+// Each post's body is a module next to it, the way an MDX file is with `@mdx-js/rollup`.
+const moduleConfig = `
+import { z } from "zod";
+import { defineConfig, directory, fileModule } from ${JSON.stringify(SOURCE)};
+
+export default defineConfig({
+  collections: {
+    posts: {
+      loader: directory("content/posts"),
+      schema: z.object({ title: z.string() }),
+      transform: ({ file }) => ({ body: fileModule(file.path.replace(/\\.md$/u, ".js")) }),
+    },
+  },
+});
+`;
+
 function pages(...titles: (string | undefined)[]) {
   return JSON.stringify(
     titles.map((title, index) => ({
@@ -228,6 +244,42 @@ describe("tomekit()", () => {
 
     expect(posts.get("later")?.metadata.title).toBe("Later");
     expect(globalThis.tomekitRuns).toBe(2);
+  });
+
+  it("leaves an edit that keeps the module the same to the bundler, without a full reload", async () => {
+    const {
+      change,
+      project,
+      server: dev,
+    } = await start({
+      "content/posts/hello.js": 'export default "Hello";\n',
+      "content/posts/hello.md": HELLO,
+      "tomekit.config.ts": moduleConfig,
+    });
+
+    const reloads: string[] = [];
+    const { hot } = dev.environments.ssr;
+    const send = hot.send.bind(hot);
+
+    // Passed on: the module runner that loads SSR modules talks over this channel too.
+    hot.send = (payload: HotPayload) => {
+      if (payload.type === "full-reload") {
+        reloads.push(payload.type);
+      }
+
+      send(payload);
+    };
+
+    await loadCollections(dev);
+    await project.write({ "content/posts/hello.md": `${HELLO}\nMore text\n` });
+    change("content/posts/hello.md");
+    await loadCollections(dev);
+    await project.write({
+      "content/posts/hello.md": HELLO.replace("Hello", "Hi"),
+    });
+    change("content/posts/hello.md");
+
+    await expect.poll(() => reloads).toStrictEqual(["full-reload"]);
   });
 
   it("reloads the browser when content changes, even though only server code imports it", async () => {
@@ -585,6 +637,43 @@ export default defineConfig({
 
     expect(code).toContain("content/posts/hello.md");
     expect(code).not.toContain("NOTES_ONLY");
+  });
+
+  it("splits each module body into its own chunk, imported on demand", async () => {
+    const project = await createProject({
+      "content/posts/hello.js": 'export default "HELLO_BODY";\n',
+      "content/posts/hello.md": HELLO,
+      "src/main.ts": `import { posts } from "tomekit/content";
+import { importModule } from "tomekit/content-modules";
+export default async () => (await importModule(posts.get("hello").body)).default;
+`,
+      "tomekit.config.ts": moduleConfig,
+    });
+
+    ({ cleanup } = project);
+
+    const output = await build({
+      build: {
+        rolldownOptions: { input: "src/main.ts" },
+        ssr: true,
+        write: false,
+      },
+      configFile: false,
+      logLevel: "silent",
+      plugins: [tomekit()],
+      root: project.root,
+    });
+
+    const chunks = [output]
+      .flat()
+      .flatMap((result) => ("output" in result ? result.output : []))
+      .flatMap((chunk) => ("code" in chunk ? [chunk] : []));
+
+    const entry = chunks.find((chunk) => chunk.isEntry);
+    const body = chunks.find((chunk) => chunk.code.includes("HELLO_BODY"));
+
+    expect(body?.isEntry).toBe(false);
+    expect(entry?.dynamicImports).toContain(body?.fileName);
   });
 
   it("fails on broken content even when nothing imports it", async () => {

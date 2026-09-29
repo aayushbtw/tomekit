@@ -41,7 +41,7 @@ type DocumentOf<TName extends CollectionName = CollectionName> =
   TName extends unknown ? Source : never;
 
 function missingPlugin(): never {
-  throw new MissingPluginError();
+  throw new MissingPluginError("tomekit/content");
 }
 
 /**

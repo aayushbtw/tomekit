@@ -25,8 +25,8 @@ Pure modules, one class that owns state, and a thin adapter, each in its own fil
 | Layer | Files | Rule |
 | --- | --- | --- |
 | Public types + config | `index.ts` | Types, `define*` helpers and the error classes. No IO |
-| Runtime | `query.ts`, `content.ts` | Ships to users' servers. Keep it tiny |
-| Pure core | `errors/` (one class per file), `value.ts` (`ContentValue` and its checks), `config.ts` (config checks), `parse.ts` (a Markdown file into an entry), `validate.ts` (an entry through the schema), `document.ts` (a source plus a transform result), `serialize.ts`, `generate.ts` (source strings) | No disk, no Vite, no state. Input in, result out |
+| Runtime | `query.ts`, `import-module.ts`, `content.ts`, `content-modules.ts` | Ships to users' servers. Keep it tiny |
+| Pure core | `errors/` (one class per file), `value.ts` (`ContentValue` and its checks), `module.ts` (`fileModule` bodies), `config.ts` (config checks), `parse.ts` (a Markdown file into an entry), `validate.ts` (an entry through the schema), `document.ts` (a source plus a transform result), `serialize.ts`, `generate.ts` (source strings) | No disk, no Vite, no state. Input in, result out |
 | IO per collection | `directory.ts` (the built-in loader), `collection.ts` | `directory.ts` reads files into entries. `collection.ts` runs a loader, validates and transforms, and returns `{ documents, errors, warnings }` |
 | State | `builder.ts` (`ContentBuilder`) | Owns config, per-collection results and caches, and the in-flight build. Knows nothing about how errors are shown |
 | Adapter | `vite.ts` | Maps Vite hooks to loader calls and reports results. No content logic |
@@ -63,7 +63,7 @@ Public exports get TSDoc: a one-sentence summary, then an `@example` that runs a
  */
 ````
 
-- Document everything users import from `tomekit`, `tomekit/content` and `tomekit/vite`, plus each option field.
+- Document everything users import from `tomekit`, `tomekit/content`, `tomekit/content-modules` and `tomekit/vite`, plus each option field.
 - Add `@param` / `@returns` only when they say something the name and type don't (units, what `undefined` means, ownership).
 - Internal functions get no TSDoc unless they have a contract the types can't express. Never add docs to a function just because its neighbors have them.
 - Inline comments explain only the non-obvious _why_, never restate the line.

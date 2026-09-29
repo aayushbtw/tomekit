@@ -32,6 +32,10 @@
       "types": "./dist/content.d.mts",
       "default": "./dist/content.mjs"
     },
+    "./content-modules": {
+      "types": "./dist/content-modules.d.mts",
+      "default": "./dist/content-modules.mjs"
+    },
     "./register": {
       "types": "./dist/register.d.mts",
       "default": "./dist/register.mjs"

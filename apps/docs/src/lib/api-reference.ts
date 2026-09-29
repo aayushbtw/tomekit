@@ -133,9 +133,16 @@ const entryPoints: readonly EntryPoint[] = [
     title: "tomekit/content",
   },
   {
+    description: "Imports a document's module body on demand.",
+    file: "content-modules.d.mts",
+    order: 3,
+    slug: "api-content-modules",
+    title: "tomekit/content-modules",
+  },
+  {
     description: "The Vite plugin and its options.",
     file: "vite.d.mts",
-    order: 3,
+    order: 4,
     slug: "api-vite",
     title: "tomekit/vite",
   },

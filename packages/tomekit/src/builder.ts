@@ -12,12 +12,19 @@ import {
   MissingDefaultExportError,
 } from "./errors";
 import type { ContentError } from "./errors";
-import { contentModule, writeModule, writeTypes } from "./generate";
+import {
+  contentModule,
+  writeModule,
+  writeModules,
+  writeTypes,
+} from "./generate";
 import type { Config } from "./index";
 import { checkReferences } from "./reference";
 import { isPlainObject } from "./value";
 
 const MODULE_ID = "tomekit/content";
+
+const MODULES_ID = "tomekit/content-modules";
 
 /** The folder, relative to the root, that holds `content.js` and `content.d.ts`. */
 const OUTPUT = ".tomekit";
@@ -296,9 +303,16 @@ class ContentBuilder {
         slugs: documents.map((document) => document.slug),
       }));
 
+      const modules = collections.flatMap(({ documents }) =>
+        documents.flatMap(({ module }) =>
+          module === undefined ? [] : [module]
+        )
+      );
+
       const [types] = await Promise.all([
         writeTypes(directory, configPath, generated),
         writeModule(directory, code),
+        writeModules(directory, modules),
       ]);
 
       if (types) {
@@ -350,4 +364,4 @@ class ContentBuilder {
   }
 }
 
-export { type Build, ContentBuilder, MODULE_ID, OUTPUT };
+export { type Build, ContentBuilder, MODULE_ID, MODULES_ID, OUTPUT };

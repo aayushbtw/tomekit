@@ -30,7 +30,7 @@ describe("errors", () => {
       [new UnserializableInstanceError("Author", "a"), TransformError],
       [new TransformResultError(), TransformError],
       [new UnknownTransformFieldError("url"), TransformError],
-      [new MissingPluginError(), PluginError],
+      [new MissingPluginError("tomekit/content"), PluginError],
       [new PluginNotReadyError(), PluginError],
     ] as const;
 

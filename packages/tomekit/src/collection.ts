@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 
 import type { Glob } from "./directory";
 import { assertTransformResult, buildDocument } from "./document";
-import { ContentError } from "./errors";
-import type { CollectionConfig, Entry, LoadResult } from "./index";
+import { ContentError, MissingModuleError } from "./errors";
+import type { CollectionConfig, Entry, LoadResult, Source } from "./index";
 import { isLocated, LOCATE } from "./parse";
 import type { Locate } from "./parse";
 import { serialize } from "./serialize";
@@ -22,6 +23,8 @@ interface BuiltDocument {
   file: string | undefined;
   /** Where a metadata key is written, when the loader can tell. */
   locate: Locate | undefined;
+  /** The file the body points at, relative to the root, when the body is a module. */
+  module: string | undefined;
   output: ContentValue | Skipped;
   /** Computed before the transform, so lookups work whatever it returns. */
   slug: string;
@@ -84,6 +87,14 @@ function messageOf(cause: unknown): string {
 
 function isSlug(value: unknown): value is string {
   return new Object(value) instanceof String && value !== "";
+}
+
+async function isFile(file: string): Promise<boolean> {
+  try {
+    return (await stat(file)).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function isLoadResult(value: unknown): value is LoadResult {
@@ -190,6 +201,7 @@ async function loadCollection(
         broken: reported.has(key),
         cache,
         dev,
+        root,
       });
     })
   );
@@ -280,11 +292,48 @@ function duplicateSlug(
   );
 }
 
+/** What `transform` made of a source, ready for the generated module. */
+interface Transformed {
+  module: string | undefined;
+  output: ContentValue | Skipped;
+  serialized: Serialized;
+}
+
+/** Runs `transform` on a source and builds its document. Throws what `transform` threw, or why its result can't be used. */
+async function transformSource(
+  name: string,
+  collection: CollectionConfig,
+  source: Source<object>,
+  { dev, root }: { dev: boolean; root: string }
+): Promise<Transformed> {
+  const result: unknown = collection.transform
+    ? await collection.transform(source, { collection: name, dev, skip })
+    : {};
+
+  if (result instanceof Skipped) {
+    return { module: undefined, output: result, serialized: { source: "" } };
+  }
+
+  assertTransformResult(result);
+  const { document, module } = buildDocument(source, result, root);
+
+  if (module !== undefined && !(await isFile(path.join(root, module)))) {
+    throw new MissingModuleError(module);
+  }
+
+  return { module, output: document, serialized: serialize(document) };
+}
+
 async function loadEntry(
   name: string,
   collection: CollectionConfig,
   entry: Entry,
-  { broken, cache, dev }: { broken: boolean; cache?: EntryCache; dev: boolean }
+  {
+    broken,
+    cache,
+    dev,
+    root,
+  }: { broken: boolean; cache?: EntryCache; dev: boolean; root: string }
 ): Promise<EntryResult> {
   const file = entry.file?.path;
   const subject = { collection: name, file, slug: entry.slug };
@@ -346,30 +395,21 @@ async function loadEntry(
 
   const { source } = validated;
 
-  let output: ContentValue | Skipped;
-  let serialized: Serialized = { source: "" };
+  let transformed: Transformed;
 
   try {
-    const result: unknown = collection.transform
-      ? await collection.transform(source, { collection: name, dev, skip })
-      : {};
-
-    if (result instanceof Skipped) {
-      output = result;
-    } else {
-      assertTransformResult(result);
-      output = buildDocument(source, result);
-      serialized = serialize(output);
-    }
+    transformed = await transformSource(name, collection, source, {
+      dev,
+      root,
+    });
   } catch (error) {
     return failure(error);
   }
 
   const document = {
-    serialized,
+    ...transformed,
     file,
     locate,
-    output,
     setsSlug: isPlainObject(metadata) && "slug" in metadata,
     slug: source.slug,
   };

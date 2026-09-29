@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { createImportModule } from "./import-module";
 import { createCollection, createCollections } from "./query";
 import { listSource, PURE } from "./serialize";
 import type { Serialized } from "./serialize";
@@ -114,6 +115,30 @@ export const collections = ${PURE}_createCollections({${names}});
 `;
 }
 
+/**
+ * The `tomekit/content-modules` module: a lazy import per module path, so a
+ * bundler splits each module into its own chunk and a page loads only its
+ * own. `modules` are relative to the root, which is `directory`'s parent.
+ */
+function modulesModule(modules: readonly string[]): string {
+  const importers = modules.map(
+    (module) =>
+      `[${JSON.stringify(module)},() => import(${JSON.stringify(`../${module}`)})]`
+  );
+
+  return `${HEADER}
+const _createImportModule = ${createImportModule.toString()};
+export const importModule = ${PURE}_createImportModule(new Map([${importers.join(",")}]));
+`;
+}
+
+const MODULES_TYPES = `${HEADER}
+import type { Module as _Module } from "tomekit";
+
+/** Imports a document's module body, eg a compiled MDX file. Only the pages that call it load the module. */
+export declare function importModule<TExports>(module: _Module<TExports>): Promise<TExports>;
+`;
+
 /** Writes `text` only when it differs from the file, through a temporary file, so a reader never sees half of it. Returns whether it wrote. */
 async function writeChanged(file: string, text: string): Promise<boolean> {
   const current = await readFile(file, "utf-8").catch(() => null);
@@ -156,10 +181,26 @@ async function writeModule(directory: string, code: string): Promise<boolean> {
   return await writeChanged(path.join(directory, "content.js"), code);
 }
 
+/** Writes `tomekit/content-modules` and its types to `<directory>/content-modules.js` and `.d.ts`. */
+async function writeModules(
+  directory: string,
+  modules: readonly string[]
+): Promise<void> {
+  await Promise.all([
+    writeChanged(
+      path.join(directory, "content-modules.js"),
+      modulesModule(modules)
+    ),
+    writeChanged(path.join(directory, "content-modules.d.ts"), MODULES_TYPES),
+  ]);
+}
+
 export {
   contentModule,
   type GeneratedCollection,
   type ModuleCollection,
+  modulesModule,
   writeModule,
+  writeModules,
   writeTypes,
 };

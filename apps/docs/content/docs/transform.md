@@ -30,6 +30,7 @@ export default defineConfig({
 
 - Put derived values inside `metadata`. `slug` and `file` can't change, and any other top-level field is an error. In `defineCollection` it's a type error; in a transform written inline in `defineConfig`, it only fails the build, so prefer `defineCollection` for a transform that returns new fields.
 - Return data only: plain objects, arrays, strings, numbers, booleans, `null`, `Date`, `Map`, `Set`, `URL` and `RegExp`. A function or a class instance fails the build, naming its key path. TypeScript doesn't check this, since Markdown ASTs are too deeply recursive to type.
+- `body` can also be a file your bundler compiles, eg an MDX file. See [MDX](/mdx).
 - `transform` can be `async`.
 - In dev, a change reruns `transform` only for the entries whose data changed.
 

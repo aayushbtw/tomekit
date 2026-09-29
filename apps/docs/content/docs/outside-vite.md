@@ -2,7 +2,7 @@
 title: Outside Vite
 description: Read collections from Node scripts, Bun and vite.config.ts.
 section: Concepts
-order: 5
+order: 6
 ---
 
 Every build writes the generated module to `.tomekit/content.js`, next to its types. The file imports nothing, so code outside Vite can read the same typed collections through `tomekit/content`.
@@ -23,7 +23,7 @@ for (const post of posts.documents()) {
 }
 ```
 
-`tomekit/register` builds your collections before the script starts, so the script never reads stale content, and then sends imports of `tomekit/content` to `.tomekit/content.js`. It reads `tomekit.config.ts` from the current folder and builds the way `vite build` does: broken content stops the script with every error, and `dev` is `false`, so drafts you skip outside dev are left out.
+`tomekit/register` builds your collections before the script starts, so the script never reads stale content, and then sends imports of `tomekit/content` to `.tomekit/content.js`, and of `tomekit/content-modules` to `.tomekit/content-modules.js`. It reads `tomekit.config.ts` from the current folder and builds the way `vite build` does: broken content stops the script with every error, and `dev` is `false`, so drafts you skip outside dev are left out.
 
 Without it, Node finds the placeholder that the `tomekit` package ships, and the import fails.
 

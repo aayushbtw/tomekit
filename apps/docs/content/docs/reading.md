@@ -2,7 +2,7 @@
 title: Reading
 description: Get collections, documents and slugs.
 section: Concepts
-order: 3
+order: 4
 ---
 
 Everything is built ahead of time, so reading is synchronous. Import collections from server code only: in the browser bundle, their documents would ship to the client.
@@ -58,7 +58,7 @@ Every document has four fields:
 
 - `slug`: its key in the collection
 - `metadata`: the schema's output, or what `transform` returned
-- `body`: the text after the frontmatter, or what `transform` returned
+- `body`: the text after the frontmatter, or what `transform` returned, eg a module's path for [MDX](/mdx)
 - `file`: `{ path }`, relative to the project root, or `undefined` when its loader gave no file
 
 `documents()` returns a plain array, so sort and filter it like any other:

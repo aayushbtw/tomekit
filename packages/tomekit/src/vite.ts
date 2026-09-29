@@ -2,7 +2,7 @@ import path from "node:path";
 
 import type { ErrorPayload, Logger, Plugin, ViteDevServer } from "vite";
 
-import { ContentBuilder, MODULE_ID } from "./builder";
+import { ContentBuilder, MODULE_ID, MODULES_ID, OUTPUT } from "./builder";
 import type { Build } from "./builder";
 import { BrokenContentError, PluginNotReadyError } from "./errors";
 import type { ContentError } from "./errors";
@@ -47,6 +47,8 @@ function tomekit({
   const reported = new WeakSet<Build>();
   // The latest build's, for a browser that connects after it was reported.
   let latestErrors: readonly ContentError[] = [];
+  // The latest build's module, so a change that leaves it the same reloads nothing, eg an edit to an MDX body.
+  let latestCode: string | undefined;
 
   function errorPayload(
     errors: readonly ContentError[]
@@ -102,6 +104,7 @@ function tomekit({
 
     const build = await builder.load();
     latestErrors = build.errors;
+    latestCode = build.code;
     // Watch globs can point outside the root, which the dev watcher does not cover on its own.
     server?.watcher.add(builder.watchFiles);
 
@@ -118,26 +121,31 @@ function tomekit({
     return build;
   }
 
-  /** Builds now in dev, so types and errors don't wait for a page to load. */
-  async function rebuild() {
+  /** Builds now in dev, so types and errors don't wait for a page to load. Returns whether the build succeeded. */
+  async function rebuild(): Promise<boolean> {
     try {
       await load();
+
+      return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       logger?.error(`[tomekit] ${message}`, {
         error: error instanceof Error ? error : undefined,
         timestamp: true,
       });
+
+      return false;
     }
   }
 
-  function reload(dev: ViteDevServer, file: string) {
+  async function reload(dev: ViteDevServer, file: string) {
     if (builder?.changed(file) !== true) {
       return;
     }
 
-    void rebuild();
+    const previous = latestCode;
 
+    // Invalidated now, so any import from here on waits for the new build.
     const importers = Object.values(dev.environments).filter((environment) => {
       const modules = [...environment.moduleGraph.idToModuleMap].flatMap(
         ([id, module]) => (id.startsWith(RESOLVED_ID) ? [module] : [])
@@ -149,6 +157,13 @@ function tomekit({
 
       return modules.length > 0;
     });
+
+    // Reloads only once the build is done and only if it changed the module, so an
+    // edit to a module body, eg MDX, is left to the bundler's HMR. A failed build
+    // still reloads, so the page shows the error.
+    if ((await rebuild()) && latestCode === previous) {
+      return;
+    }
 
     // The browser too, even when only server code imports the content: the page it shows was rendered from it.
     for (const environment of new Set([
@@ -171,7 +186,7 @@ function tomekit({
     // own module must never be bundled from its stub.
     configEnvironment() {
       return {
-        optimizeDeps: { exclude: ["tomekit", MODULE_ID] },
+        optimizeDeps: { exclude: ["tomekit", MODULE_ID, MODULES_ID] },
       };
     },
 
@@ -188,7 +203,7 @@ function tomekit({
     configureServer(dev) {
       server = dev;
       dev.watcher.on("all", (_event, file) => {
-        reload(dev, file);
+        void reload(dev, file);
       });
       dev.environments.client.hot.on("vite:client:connect", (_data, client) => {
         const payload = errorPayload(latestErrors);
@@ -229,8 +244,20 @@ function tomekit({
 
     name: "tomekit",
 
-    resolveId(id) {
-      return id === MODULE_ID ? RESOLVED_ID : undefined;
+    // `tomekit/content-modules` is the generated file itself, so its imports of
+    // content files resolve relative to it, and Vite watches it like any file.
+    async resolveId(id) {
+      if (id === MODULE_ID) {
+        return RESOLVED_ID;
+      }
+
+      if (id !== MODULES_ID) {
+        return undefined;
+      }
+
+      await load();
+
+      return path.join(root, OUTPUT, "content-modules.js");
     },
   };
 }

@@ -1,7 +1,9 @@
 import {
+  MisplacedModuleError,
   UnserializableInstanceError,
   UnserializableValueError,
 } from "./errors";
+import { isFileModule } from "./module";
 
 const IDENTIFIER = /^[$_\p{ID_Start}][$\p{ID_Continue}]*$/u;
 
@@ -85,6 +87,13 @@ function keyPath(at: string, key: string): string {
   return at === "" ? key : `${at}.${key}`;
 }
 
+/** Whether a value is written whole, with nothing inside it to check. */
+function isWholeValue(value: unknown): value is Date | RegExp | URL {
+  return (
+    value instanceof Date || value instanceof RegExp || value instanceof URL
+  );
+}
+
 /**
  * Checks that a value can be written into content, and throws an
  * `UnserializableValueError` naming the key path of the first one that cannot.
@@ -123,11 +132,7 @@ function assertContentValue(
     throw new UnserializableValueError("a circular reference", at);
   }
 
-  if (
-    boxed instanceof Date ||
-    boxed instanceof RegExp ||
-    boxed instanceof URL
-  ) {
+  if (isWholeValue(value)) {
     return;
   }
 
@@ -147,6 +152,11 @@ function assertContentValue(
       entry,
     ]);
   } else {
+    // Its only key is a symbol, so without this it would pass as an empty object.
+    if (isFileModule(boxed)) {
+      throw new MisplacedModuleError(at);
+    }
+
     if (!PLAIN_PROTOTYPES.has(Reflect.getPrototypeOf(boxed))) {
       throw new UnserializableInstanceError(boxed.constructor.name, at);
     }

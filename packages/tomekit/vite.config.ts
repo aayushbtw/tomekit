@@ -8,6 +8,7 @@ export default defineConfig({
     entry: [
       "src/bin.ts",
       "src/content.ts",
+      "src/content-modules.ts",
       "src/index.ts",
       "src/register.ts",
       "src/vite.ts",

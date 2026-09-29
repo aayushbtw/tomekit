@@ -4,12 +4,14 @@ import { z } from "zod";
 import { loadCollection } from "../src/collection";
 import type { EntryCache } from "../src/collection";
 import {
+  MissingModuleError,
   TransformResultError,
   UnknownTransformFieldError,
   UnserializableValueError,
 } from "../src/errors";
 import { defineCollection } from "../src/index";
 import type { CollectionConfig, Entry, Loader, LoadResult } from "../src/index";
+import { fileModule } from "../src/module";
 import { LOCATE } from "../src/parse";
 import type { LocatedEntry } from "../src/parse";
 
@@ -309,6 +311,23 @@ describe("loadCollection", () => {
     expect(errors[0]?.cause).toBeInstanceOf(UnknownTransformFieldError);
     expect(messages(errors)[0]).toBe(
       'content/posts/hello.md: transform returned "url", but it can only return `metadata` and `body`. Put derived values inside `metadata` instead.'
+    );
+  });
+
+  it("fails when a module body points at a file that does not exist", async () => {
+    const { documents, errors } = await loadCollection(
+      "posts",
+      defineCollection({
+        loader: loader([hello]),
+        schema,
+        transform: () => ({ body: fileModule("content/posts/missing.mdx") }),
+      }),
+      ROOT
+    );
+
+    expect(documents).toStrictEqual([]);
+    expect(errors[0]?.cause).toStrictEqual(
+      new MissingModuleError("content/posts/missing.mdx")
     );
   });
 

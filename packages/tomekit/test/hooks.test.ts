@@ -18,7 +18,7 @@ function nextResolve(specifier: string): ResolveFnOutput {
 }
 
 function resolve(specifier: string) {
-  const { resolve: hook } = contentHooks(STUB, GENERATED);
+  const { resolve: hook } = contentHooks(new Map([[STUB, GENERATED]]));
 
   return hook?.(
     specifier,

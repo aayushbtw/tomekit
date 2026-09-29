@@ -2,7 +2,7 @@
 title: Errors
 description: How problems in content and config are reported.
 section: Concepts
-order: 4
+order: 5
 ---
 
 tomekit reports every broken file in one pass, pointing at where to fix it.

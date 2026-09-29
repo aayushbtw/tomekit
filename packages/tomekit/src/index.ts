@@ -1,4 +1,5 @@
 import type { Glob } from "./directory";
+import type { FileModule, Module } from "./module";
 import type { Prettify } from "./query";
 import type { Skipped } from "./skipped";
 import type { ContentValue } from "./value";
@@ -319,10 +320,14 @@ type IsUntransformed<TOutput> = unknown extends TOutput
     ? true
     : false;
 
+// A module body is written into the document as its path.
+type BodyOf<TBody> =
+  TBody extends FileModule<infer TExports> ? Module<TExports> : TBody;
+
 // Distributes, so a transform that returns different shapes gives a union of documents.
 type DocumentFrom<TMetadata, TResult, TFile> = TResult extends unknown
   ? {
-      body: TResult extends { body: infer TBody } ? TBody : string;
+      body: TResult extends { body: infer TBody } ? BodyOf<TBody> : string;
       file: TFile;
       metadata: TResult extends { metadata: infer TNewMetadata }
         ? PrettifyIfPlainObject<TNewMetadata>
@@ -632,6 +637,8 @@ export {
 
 export { directory, type DirectoryOptions } from "./directory";
 
+export { type FileModule, fileModule, type Module } from "./module";
+
 export type { Collection, LookupKey } from "./query";
 
 export {
@@ -640,7 +647,9 @@ export {
   ConfigLoadError,
   ContentError,
   InvalidConfigError,
+  MisplacedModuleError,
   MissingDefaultExportError,
+  MissingModuleError,
   MissingPluginError,
   PluginError,
   PluginNotReadyError,
