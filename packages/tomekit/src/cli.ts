@@ -82,7 +82,7 @@ async function watch(
   async function rebuild() {
     await build(builder, logger);
     // After every build, since a `load` can watch different files than the last one.
-    watcher.watch(builder.watchFiles);
+    watcher.watch(builder.watchTargets);
   }
 
   signal?.addEventListener("abort", () => {

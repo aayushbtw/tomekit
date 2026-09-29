@@ -43,6 +43,13 @@ interface Build {
   warnings: string[];
 }
 
+/** A file, or a folder watched with everything under it. */
+interface WatchTarget {
+  /** Absolute globs of what no collection watching `path` loads. */
+  ignore: readonly string[];
+  path: string;
+}
+
 interface BuilderOptions {
   /** Absolute path of the config file. */
   configPath: string;
@@ -109,15 +116,42 @@ class ContentBuilder {
     this.#options = options;
   }
 
-  /** Files and folders whose changes `changed` looks for, for the dev watcher and `vite build --watch`. */
+  /** Files and folders whose changes `changed` looks for, for `vite build --watch`. */
   get watchFiles(): string[] {
+    return this.watchTargets.map((target) => target.path);
+  }
+
+  /** `watchFiles`, each with the `!` patterns every collection watching it shares, so a watcher can skip what none of them loads. */
+  get watchTargets(): WatchTarget[] {
     const { configPath } = this.#options;
+    const targets = new Map<string, readonly string[]>();
 
-    const bases = [...this.#watched.values(), ...this.#pending.values()]
-      .flat()
-      .flatMap(({ include }) => include.map(globBase));
+    function add(target: string, ignore: readonly string[]) {
+      const shared = targets.get(target);
 
-    return [...new Set([configPath, ...this.#dependencies, ...bases])];
+      // A path is skipped only when every collection watching the folder leaves it out.
+      targets.set(
+        target,
+        shared === undefined
+          ? ignore
+          : shared.filter((pattern) => ignore.includes(pattern))
+      );
+    }
+
+    for (const file of [configPath, ...this.#dependencies]) {
+      add(file, []);
+    }
+
+    for (const { exclude, include } of [
+      ...this.#watched.values(),
+      ...this.#pending.values(),
+    ].flat()) {
+      for (const pattern of include) {
+        add(globBase(pattern), exclude);
+      }
+    }
+
+    return [...targets].map(([target, ignore]) => ({ ignore, path: target }));
   }
 
   /**
@@ -383,4 +417,11 @@ class ContentBuilder {
   }
 }
 
-export { type Build, ContentBuilder, MODULE_ID, MODULES_ID, OUTPUT };
+export {
+  type Build,
+  ContentBuilder,
+  MODULE_ID,
+  MODULES_ID,
+  OUTPUT,
+  type WatchTarget,
+};

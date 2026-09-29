@@ -2,8 +2,32 @@ import { statSync, watch } from "node:fs";
 import type { FSWatcher } from "node:fs";
 import path from "node:path";
 
+import type { WatchTarget } from "./builder";
+
 /** Collects changes this long before reporting them, so a save that touches several files rebuilds once. */
 const SETTLE_MS = 20;
+
+const DOT_SEGMENT = /(?:^|[\\/])\./u;
+
+/** Whether `name`, relative to `folder`, is in a dot folder, which `glob` never loads from, or is left out by a pattern. */
+function ignored(
+  folder: string,
+  name: string,
+  patterns: readonly string[]
+): boolean {
+  const file = path.join(folder, name);
+
+  // A folder never matches its own `folder/**`, so that is checked without the `/**`.
+  return (
+    DOT_SEGMENT.test(name) ||
+    patterns.some(
+      (pattern) =>
+        path.matchesGlob(file, pattern) ||
+        (pattern.endsWith("/**") &&
+          path.matchesGlob(file, pattern.slice(0, -"/**".length)))
+    )
+  );
+}
 
 /**
  * Watches files and folders, and reports the absolute paths that changed in
@@ -21,11 +45,14 @@ class FileWatcher {
     this.#onChange = onChange;
   }
 
-  /** Watches exactly these paths from now on, eg a builder's `watchFiles` after each build. Paths that don't exist are skipped. */
-  watch(paths: readonly string[]) {
-    const wanted = new Map<string, { folder: string; recursive: boolean }>();
+  /** Watches exactly these targets from now on, eg a builder's `watchTargets` after each build. Paths that don't exist are skipped. */
+  watch(targets: readonly WatchTarget[]) {
+    const wanted = new Map<
+      string,
+      { folder: string; ignore: readonly string[]; recursive: boolean }
+    >();
 
-    for (const file of paths) {
+    for (const { ignore, path: file } of targets) {
       let folder: boolean;
 
       try {
@@ -35,7 +62,13 @@ class FileWatcher {
       }
 
       const target = folder ? file : path.dirname(file);
-      wanted.set(`${folder}:${target}`, { folder: target, recursive: folder });
+
+      // With `ignore`, so a change to the patterns starts a watcher that skips the new set.
+      wanted.set(`${folder}:${target}:${JSON.stringify(ignore)}`, {
+        folder: target,
+        ignore: folder ? ignore : [],
+        recursive: folder,
+      });
     }
 
     for (const [key, watcher] of this.#watchers) {
@@ -45,13 +78,23 @@ class FileWatcher {
       }
     }
 
-    for (const [key, { folder, recursive }] of wanted) {
+    for (const [key, { folder, ignore, recursive }] of wanted) {
       if (!this.#watchers.has(key)) {
         this.#watchers.set(
           key,
-          watch(folder, { recursive }, (_event, name) => {
-            this.#add(name === null ? folder : path.join(folder, name));
-          })
+          watch(
+            folder,
+            {
+              // On Linux, Node doesn't watch an ignored folder at all, eg `node_modules`.
+              ignore: recursive
+                ? (name) => ignored(folder, name, ignore)
+                : undefined,
+              recursive,
+            },
+            (_event, name) => {
+              this.#add(name === null ? folder : path.join(folder, name));
+            }
+          )
         );
       }
     }
@@ -78,4 +121,4 @@ class FileWatcher {
   }
 }
 
-export { FileWatcher };
+export { FileWatcher, ignored };

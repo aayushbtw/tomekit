@@ -113,7 +113,7 @@ function tomekit({
     latestErrors = build.errors;
     latestCode = build.code;
     // After every build, since a `load` can watch different files than the last one.
-    watcher?.watch(builder.watchFiles);
+    watcher?.watch(builder.watchTargets);
 
     if (!reported.has(build)) {
       reported.add(build);

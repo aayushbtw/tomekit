@@ -300,6 +300,30 @@ describe("ContentBuilder", () => {
     );
   });
 
+  it("lets a watcher skip only what every collection watching a folder leaves out", async () => {
+    const { builder, project } = await createBuilder({
+      "content/posts/hello.md": HELLO,
+      "tomekit.config.ts": `
+import { z } from "zod";
+import { defineConfig, directory } from ${JSON.stringify(SOURCE)};
+
+export default defineConfig({
+  collections: {
+    drafts: { loader: directory("content", { files: ["**/*.md", "!api/**"] }), schema: z.object({}) },
+    posts: { loader: directory("content", { files: ["**/*.md", "!api/**", "!drafts/**"] }), schema: z.object({}) },
+  },
+});
+`,
+    });
+
+    await builder.load();
+
+    expect(builder.watchTargets).toContainEqual({
+      ignore: [path.join(project.root, "content/api/**")],
+      path: path.join(project.root, "content"),
+    });
+  });
+
   it("leaves out a document whose reference breaks, until the other collection has the slug", async () => {
     const { builder, changed, project } = await createBuilder({
       "content/authors/ada.md": "Ada\n",
