@@ -8,7 +8,7 @@ This guide matches the installed version. Prefer it over what you remember: tome
 
 Each step is required.
 
-1. Install `tomekit` and a [Standard Schema](https://standardschema.dev) validator, eg `zod`.
+1. Install `tomekit`. For schemas, use the [Standard Schema](https://standardschema.dev) validator already in `package.json` (`zod`, `valibot`, `arktype`); install `zod` only if there is none.
 2. Add the plugin to `vite.config.ts`, before framework plugins: `plugins: [tomekit(), reactRouter()]`, with `import { tomekit } from "tomekit/vite"`.
 3. Point `tomekit/content*` at the generated types in `tsconfig.json`, and add `.tomekit` to `.gitignore`:
 

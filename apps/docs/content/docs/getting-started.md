@@ -14,7 +14,7 @@ To have a coding agent set it up, give it this prompt:
 ```text title="Prompt"
 Set up tomekit (https://tomekit.aayush.cv), typed Markdown content collections for Vite, in this project.
 
-1. Install the npm packages `tomekit` and `zod` with this project's package manager, eg `pnpm add tomekit zod`.
+1. Install the npm package `tomekit` with this project's package manager, eg `pnpm add tomekit`. Check `package.json` for a Standard Schema validator (`zod`, `valibot` or `arktype`) and use it. Install `zod` only if none is there.
 
 2. Read `node_modules/tomekit/dist/AGENTS.md` completely. It is the guide for the installed version; follow it over anything you remember about tomekit.
 
@@ -22,7 +22,7 @@ Set up tomekit (https://tomekit.aayush.cv), typed Markdown content collections f
 
 4. In `tsconfig.json`, add `"tomekit/content*": ["./.tomekit/content*"]` to `compilerOptions.paths`. Add `.tomekit` to `.gitignore`.
 
-5. Create `tomekit.config.ts` at the project root with a `posts` collection: `directory("content/posts")` as its loader and a `z.strictObject` schema. Add one post at `content/posts/hello-world.md` with YAML frontmatter that matches the schema.
+5. Create `tomekit.config.ts` at the project root with a `posts` collection: `directory("content/posts")` as its loader and a strict object schema from that validator (`z.strictObject`, `v.strictObject` or ArkType's `"+": "reject"`). Add one post at `content/posts/hello-world.md` with YAML frontmatter that matches the schema.
 
 6. Add these lines to `AGENTS.md` at the project root, creating the file if it doesn't exist:
 
