@@ -39,9 +39,9 @@ Pure modules, one class that owns state, and a thin adapter, each in its own fil
 
 ## Read when relevant
 
-- `.agents/errors.md`: before adding or changing an error, warning or message
-- `.agents/tsdoc.md`: before adding or changing a public export or option
-- `.agents/code-style.md`: before writing code in `src/` or `test/`. Anti-slop lint rules are never turned off or suppressed; change the code
+- `.claude/guides/errors.md`: before adding or changing an error, warning or message
+- `.claude/guides/tsdoc.md`: before adding or changing a public export or option
+- `.claude/guides/code-style.md`: before writing code in `src/` or `test/`. Anti-slop lint rules are never turned off or suppressed; change the code
 
 ## Internal notes
 
