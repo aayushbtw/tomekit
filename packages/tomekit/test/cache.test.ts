@@ -1,18 +1,12 @@
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 
 import { readCache, writeCache } from "../src/cache";
 import type { BuiltDocument } from "../src/collection";
 import { serialize } from "../src/serialize";
 import type { ContentValue } from "../src/value";
 import { createProject } from "./project";
-
-let cleanup: (() => Promise<void>) | undefined;
-
-afterEach(async () => {
-  await cleanup?.();
-});
 
 function documentOf(output: ContentValue): BuiltDocument {
   return {
@@ -29,7 +23,6 @@ function documentOf(output: ContentValue): BuiltDocument {
 describe("writeCache and readCache", () => {
   it("give back every value a transform can return", async () => {
     const project = await createProject({});
-    ({ cleanup } = project);
     const file = path.join(project.root, "cache.json");
     // A hole at index 1, which JSON alone would read back as `null`.
     const holes: ContentValue[] = [1];

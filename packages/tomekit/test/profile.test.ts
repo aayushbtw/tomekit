@@ -19,21 +19,11 @@ export default defineConfig({
 });
 `;
 
-let cleanup: (() => Promise<void>) | undefined;
-
-afterEach(async () => {
-  vi.unstubAllEnvs();
-  performance.clearMeasures("tomekit");
-  await cleanup?.();
-});
-
 async function build(): Promise<string> {
   const project = await createProject({
     "content/posts/hello.md": "---\ntitle: Hello\n---\n",
     "tomekit.config.ts": config,
   });
-
-  ({ cleanup } = project);
   const lines: string[] = [];
 
   function record(message: string) {
@@ -48,6 +38,11 @@ async function build(): Promise<string> {
 }
 
 describe("TOMEKIT_PROFILE", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    performance.clearMeasures("tomekit");
+  });
+
   it("prints where the build's time went, naming every stage and phase", async () => {
     vi.stubEnv("TOMEKIT_PROFILE", "1");
     const output = await build();

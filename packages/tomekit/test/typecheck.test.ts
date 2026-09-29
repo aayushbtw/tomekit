@@ -2,18 +2,12 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 import { createServer } from "vite";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 
 import { tomekit } from "../src/vite";
 import { createProject, SOURCE } from "./project";
 
 const TSC = path.join(import.meta.dirname, "..", "node_modules", ".bin", "tsc");
-
-let cleanup: (() => Promise<void>) | undefined;
-
-afterEach(async () => {
-  await cleanup?.();
-});
 
 // Imports the source, since "tomekit" would resolve to dist, which may not be built yet.
 const config = `
@@ -81,9 +75,6 @@ async function typecheck(usage: string) {
     "tsconfig.json": tsconfig,
     "usage.ts": usage,
   });
-
-  ({ cleanup } = project);
-
   const server = await createServer({
     configFile: false,
     logLevel: "silent",

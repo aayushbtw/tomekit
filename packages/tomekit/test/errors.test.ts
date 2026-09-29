@@ -45,7 +45,7 @@ describe("errors", () => {
     const errors = await import("../src/errors");
     const tomekit = await import("../src/index");
 
-    expect(Object.keys(tomekit)).toEqual(
+    expect(Object.keys(tomekit)).toStrictEqual(
       expect.arrayContaining(Object.keys(errors))
     );
   });

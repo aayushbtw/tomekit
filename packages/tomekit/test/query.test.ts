@@ -19,14 +19,14 @@ describe(createCollection, () => {
   it("finds and checks a document by slug", () => {
     expect(collection.get("a")?.title).toBe("Alpha");
     expect(collection.get("missing")).toBeUndefined();
-    expect(collection.has("a")).toBe(true);
-    expect(collection.has("missing")).toBe(false);
+    expect(collection.has("a")).toBeTruthy();
+    expect(collection.has("missing")).toBeFalsy();
   });
 
   it("works when its members are destructured", () => {
     const { documents, get, has, slugs } = collection;
     expect(get("b")?.title).toBe("Beta");
-    expect(has("b")).toBe(true);
+    expect(has("b")).toBeTruthy();
     expect([documents().length, slugs().length]).toStrictEqual([2, 2]);
   });
 });
@@ -46,9 +46,9 @@ describe(createCollections, () => {
 
   it("finds and checks a collection by name, and nothing for other strings", () => {
     expect(collections.get("posts")?.get("hello")?.title).toBe("Hello");
-    expect(collections.has("posts")).toBe(true);
+    expect(collections.has("posts")).toBeTruthy();
     expect(collections.get("drafts")).toBeUndefined();
     expect(collections.get("toString")).toBeUndefined();
-    expect(collections.has("toString")).toBe(false);
+    expect(collections.has("toString")).toBeFalsy();
   });
 });

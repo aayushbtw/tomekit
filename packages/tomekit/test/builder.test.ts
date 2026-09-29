@@ -1,7 +1,7 @@
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import { ContentBuilder } from "../src/builder";
 import { ConfigLoadError } from "../src/errors";
@@ -192,25 +192,17 @@ function gate() {
 
 const HELLO = "---\ntitle: Hello\n---\n";
 
-let cleanup: (() => Promise<void>) | undefined;
-
-afterEach(async () => {
+async function createBuilder(files: Record<string, string>) {
   globalThis.tomekitGate = undefined;
   globalThis.tomekitImports = 0;
   globalThis.tomekitLoads = 0;
   globalThis.tomekitStarted = false;
   globalThis.tomekitTransforms = 0;
-  await cleanup?.();
-});
 
-async function createBuilder(files: Record<string, string>) {
   const project = await createProject({
     "tomekit.config.ts": config,
     ...files,
   });
-
-  ({ cleanup } = project);
-
   const builder = new ContentBuilder({
     configPath: path.join(project.root, "tomekit.config.ts"),
     dev: false,
@@ -282,12 +274,25 @@ describe(ContentBuilder, () => {
 
     await builder.load();
 
-    expect(changed("content/posts/notes.txt")).toBe(false);
-    expect(changed("content/pages/about.md")).toBe(false);
-    expect(changed("content/posts/drafts/wip.md")).toBe(false);
-    expect(changed("content/posts/new.md")).toBe(true);
-    expect(changed("data/pages.json")).toBe(true);
-    expect(changed("tomekit.config.ts")).toBe(true);
+    const files = [
+      "content/posts/notes.txt",
+      "content/pages/about.md",
+      "content/posts/drafts/wip.md",
+      "content/posts/new.md",
+      "data/pages.json",
+      "tomekit.config.ts",
+    ];
+
+    expect(
+      Object.fromEntries(files.map((file) => [file, changed(file)]))
+    ).toStrictEqual({
+      "content/pages/about.md": false,
+      "content/posts/drafts/wip.md": false,
+      "content/posts/new.md": true,
+      "content/posts/notes.txt": false,
+      "data/pages.json": true,
+      "tomekit.config.ts": true,
+    });
   });
 
   it("reruns a loader only when a file it watches or the config changes", async () => {
@@ -316,7 +321,7 @@ describe(ContentBuilder, () => {
 
     await builder.load();
 
-    expect(builder.watchFiles).toEqual(
+    expect(builder.watchFiles).toStrictEqual(
       expect.arrayContaining([
         path.join(project.root, "tomekit.config.ts"),
         path.join(project.root, "content/posts"),
@@ -360,11 +365,17 @@ export default defineConfig({
     const broken = await builder.load();
     const types = path.join(project.root, ".tomekit", "content.d.ts");
 
-    expect(broken.code).toContain('"hello"');
-    expect(broken.code).not.toContain('"typo"');
-    expect(broken.errors.map((error) => error.message)).toStrictEqual([
-      'content/posts/typo.md:2:1: author: no document in collection "authors" has the slug "adaa". Fix the slug, or add a document with it to "authors"',
-    ]);
+    expect({
+      errors: broken.errors.map((error) => error.message),
+      hello: broken.code.includes('"hello"'),
+      typo: broken.code.includes('"typo"'),
+    }).toStrictEqual({
+      errors: [
+        'content/posts/typo.md:2:1: author: no document in collection "authors" has the slug "adaa". Fix the slug, or add a document with it to "authors"',
+      ],
+      hello: true,
+      typo: false,
+    });
     await expect(readFile(types, "utf-8")).resolves.toContain(
       '  "posts": "hello";'
     );
@@ -390,8 +401,8 @@ export default defineConfig({
     expect(builder.watchFiles).toContain(
       path.join(project.root, "data/site.json")
     );
-    expect(changed("data/site.json")).toBe(true);
-    expect(changed("data/other.json")).toBe(false);
+    expect(changed("data/site.json")).toBeTruthy();
+    expect(changed("data/other.json")).toBeFalsy();
   });
 
   it("leaves files out only for the watch call that excluded them", async () => {
@@ -402,9 +413,9 @@ export default defineConfig({
 
     await builder.load();
 
-    expect(changed("content/api/types.md")).toBe(true);
-    expect(changed("content/guide.md")).toBe(true);
-    expect(changed("content/api/types.txt")).toBe(false);
+    expect(changed("content/api/types.md")).toBeTruthy();
+    expect(changed("content/guide.md")).toBeTruthy();
+    expect(changed("content/api/types.txt")).toBeFalsy();
   });
 
   it("keeps watching after a load throws before it calls watch", async () => {
@@ -419,7 +430,7 @@ export default defineConfig({
     expect(broken.errors.map((error) => error.message)).toStrictEqual([
       "data: the loader failed: broken data",
     ]);
-    expect(changed("data/pages.json")).toBe(true);
+    expect(changed("data/pages.json")).toBeTruthy();
   });
 
   it("drops a result from a build that a change made stale", async () => {
@@ -440,8 +451,11 @@ export default defineConfig({
     changed("data/pages.json");
     release();
 
-    expect((await stale).code).toContain('"run1"');
-    expect((await builder.load()).code).toContain('"run2"');
+    const first = await stale;
+    const second = await builder.load();
+
+    expect(first.code).toContain('"run1"');
+    expect(second.code).toContain('"run2"');
   });
 
   it("keeps the config and build that replaced one still failing to import", async () => {
@@ -456,7 +470,7 @@ export default defineConfig({
 
     await vi.waitFor(
       () => {
-        expect(globalThis.tomekitStarted).toBe(true);
+        expect(globalThis.tomekitStarted).toBeTruthy();
       },
       { timeout: 5000 }
     );
@@ -487,7 +501,8 @@ export default defineConfig({
 
     // Evaluated by Node, not Vite, as a script outside the plugin would.
     const content: unknown = await import(
-      /* @vite-ignore */ `data:text/javascript,${encodeURIComponent(code)}`
+      /* @vite-ignore */
+      `data:text/javascript,${encodeURIComponent(code)}`
     );
 
     expect(content).toHaveProperty("posts");
@@ -511,50 +526,47 @@ export default defineConfig({
   });
 });
 
+async function createCachedProject(files: Record<string, string> = {}) {
+  const project = await createProject({
+    "content/posts/draft.md": "---\ntitle: Draft\ndraft: true\n---\n",
+    "content/posts/hello.md": HELLO,
+    // Its own, so editing it can't touch the repo's.
+    "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+    "suffix.ts": 'export const suffix = "!";\n',
+    "tomekit.config.ts": transforming,
+    ...files,
+  });
+  return project;
+}
+
+/** A build by a new builder, as a new process runs it, and how many transforms it ran. */
+async function buildInNewProcess(root: string, { dev = false } = {}) {
+  globalThis.tomekitTransforms = 0;
+
+  const builder = new ContentBuilder({
+    configPath: path.join(root, "tomekit.config.ts"),
+    dev,
+    rebuilds: false,
+    root,
+  });
+
+  const { code, errors } = await builder.load();
+
+  return { code, errors, transforms: globalThis.tomekitTransforms };
+}
+
 describe("the cache in .tomekit", () => {
-  async function createCachedProject(files: Record<string, string> = {}) {
-    const project = await createProject({
-      "content/posts/draft.md": "---\ntitle: Draft\ndraft: true\n---\n",
-      "content/posts/hello.md": HELLO,
-      // Its own, so editing it can't touch the repo's.
-      "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
-      "suffix.ts": 'export const suffix = "!";\n',
-      "tomekit.config.ts": transforming,
-      ...files,
-    });
-
-    ({ cleanup } = project);
-
-    return project;
-  }
-
-  /** A build by a new builder, as a new process runs it, and how many transforms it ran. */
-  async function build(root: string, { dev = false } = {}) {
-    globalThis.tomekitTransforms = 0;
-
-    const builder = new ContentBuilder({
-      configPath: path.join(root, "tomekit.config.ts"),
-      dev,
-      rebuilds: false,
-      root,
-    });
-
-    const { code, errors } = await builder.load();
-
-    return { code, errors, transforms: globalThis.tomekitTransforms };
-  }
-
   it("reruns no transform in a new process, and only an edited entry's", async () => {
     const { root, write } = await createCachedProject();
 
-    const cold = await build(root);
-    const warm = await build(root);
+    const cold = await buildInNewProcess(root);
+    const warm = await buildInNewProcess(root);
 
     expect(cold.transforms).toBe(2);
     expect(warm).toStrictEqual({ ...cold, transforms: 0 });
 
     await write({ "content/posts/hello.md": "---\ntitle: Hi\n---\n" });
-    const edited = await build(root);
+    const edited = await buildInNewProcess(root);
 
     expect(edited.transforms).toBe(1);
     expect(edited.code).toContain('"Hi!"');
@@ -564,31 +576,36 @@ describe("the cache in .tomekit", () => {
     "reruns every transform after %s changes",
     async (file) => {
       const { root, write } = await createCachedProject();
-      await build(root);
+      await buildInNewProcess(root);
 
       const source = await readFile(path.join(root, file), "utf-8");
       await write({ [file]: `${source}\n` });
 
-      expect((await build(root)).transforms).toBe(2);
+      const rebuilt = await buildInNewProcess(root);
+
+      expect(rebuilt.transforms).toBe(2);
     }
   );
 
   it("keeps dev results apart from build results", async () => {
     const { root } = await createCachedProject();
 
-    await build(root, { dev: true });
+    await buildInNewProcess(root, { dev: true });
 
-    expect((await build(root)).transforms).toBe(2);
-    expect((await build(root, { dev: true })).transforms).toBe(0);
+    const built = await buildInNewProcess(root);
+    const rebuiltInDev = await buildInNewProcess(root, { dev: true });
+
+    expect(built.transforms).toBe(2);
+    expect(rebuiltInDev.transforms).toBe(0);
   });
 
   it("builds as if there were no cache when its file is broken", async () => {
     const { root, write } = await createCachedProject();
-    const cold = await build(root);
+    const cold = await buildInNewProcess(root);
 
     await write({ ".tomekit/cache/build/posts.json": "{ not json" });
 
-    await expect(build(root)).resolves.toStrictEqual({
+    await expect(buildInNewProcess(root)).resolves.toStrictEqual({
       ...cold,
       transforms: 2,
     });
@@ -613,10 +630,12 @@ export default defineConfig({
 `,
     });
 
-    await build(root);
+    await buildInNewProcess(root);
     await rm(path.join(root, "components/intro.js"));
 
-    expect((await build(root)).errors.map((error) => error.message)).toContain(
+    const { errors } = await buildInNewProcess(root);
+
+    expect(errors.map((error) => error.message)).toContain(
       'content/posts/hello.md: fileModule("components/intro.js") points at a file that does not exist. Pass a path relative to the project root, eg `file.path`.'
     );
   });

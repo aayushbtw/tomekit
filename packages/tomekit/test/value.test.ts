@@ -2,14 +2,19 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { assertContentValue, isPlainObject } from "../src/value";
 
+// An instance of a class without a name.
+const anonymousInstance = new (class {
+  name = "Ada";
+})();
+
 interface Cyclic {
   self?: Cyclic;
 }
 
 describe(isPlainObject, () => {
   it("accepts object literals and objects without a prototype", () => {
-    expect(isPlainObject({ a: 1 })).toBe(true);
-    expect(isPlainObject(Object.create(null))).toBe(true);
+    expect(isPlainObject({ a: 1 })).toBeTruthy();
+    expect(isPlainObject(Object.create(null))).toBeTruthy();
   });
 
   it("rejects primitives, arrays and instances of classes", () => {
@@ -20,11 +25,9 @@ describe(isPlainObject, () => {
       1,
       [],
       new Date(0),
-      new (class {
-        name = "Ada";
-      })(),
+      anonymousInstance,
     ]) {
-      expect(isPlainObject(value)).toBe(false);
+      expect(isPlainObject(value)).toBeFalsy();
     }
   });
 });
@@ -76,9 +79,7 @@ describe(assertContentValue, () => {
     }).toThrow("cannot write a symbol at [0][1] into content");
     expect(() => {
       assertContentValue({
-        a: new (class {
-          name = "Ada";
-        })(),
+        a: anonymousInstance,
       });
     }).toThrow("cannot write an object at a into content");
   });

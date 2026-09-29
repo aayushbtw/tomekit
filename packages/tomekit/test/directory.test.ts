@@ -1,7 +1,7 @@
 import { chmod, symlink, utimes } from "node:fs/promises";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
 import { loadCollection } from "../src/collection";
@@ -9,16 +9,8 @@ import { directory } from "../src/directory";
 import { defineCollection } from "../src/index";
 import { createProject } from "./project";
 
-let cleanup: (() => Promise<void>) | undefined;
-
-afterEach(async () => {
-  await cleanup?.();
-});
-
 async function project(files: Record<string, string>) {
   const created = await createProject(files);
-  ({ cleanup } = created);
-
   return created.root;
 }
 
@@ -251,8 +243,6 @@ describe(directory, () => {
       "content/posts/a.md": "---\ntitle: A\nslug: same\n---\n",
       "content/posts/b.md": "---\ntitle: B\nslug: same\n---\n",
     });
-
-    ({ cleanup } = created);
     const cache = new Map();
 
     await loadCollection("posts", posts, created.root, { cache });
@@ -271,8 +261,6 @@ describe(directory, () => {
     const created = await createProject({
       "content/posts/a.md": "---\ntitle: A\n---\n",
     });
-
-    ({ cleanup } = created);
     const file = path.join(created.root, "content/posts/a.md");
     // Whole seconds, so setting it again restores it to the nanosecond.
     await utimes(file, 1000, 1000);

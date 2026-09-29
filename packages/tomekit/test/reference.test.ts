@@ -11,12 +11,12 @@ import type { ContentFields } from "../src/value";
 
 /** A document from `content/<collection>/<slug>.md`, located through its frontmatter when `text` is given. */
 function document(
-  collection: string,
+  collectionName: string,
   slug: string,
   metadata: ContentFields,
   text?: string
 ): ReferencingDocument {
-  const file = `content/${collection}/${slug}.md`;
+  const file = `content/${collectionName}/${slug}.md`;
 
   const locate =
     text === undefined

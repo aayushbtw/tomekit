@@ -1,22 +1,27 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 
 import { writeTypes } from "../src/generate";
 import { createProject } from "./project";
 
-let cleanup: (() => Promise<void>) | undefined;
-
-afterEach(async () => {
-  await cleanup?.();
-});
-
 async function project() {
   const created = await createProject({});
-  ({ cleanup } = created);
-
   return created.root;
+}
+
+function byName(left: string, right: string) {
+  return left.localeCompare(right);
+}
+
+function many(count: number) {
+  return [
+    {
+      name: "posts",
+      slugs: Array.from({ length: count }, (_, index) => `post-${index}`),
+    },
+  ];
 }
 
 describe(writeTypes, () => {
@@ -33,16 +38,18 @@ describe(writeTypes, () => {
       ]
     );
 
-    expect(changed).toBe(true);
+    expect(changed).toBeTruthy();
     await expect(readdir(directory)).resolves.toStrictEqual(["content.d.ts"]);
     const types = await readFile(path.join(directory, "content.d.ts"), "utf-8");
-    expect(types).toContain('import type config from "../tomekit.config";');
-    expect(types).toContain('export type CollectionName = "posts" | "notes";');
-    expect(types).toContain('  "posts": "hello" | "guides/setup";');
-    expect(types).toContain('  "notes": never;');
-    expect(types).toContain("export declare const collections: {");
-    expect(types).toContain(
-      'export declare const posts: _Collection<DocumentOf<"posts">, SlugOf<"posts">, SlugOf<"posts">>;'
+    expect(types.split("\n")).toStrictEqual(
+      expect.arrayContaining([
+        'import type config from "../tomekit.config";',
+        'export type CollectionName = "posts" | "notes";',
+        '  "posts": "hello" | "guides/setup";',
+        '  "notes": never;',
+        "export declare const collections: {",
+        'export declare const posts: _Collection<DocumentOf<"posts">, SlugOf<"posts">, SlugOf<"posts">>;',
+      ])
     );
   });
 
@@ -65,8 +72,8 @@ describe(writeTypes, () => {
     );
 
     const generatedNames = [
-      ...generated.matchAll(/^export (?:type|declare const) (\w+)/gmu),
-    ].map(([, name]) => name ?? "");
+      ...generated.matchAll(/^export (?:type|declare const) (?<name>\w+)/gmu),
+    ].map((match) => match.groups?.name ?? "");
 
     const fallbackNames = (
       /^export \{(?<names>[^}]*)\}/mu.exec(fallback)?.groups?.names ?? ""
@@ -74,10 +81,6 @@ describe(writeTypes, () => {
       .split(",")
       .map((name) => name.replace(/^\s*type\s+/u, "").trim())
       .filter((name) => name !== "");
-
-    function byName(left: string, right: string) {
-      return left.localeCompare(right);
-    }
 
     expect(generatedNames.toSorted(byName)).toStrictEqual(
       [...fallbackNames, "posts"].toSorted(byName)
@@ -101,15 +104,6 @@ describe(writeTypes, () => {
     const configPath = path.join(root, "tomekit.config.ts");
     const file = path.join(root, "content.d.ts");
 
-    function many(count: number) {
-      return [
-        {
-          name: "posts",
-          slugs: Array.from({ length: count }, (_, index) => `post-${index}`),
-        },
-      ];
-    }
-
     await writeTypes(root, configPath, many(100_000));
     const complete = new Set([await readFile(file, "utf-8")]);
     let writing = true;
@@ -132,7 +126,7 @@ describe(writeTypes, () => {
     await written;
 
     expect(reads.length).toBeGreaterThan(0);
-    expect(reads.every((read) => complete.has(read))).toBe(true);
+    expect(reads.every((read) => complete.has(read))).toBeTruthy();
   });
 
   it("writes nothing when the types are unchanged", async () => {
@@ -143,13 +137,13 @@ describe(writeTypes, () => {
 
     await writeTypes(directory, configPath, [posts]);
 
-    await expect(writeTypes(directory, configPath, [posts])).resolves.toBe(
-      false
-    );
+    await expect(
+      writeTypes(directory, configPath, [posts])
+    ).resolves.toBeFalsy();
     await expect(
       writeTypes(directory, configPath, [
         { name: "posts", slugs: ["hello", "later"] },
       ])
-    ).resolves.toBe(true);
+    ).resolves.toBeTruthy();
   });
 });

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { run } from "../src/cli";
 import type { CliLogger } from "../src/cli";
@@ -23,17 +23,6 @@ export default defineConfig({
 
 const HELLO = "---\ntitle: Hello\n---\n";
 
-let cleanup: (() => Promise<void>) | undefined;
-
-// Stops each test's `watch`.
-let controller = new AbortController();
-
-afterEach(async () => {
-  controller.abort();
-  controller = new AbortController();
-  await cleanup?.();
-});
-
 function recorder() {
   const lines: string[] = [];
 
@@ -51,9 +40,6 @@ async function setup(files: Record<string, string>) {
     "tomekit.config.ts": config,
     ...files,
   });
-
-  ({ cleanup } = project);
-
   return project;
 }
 
@@ -63,7 +49,7 @@ interface Posts {
 
 function hasPosts(module: unknown): module is { posts: Posts } {
   // A module namespace has no prototype, so `instanceof Object` is false for it.
-  return "posts" in Object(module);
+  return "posts" in new Object(module);
 }
 
 // Evaluated by Node, not Vite, as a script outside the plugin would.
@@ -74,7 +60,8 @@ async function importModule(root: string) {
   );
 
   const module: unknown = await import(
-    /* @vite-ignore */ `data:text/javascript,${encodeURIComponent(code)}`
+    /* @vite-ignore */
+    `data:text/javascript,${encodeURIComponent(code)}`
   );
 
   if (!hasPosts(module)) {
@@ -90,7 +77,9 @@ describe("tomekit build", () => {
     const { lines, logger } = recorder();
 
     await expect(run(["build"], { logger, root })).resolves.toBe(0);
-    expect((await importModule(root)).slugs()).toStrictEqual(["hello"]);
+    const content = await importModule(root);
+
+    expect(content.slugs()).toStrictEqual(["hello"]);
     await expect(
       readFile(path.join(root, ".tomekit", "content.d.ts"), "utf-8")
     ).resolves.toContain('  "posts": "hello";');
@@ -141,6 +130,10 @@ describe("tomekit watch", () => {
   it("rebuilds the module after a file changes", async () => {
     const project = await setup({ "content/posts/hello.md": HELLO });
     const { logger } = recorder();
+    const controller = new AbortController();
+    onTestFinished(() => {
+      controller.abort();
+    });
 
     await expect(
       run(["watch"], {
@@ -155,7 +148,11 @@ describe("tomekit watch", () => {
     });
 
     await expect
-      .poll(async () => (await importModule(project.root)).slugs())
+      .poll(async () => {
+        const content = await importModule(project.root);
+
+        return content.slugs();
+      })
       .toStrictEqual(["hello", "later"]);
   });
 });

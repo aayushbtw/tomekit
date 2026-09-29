@@ -254,8 +254,8 @@ const generated = defineConfig({
         },
       },
       schema: z.object({ title: z.string() }),
-      transform: ({ file, metadata }) => ({
-        metadata: { title: metadata.title, withFile: file !== undefined },
+      transform: ({ file: source, metadata }) => ({
+        metadata: { title: metadata.title, withFile: source !== undefined },
       }),
     },
     plain: {

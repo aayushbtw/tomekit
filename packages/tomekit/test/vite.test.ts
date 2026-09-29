@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { build, createLogger, createServer } from "vite";
 import type { HotPayload, ServerOptions, ViteDevServer } from "vite";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { tomekit } from "../src/vite";
 import { createProject, SOURCE } from "./project";
@@ -120,7 +120,8 @@ async function loadCollections(dev: ViteDevServer) {
 }
 
 async function loadPosts(dev: ViteDevServer) {
-  const posts = (await loadCollections(dev)).get("posts");
+  const collections = await loadCollections(dev);
+  const posts = collections.get("posts");
 
   if (posts === undefined) {
     throw new Error("tomekit/content has no posts collection");
@@ -149,29 +150,15 @@ function connect(dev: ViteDevServer) {
   return { received, socket };
 }
 
-let server: ViteDevServer | undefined;
-
-let cleanup: (() => Promise<void>) | undefined;
-
-afterEach(async () => {
+async function start(files: Record<string, string>, options?: ServerOptions) {
   globalThis.tomekitDev = undefined;
   globalThis.tomekitRuns = 0;
-  await server?.close();
-  await cleanup?.();
-});
 
-async function start(
-  files: Record<string, string>,
-  options: ServerOptions = { hmr: false, middlewareMode: true }
-) {
   const project = await createProject({
     "src/read.ts": 'export { collections } from "tomekit/content";\n',
     "tomekit.config.ts": config,
     ...files,
   });
-
-  ({ cleanup } = project);
-
   const messages: string[] = [];
   const logger = createLogger("silent");
   logger.error = (message) => {
@@ -182,12 +169,15 @@ async function start(
     messages.push(message);
   };
 
-  server = await createServer({
+  const server = await createServer({
     configFile: false,
     customLogger: logger,
     plugins: [tomekit()],
     root: project.root,
-    server: options,
+    server: options ?? { hmr: false, middlewareMode: true },
+  });
+  onTestFinished(async () => {
+    await server.close();
   });
 
   return { messages, project, server };
@@ -211,7 +201,7 @@ describe("tomekit()", () => {
       "Later",
     ]);
     expect(posts.get("hello")?.metadata.date).toBeInstanceOf(Date);
-    expect(globalThis.tomekitDev).toBe(true);
+    expect(globalThis.tomekitDev).toBeTruthy();
   });
 
   it("serves tomekit/content in dev SSR when tomekit is installed in node_modules", async () => {
@@ -229,7 +219,9 @@ describe("tomekit()", () => {
       "package.json": JSON.stringify({ name: "app", type: "module" }),
     });
 
-    expect((await loadPosts(dev)).get("hello")?.metadata.title).toBe("Hello");
+    const posts = await loadPosts(dev);
+
+    expect(posts.get("hello")?.metadata.title).toBe("Hello");
   });
 
   it("serves collection names, and nothing for an unknown name", async () => {
@@ -238,7 +230,7 @@ describe("tomekit()", () => {
     const collections = await loadCollections(dev);
 
     expect(collections.names()).toStrictEqual(["posts"]);
-    expect(collections.has("posts")).toBe(true);
+    expect(collections.has("posts")).toBeTruthy();
     expect(collections.get("drafts")).toBeUndefined();
   });
 
@@ -253,7 +245,11 @@ describe("tomekit()", () => {
     await project.write({ "content/posts/later.md": LATER });
 
     await expect
-      .poll(async () => (await loadPosts(dev)).get("later")?.metadata.title)
+      .poll(async () => {
+        const posts = await loadPosts(dev);
+
+        return posts.get("later")?.metadata.title;
+      })
       .toBe("Later");
     expect(globalThis.tomekitRuns).toBe(2);
   });
@@ -307,7 +303,7 @@ describe("tomekit()", () => {
 
     await expect
       .poll(() => sent.some(({ type }) => type === "full-reload"))
-      .toBe(true);
+      .toBeTruthy();
     // Lets the rebuild finish before the project is deleted.
     await loadPosts(dev);
   });
@@ -324,7 +320,11 @@ describe("tomekit()", () => {
     await project.write({ "content/posts/later.md": LATER });
 
     await expect
-      .poll(async () => (await loadPosts(dev)).documents())
+      .poll(async () => {
+        const posts = await loadPosts(dev);
+
+        return posts.documents();
+      })
       .toHaveLength(2);
     expect(globalThis.tomekitRuns).toBe(2);
   });
@@ -356,7 +356,7 @@ describe("tomekit()", () => {
     await project.write({ "content/posts/broken.md": "---\ntitle: 1\n---\n" });
     await expect
       .poll(() => sent.some((payload) => payload.type === "error"))
-      .toBe(true);
+      .toBeTruthy();
 
     const overlay = sent.find((payload) => payload.type === "error");
     expect(overlay?.err.plugin).toBe("tomekit");
@@ -402,16 +402,18 @@ describe("tomekit()", () => {
       "tomekit.config.ts": loaderConfig,
     });
 
-    const before = (await loadCollections(dev)).get("pages")?.get("0");
+    const collections = await loadCollections(dev);
+    const before = collections.get("pages")?.get("0");
     expect(before?.metadata.title).toBe("One");
 
     await project.write({ "data/pages.json": pages({ title: "Two" }) });
 
     await expect
-      .poll(
-        async () =>
-          (await loadCollections(dev)).get("pages")?.get("0")?.metadata.title
-      )
+      .poll(async () => {
+        const reloaded = await loadCollections(dev);
+
+        return reloaded.get("pages")?.get("0")?.metadata.title;
+      })
       .toBe("Two");
   });
 
@@ -429,7 +431,7 @@ describe("tomekit()", () => {
     await project.write({ "data/pages.json": pages({}) });
     await expect
       .poll(() => sent.some((payload) => payload.type === "error"))
-      .toBe(true);
+      .toBeTruthy();
 
     const overlay = sent.find((payload) => payload.type === "error");
     expect(overlay?.err.loc?.file).toBe(
@@ -492,7 +494,7 @@ describe("tomekit()", () => {
     const { server: dev } = await start({});
 
     for (const environment of Object.values(dev.environments)) {
-      expect(environment.config.optimizeDeps.exclude).toEqual(
+      expect(environment.config.optimizeDeps.exclude).toStrictEqual(
         expect.arrayContaining(["tomekit", "tomekit/content"])
       );
     }
@@ -556,9 +558,6 @@ describe("vite build", () => {
       "src/read.ts": 'export { collections } from "tomekit/content";\n',
       "tomekit.config.ts": config,
     });
-
-    ({ cleanup } = project);
-
     const result = build({
       build: {
         rolldownOptions: { input: "src/read.ts" },
@@ -594,9 +593,6 @@ export default defineConfig({
 });
 `,
     });
-
-    ({ cleanup } = project);
-
     const result = build({
       build: {
         rolldownOptions: { input: "src/main.ts" },
@@ -632,9 +628,6 @@ export default defineConfig({
 });
 `,
     });
-
-    ({ cleanup } = project);
-
     const output = await build({
       build: {
         rolldownOptions: { input: "src/main.ts" },
@@ -667,9 +660,6 @@ export default async () => (await importModule(posts.get("hello").body)).default
 `,
       "tomekit.config.ts": moduleConfig,
     });
-
-    ({ cleanup } = project);
-
     const output = await build({
       build: {
         rolldownOptions: { input: "src/main.ts" },
@@ -690,7 +680,7 @@ export default async () => (await importModule(posts.get("hello").body)).default
     const entry = chunks.find((chunk) => chunk.isEntry);
     const body = chunks.find((chunk) => chunk.code.includes("HELLO_BODY"));
 
-    expect(body?.isEntry).toBe(false);
+    expect(body?.isEntry).toBeFalsy();
     expect(entry?.dynamicImports).toContain(body?.fileName);
   });
 
@@ -700,9 +690,6 @@ export default async () => (await importModule(posts.get("hello").body)).default
       "src/main.ts": "export const answer = 42;\n",
       "tomekit.config.ts": config,
     });
-
-    ({ cleanup } = project);
-
     const result = build({
       build: {
         rolldownOptions: { input: "src/main.ts" },
@@ -717,9 +704,10 @@ export default async () => (await importModule(posts.get("hello").body)).default
 
     await expect(result).rejects.toThrow("1 content file has errors:");
     // The bundler wraps plugin errors and keeps the originals under `errors`.
-    const failure: unknown = await result.catch((error: unknown) => error);
-
-    expect(failure).toHaveProperty(["errors", 0, "name"], "BrokenContentError");
+    await expect(result).rejects.toHaveProperty(
+      ["errors", 0, "name"],
+      "BrokenContentError"
+    );
   });
 });
 
