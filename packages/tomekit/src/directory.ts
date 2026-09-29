@@ -1,8 +1,10 @@
+import type { BigIntStats } from "node:fs";
 import { glob, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 import type { Entry, FileInfo, Loader, LoadIssue } from "./index";
 import { parse } from "./parse";
+import type { LocatedEntry } from "./parse";
 
 const DEFAULT_INCLUDE = "**/*.md";
 
@@ -65,32 +67,115 @@ async function folderIssue(
   }
 }
 
-// `stat` follows symlinks, so a linked file still loads. A path it can't stat counts as a file, so reading it reports why.
-async function isFile(file: string): Promise<boolean> {
-  const stats = await stat(file).catch(() => null);
+/** A file matched by the globs, relative to the directory. */
+interface Found {
+  file: string;
+  /** `undefined` when it can't be stat'ed, so reading it reports why. */
+  stats: BigIntStats | undefined;
+}
 
-  return stats?.isFile() ?? true;
+/** A file's entry as `parse` returned it, or why it couldn't be read. */
+interface FileResult {
+  entry: LocatedEntry | undefined;
+  /** Relative to the root. */
+  filePath: string;
+  issues: LoadIssue[];
 }
 
 async function filesIn(
   directory: string,
   include: readonly string[],
   exclude: readonly string[] = []
-): Promise<string[]> {
+): Promise<Found[]> {
   const matches: string[] = [];
 
   for await (const match of glob(include, { cwd: directory, exclude })) {
     matches.push(match);
   }
 
-  // Globs match folders too, eg `archive.md/`.
-  const checked = await Promise.all(
-    matches.map(async (match) =>
-      (await isFile(path.join(directory, match))) ? [match] : []
-    )
+  // Globs match folders too, eg `archive.md/`. `stat` follows symlinks, so a linked file still loads.
+  const found = await Promise.all(
+    matches.map(async (file) => {
+      const stats = await stat(path.join(directory, file), {
+        bigint: true,
+      }).catch(() => undefined);
+
+      return stats === undefined || stats.isFile() ? [{ file, stats }] : [];
+    })
   );
 
-  return checked.flat().toSorted();
+  return found.flat().toSorted((a, b) => (a.file < b.file ? -1 : 1));
+}
+
+/**
+ * Each file's last result, reused while its size and times are unchanged, so
+ * an edit in dev reads and parses only the files that changed.
+ */
+class ParseCache {
+  #results = new Map<string, { result: FileResult; version: string }>();
+
+  async results(
+    directory: string,
+    root: string,
+    files: readonly Found[]
+  ): Promise<FileResult[]> {
+    const next = new Map<string, { result: FileResult; version: string }>();
+
+    const results = await Promise.all(
+      files.map(async ({ file, stats }) => {
+        // ctime too: it changes on every write, even one that keeps the mtime.
+        const version =
+          stats === undefined
+            ? undefined
+            : `${stats.size}:${stats.mtimeNs}:${stats.ctimeNs}`;
+
+        // With the root, since one loader can load from several roots and `filePath` is relative to it.
+        const key = `${root}\0${path.join(directory, file)}`;
+        const cached = this.#results.get(key);
+
+        if (version !== undefined && cached?.version === version) {
+          next.set(key, cached);
+
+          return cached.result;
+        }
+
+        const result = await read(directory, root, file);
+
+        // A read error is not cached, so the next load tries again.
+        if (version !== undefined && result.entry !== undefined) {
+          next.set(key, { result, version });
+        }
+
+        return result;
+      })
+    );
+
+    this.#results = next;
+
+    return results;
+  }
+}
+
+async function read(
+  directory: string,
+  root: string,
+  file: string
+): Promise<FileResult> {
+  const filePath = path.relative(root, path.join(directory, file));
+
+  try {
+    const text = await readFile(path.join(directory, file), "utf-8");
+
+    return { filePath, ...parse({ file, filePath, text }) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    return {
+      entry: undefined,
+      filePath,
+      issues: [{ cause: error, message }],
+    };
+  }
 }
 
 /**
@@ -117,6 +202,7 @@ function directory(
 ): Loader<FileInfo> {
   const includes = [include].flat();
   const excludes = [exclude].flat();
+  const cache = new ParseCache();
 
   return {
     async load({ collection, root, watch }) {
@@ -151,26 +237,7 @@ function directory(
         };
       }
 
-      const results = await Promise.all(
-        files.map(async (file) => {
-          const filePath = path.relative(root, path.join(absolute, file));
-
-          try {
-            const text = await readFile(path.join(absolute, file), "utf-8");
-
-            return { filePath, ...parse({ file, filePath, text }) };
-          } catch (error) {
-            const message =
-              error instanceof Error ? error.message : String(error);
-
-            return {
-              entry: undefined,
-              filePath,
-              issues: [{ cause: error, message }],
-            };
-          }
-        })
-      );
+      const results = await cache.results(absolute, root, files);
 
       const entries: Entry<FileInfo>[] = [];
       const issues: LoadIssue[] = [];

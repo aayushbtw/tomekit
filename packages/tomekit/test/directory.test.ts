@@ -1,4 +1,4 @@
-import { chmod, symlink } from "node:fs/promises";
+import { chmod, symlink, utimes } from "node:fs/promises";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vite-plus/test";
@@ -266,6 +266,29 @@ describe("directory", () => {
     });
 
     expect(errors[0]).toMatchObject({ line: 4 });
+  });
+
+  it("reloads a file edited without changing its size or mtime", async () => {
+    const created = await createProject({
+      "content/posts/a.md": "---\ntitle: A\n---\n",
+    });
+
+    ({ cleanup } = created);
+    const file = path.join(created.root, "content/posts/a.md");
+    // Whole seconds, so setting it again restores it to the nanosecond.
+    await utimes(file, 1000, 1000);
+    const loaded = await loadCollection("posts", posts, created.root);
+    await created.write({ "content/posts/a.md": "---\ntitle: B\n---\n" });
+    await utimes(file, 1000, 1000);
+    const reloaded = await loadCollection("posts", posts, created.root);
+
+    expect(outputs(loaded.documents)).toMatchObject([
+      { metadata: { title: "A" } },
+    ]);
+
+    expect(outputs(reloaded.documents)).toMatchObject([
+      { metadata: { title: "B" } },
+    ]);
   });
 
   it("fails when the directory is missing", async () => {
