@@ -1,4 +1,4 @@
-// Checked by `pnpm check`, never run: each line fails to compile if inference breaks.
+// Checked by `vpr check`, never run: each line fails to compile if inference breaks.
 import type { Collection } from "../src/index";
 
 // A known slug returns its document; any other string may not exist until `has` says so.

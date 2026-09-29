@@ -1,4 +1,4 @@
-// Checked by `pnpm check`, never run: each line fails to compile if inference breaks.
+// Checked by `vpr check`, never run: each line fails to compile if inference breaks.
 import { z } from "zod";
 
 import { defineCollection, directory } from "../src/index";

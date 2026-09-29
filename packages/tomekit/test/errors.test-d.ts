@@ -1,4 +1,4 @@
-// Checked by `pnpm check`, never run: each line fails to compile if inference breaks.
+// Checked by `vpr check`, never run: each line fails to compile if inference breaks.
 import { ContentError } from "../src/index";
 import type { ContentSubject, Issue } from "../src/index";
 
