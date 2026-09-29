@@ -8,7 +8,7 @@ import {
 const site = {
   description,
   name,
-  // Also set as the custom domain in wrangler.jsonc, which can't import it.
+  // Also set as the custom domain in cloudflare.config.ts.
   url: homepage,
   version,
 };

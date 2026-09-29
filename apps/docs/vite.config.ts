@@ -13,7 +13,10 @@ const config = defineConfig({
 
     return [
       tomekit(),
-      cloudflare({ viteEnvironment: { name: "ssr" } }),
+      cloudflare({
+        experimental: { newConfig: true },
+        viteEnvironment: { name: "ssr" },
+      }),
       tanstackStart({
         // Crawling only follows links, and no page links to these.
         pages: [{ path: "/robots.txt" }, { path: "/sitemap.xml" }],

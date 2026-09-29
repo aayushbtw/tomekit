@@ -11,15 +11,15 @@ Pages live in `content/docs` as Markdown; frontmatter sets the title, descriptio
 
 ## Deploy
 
-Cloudflare Workers, built and deployed by Workers Builds on every push to `main`. `wrangler.jsonc` holds the worker name and the `tomekit.aayush.cv` custom domain, so the domain and its DNS record are created by the deploy, not by hand.
+Cloudflare Workers, built and deployed by Workers Builds on every push to `main`. `cloudflare.config.ts` holds the worker name and the `tomekit.aayush.cv` custom domain, so the domain and its DNS record are created by the deploy, not by hand.
 
 The build settings in the dashboard (Workers & Pages → tomekit-docs → Settings → Builds):
 
-| Setting        | Value                       |
-| -------------- | --------------------------- |
-| Root directory | `apps/docs`                 |
-| Build command  | `pnpm exec vp run build`    |
-| Deploy command | `pnpm exec wrangler deploy` |
+| Setting        | Value                    |
+| -------------- | ------------------------ |
+| Root directory | `apps/docs`              |
+| Build command  | `pnpm exec vp run build` |
+| Deploy command | `pnpm run deploy`        |
 
 Build watch paths, include:
 

@@ -8,6 +8,7 @@ dist-ssr
 .tanstack
 .tomekit
 routeTree.gen.ts
+.cloudflare
 .wrangler
 .output
 .vinxi
