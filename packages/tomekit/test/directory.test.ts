@@ -220,7 +220,7 @@ describe("directory", () => {
     expect(outputs(documents)).toMatchObject([{ metadata: { title: "Fine" } }]);
     expect(messages(errors)).toStrictEqual([
       expect.stringMatching(
-        /^content\/posts\/bad-yaml\.md:2:17: Flow sequence/u
+        /^content\/posts\/bad-yaml\.md:2:17: unexpected end of the stream/u
       ),
       expect.stringMatching(/^content\/posts\/no-title\.md:4:5: tags\.1: /u),
       expect.stringMatching(/^content\/posts\/no-title\.md:2:1: title: /u),

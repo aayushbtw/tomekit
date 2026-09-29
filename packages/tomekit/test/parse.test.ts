@@ -102,6 +102,30 @@ describe("parse", () => {
     });
   });
 
+  it("reports frontmatter with more than one YAML document", () => {
+    expect(parseText("---\ntitle: A\n...\ntitle: B\n---\n")).toMatchObject({
+      entry: undefined,
+      issues: [
+        {
+          column: 1,
+          line: 1,
+          message:
+            "frontmatter must be one YAML document. Remove the `...` or `---` inside it",
+        },
+      ],
+    });
+  });
+
+  it("locates quoted keys at their opening quote, and items inside flow lists", () => {
+    const entry = entryOf(
+      "---\n\"title\": A\n'slug': b\ntags: [one, 'two']\n---\n"
+    );
+
+    expect(entry[LOCATE](["title"])).toStrictEqual({ column: 1, line: 2 });
+    expect(entry[LOCATE](["slug"])).toStrictEqual({ column: 1, line: 3 });
+    expect(entry[LOCATE](["tags", "1"])).toStrictEqual({ column: 13, line: 4 });
+  });
+
   it("has no positions when there is no frontmatter", () => {
     const entry = entryOf("Just a body");
 

@@ -2,7 +2,8 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   pack: {
-    deps: { resolveDepSubpath: true },
+    // js-yaml is bundled so tomekit installs with no dependencies; anything else bundled by accident fails the build.
+    deps: { onlyBundle: ["js-yaml"], resolveDepSubpath: true },
     dts: true,
     // query.ts is not in package.json exports: the generated module imports dist/query.mjs by path.
     entry: ["src/index.ts", "src/content.ts", "src/query.ts", "src/vite.ts"],

@@ -1,7 +1,15 @@
 import path from "node:path";
 
-import { isMap, isNode, isScalar, isSeq, parseDocument } from "yaml";
-import type { Document as YamlDocument } from "yaml";
+import {
+  constructFromEvents,
+  CORE_SCHEMA,
+  EVENT_ID,
+  getScalarValue,
+  parseEvents,
+  SCALAR_STYLE,
+  YAMLException,
+} from "js-yaml";
+import type { Event } from "js-yaml";
 
 import type { Issue } from "./errors";
 import type { Entry, FileInfo } from "./index";
@@ -60,40 +68,181 @@ function isSlug(value: unknown): value is string {
   return new Object(value) instanceof String && value !== "";
 }
 
+function isCollection(event: Event | undefined): boolean {
+  return event?.type === EVENT_ID.MAPPING || event?.type === EVENT_ID.SEQUENCE;
+}
+
+/** The index just past the node whose event is at `index`, children included. */
+function skipNode(events: readonly Event[], index: number): number {
+  let depth = 0;
+  let next = index;
+
+  do {
+    const event = events[next];
+
+    if (isCollection(event)) {
+      depth += 1;
+    } else if (event?.type === EVENT_ID.POP) {
+      depth -= 1;
+    }
+
+    next += 1;
+  } while (depth > 0 && next < events.length);
+
+  return next;
+}
+
+/** Where the node whose event is at `index` starts, quotes included. */
+function startOf(events: readonly Event[], index: number): number | undefined {
+  const event = events[index];
+
+  switch (event?.type) {
+    case EVENT_ID.MAPPING:
+    case EVENT_ID.SEQUENCE: {
+      return event.start;
+    }
+
+    case EVENT_ID.SCALAR: {
+      const quoted =
+        event.style === SCALAR_STYLE.SINGLE_QUOTED ||
+        event.style === SCALAR_STYLE.DOUBLE_QUOTED;
+
+      return quoted ? event.valueStart - 1 : event.valueStart;
+    }
+
+    case EVENT_ID.ALIAS: {
+      // `anchorStart` is after the `*`.
+      return event.anchorStart - 1;
+    }
+
+    default: {
+      return undefined;
+    }
+  }
+}
+
+/** The index of the value for `key` in the mapping whose event is at `index`, and of its key. */
+function pairOf(
+  events: readonly Event[],
+  source: string,
+  index: number,
+  key: string
+): { key: number; value: number } | undefined {
+  let next = index + 1;
+
+  while (next < events.length && events[next]?.type !== EVENT_ID.POP) {
+    const event = events[next];
+    const value = skipNode(events, next);
+
+    if (
+      event?.type === EVENT_ID.SCALAR &&
+      getScalarValue(source, event) === key
+    ) {
+      return { key: next, value };
+    }
+
+    next = skipNode(events, value);
+  }
+
+  return undefined;
+}
+
+/** The index of item `key` in the sequence whose event is at `index`. */
+function itemOf(
+  events: readonly Event[],
+  index: number,
+  key: string
+): number | undefined {
+  const target = Number(key);
+  let next = index + 1;
+
+  for (let item = 0; next < events.length; item += 1) {
+    if (events[next]?.type === EVENT_ID.POP) {
+      return undefined;
+    }
+
+    if (item === target) {
+      return next;
+    }
+
+    next = skipNode(events, next);
+  }
+
+  return undefined;
+}
+
 /** The offset of the key or item at `keys`, as deep as the frontmatter goes. */
 function offsetOf(
-  yaml: YamlDocument,
+  events: readonly Event[],
+  source: string,
   keys: readonly string[]
 ): number | undefined {
-  let node: unknown = yaml.contents;
-  let offset = isNode(node) ? node.range?.[0] : undefined;
+  // The first event opens the document; its content is the next one.
+  let index = 1;
+  let offset = startOf(events, index);
 
   for (const key of keys) {
-    if (isMap(node)) {
-      const pair = node.items.find(
-        (item) => String(isScalar(item.key) ? item.key.value : item.key) === key
-      );
+    const type = events[index]?.type;
+
+    if (type === EVENT_ID.MAPPING) {
+      const pair = pairOf(events, source, index, key);
 
       if (pair === undefined) {
         break;
       }
 
-      offset = isNode(pair.key) ? pair.key.range?.[0] : offset;
-      node = pair.value;
-    } else if (isSeq(node)) {
-      node = node.items[Number(key)];
+      offset = startOf(events, pair.key);
+      index = pair.value;
+    } else if (type === EVENT_ID.SEQUENCE) {
+      const item = itemOf(events, index, key);
 
-      if (!isNode(node)) {
+      if (item === undefined) {
         break;
       }
 
-      offset = node.range?.[0];
+      offset = startOf(events, item);
+      index = item;
     } else {
       break;
     }
   }
 
   return offset;
+}
+
+/** The frontmatter's value and the events its positions are read from, or the first problem in it. */
+function readYaml(
+  source: string
+):
+  | { events: Event[]; issue?: undefined; value: unknown }
+  | { issue: { message: string; offset: number | undefined } } {
+  let events: Event[];
+  let documents: unknown[];
+
+  try {
+    events = parseEvents(source, {});
+    documents = constructFromEvents(events, { schema: CORE_SCHEMA, source });
+  } catch (error) {
+    if (error instanceof YAMLException) {
+      return {
+        issue: { message: error.reason, offset: error.mark?.position },
+      };
+    }
+
+    throw error;
+  }
+
+  if (documents.length > 1) {
+    return {
+      issue: {
+        message:
+          "frontmatter must be one YAML document. Remove the `...` or `---` inside it",
+        offset: undefined,
+      },
+    };
+  }
+
+  return { events, value: documents[0] };
 }
 
 /** Splits a Markdown file into an entry: frontmatter as metadata, the rest as body. Reads nothing from disk. */
@@ -103,10 +252,7 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
   const match = FRONTMATTER.exec(text);
   const frontmatter = match?.groups?.data;
 
-  const yaml =
-    frontmatter === undefined
-      ? undefined
-      : parseDocument(frontmatter, { prettyErrors: false });
+  const yaml = frontmatter === undefined ? undefined : readYaml(frontmatter);
 
   /** Where an offset into the YAML is. With no offset it is the opening `---`. */
   function positionAt(offset: number | undefined): Position {
@@ -119,17 +265,14 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
     return position(text, start + offset);
   }
 
-  if (yaml !== undefined && yaml.errors.length > 0) {
-    return {
-      entry: undefined,
-      issues: yaml.errors.map((error) => ({
-        ...positionAt(error.pos[0]),
-        message: error.message,
-      })),
-    };
+  if (yaml?.issue !== undefined) {
+    const { message, offset } = yaml.issue;
+
+    return { entry: undefined, issues: [{ ...positionAt(offset), message }] };
   }
 
-  const metadata: unknown = yaml?.toJS() ?? {};
+  const events = yaml?.events;
+  const metadata: unknown = yaml?.value ?? {};
   assertContentValue(metadata);
 
   const slug =
@@ -140,7 +283,11 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
       return undefined;
     }
 
-    return positionAt(yaml === undefined ? undefined : offsetOf(yaml, keys));
+    return positionAt(
+      events === undefined || frontmatter === undefined
+        ? undefined
+        : offsetOf(events, frontmatter, keys)
+    );
   }
 
   const frontmatterIssues = isPlainObject(metadata)
