@@ -12,16 +12,27 @@ tomekit parses and validates your Markdown while Vite builds, then serves it as 
 To have a coding agent set it up, give it this prompt:
 
 ```text title="Prompt"
-Set up tomekit in this project:
+Set up tomekit (https://tomekit.aayush.cv), typed Markdown content collections for Vite, in this project.
 
-1. Install tomekit and zod with this project's package manager.
-2. Read node_modules/tomekit/dist/AGENTS.md completely, and follow its Setup section.
-3. Add this line to AGENTS.md at the project root, creating the file if needed:
+1. Install the npm packages `tomekit` and `zod` with this project's package manager, eg `pnpm add tomekit zod`.
+
+2. Read `node_modules/tomekit/dist/AGENTS.md` completely. It is the guide for the installed version; follow it over anything you remember about tomekit.
+
+3. In `vite.config.ts`, import `tomekit` from `tomekit/vite` and add `tomekit()` to `plugins`, before any framework plugin.
+
+4. In `tsconfig.json`, add `"tomekit/content*": ["./.tomekit/content*"]` to `compilerOptions.paths`. Add `.tomekit` to `.gitignore`.
+
+5. Create `tomekit.config.ts` at the project root with a `posts` collection: `directory("content/posts")` as its loader and a `z.strictObject` schema. Add one post at `content/posts/hello-world.md` with YAML frontmatter that matches the schema.
+
+6. Add these lines to `AGENTS.md` at the project root, creating the file if it doesn't exist:
+
+   ## tomekit
    This project uses tomekit for content. Before writing code that touches `tomekit.config.ts` or imports from `tomekit`, read `node_modules/tomekit/dist/AGENTS.md` completely, and follow its links when needed.
-4. Run the build and fix every error it reports.
+
+7. Run the project's build, eg `pnpm build`, and fix every error it reports until it passes.
 ```
 
-The last step keeps the guide in front of agents in later sessions, see [AI agents](/agents). To set it up yourself, read on.
+Step 6 keeps the guide in front of agents in later sessions, see [AI agents](/agents). To set it up yourself, read on.
 
 ## Install
 

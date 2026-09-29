@@ -10,6 +10,8 @@ The `tomekit` package ships a guide for coding agents, eg Claude Code, Codex or 
 Add this to `AGENTS.md` at your project root:
 
 ```md title="AGENTS.md"
+## tomekit
+
 This project uses tomekit for content. Before writing code that touches `tomekit.config.ts` or imports from `tomekit`, read `node_modules/tomekit/dist/AGENTS.md` completely, and follow its links when needed.
 ```
 

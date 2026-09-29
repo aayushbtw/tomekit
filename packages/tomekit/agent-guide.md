@@ -41,6 +41,8 @@ Each step is required.
 5. If `AGENTS.md` at the project root doesn't point to this file, add this line to it, so later sessions read this guide:
 
    ```md
+   ## tomekit
+
    This project uses tomekit for content. Before writing code that touches `tomekit.config.ts` or imports from `tomekit`, read `node_modules/tomekit/dist/AGENTS.md` completely, and follow its links when needed.
    ```
 
