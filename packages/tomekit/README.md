@@ -60,6 +60,14 @@ post.metadata.title; // string
 post.body; // the Markdown
 ```
 
+## Examples
+
+A small blog per framework, each one opens in StackBlitz:
+
+- [TanStack Start](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/tanstack-start)
+- [React Router](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/react-router)
+- [SolidStart](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/solid-start)
+
 ## License
 
 MIT
