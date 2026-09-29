@@ -8,7 +8,7 @@ import type { LocatedEntry } from "./parse";
 import { isProfiled, PROFILE, timed } from "./profile";
 import type { PhaseRecorder } from "./profile";
 
-const DEFAULT_INCLUDE = "**/*.md";
+const DEFAULT_FILES = "**/*.md";
 
 /**
  * A glob pattern. Suggests common ones and accepts any string.
@@ -22,18 +22,17 @@ type Glob = "**/*.md" | "**/*.mdx" | "*.md" | (string & Record<never, never>);
  *
  * @example
  * ```ts
- * directory("content/posts", { exclude: "drafts/**", include: ["**\/*.md", "**\/*.mdx"] })
+ * directory("content/posts", { files: ["**\/*.md", "**\/*.mdx", "!drafts/**"] })
  * ```
  */
 interface DirectoryOptions {
-  /** Glob patterns, relative to the directory, of files to leave out, eg `"drafts/**"`. */
-  exclude?: Glob | readonly Glob[];
   /**
-   * Glob patterns, relative to the directory, of files to load.
+   * Glob patterns, relative to the directory, of files to load. A pattern
+   * starting with `!` leaves out files the others match, eg `"!drafts/**"`.
    *
    * @default "**\/*.md"
    */
-  include?: Glob | readonly Glob[];
+  files?: Glob | readonly Glob[];
 }
 
 function isMissing(cause: unknown): boolean {
@@ -202,17 +201,23 @@ async function read(
  * @example
  * ```ts
  * posts: {
- *   loader: directory("content/posts", { exclude: "drafts/**" }),
+ *   loader: directory("content/posts", { files: ["**\/*.md", "!drafts/**"] }),
  *   schema: z.strictObject({ title: z.string() }),
  * }
  * ```
  */
 function directory(
   folder: string,
-  { exclude = [], include = DEFAULT_INCLUDE }: DirectoryOptions = {}
+  { files = DEFAULT_FILES }: DirectoryOptions = {}
 ): Loader<FileInfo> {
-  const includes = [include].flat();
-  const excludes = [exclude].flat();
+  const patterns = [files].flat();
+  const includes = patterns.filter((pattern) => !pattern.startsWith("!"));
+
+  // Passed to `glob` as `exclude`, so they only take away from what the others match, whatever their order.
+  const excludes = patterns.flatMap((pattern) =>
+    pattern.startsWith("!") ? [pattern.slice(1)] : []
+  );
+
   const cache = new ParseCache();
 
   return {
@@ -221,10 +226,13 @@ function directory(
       const profile = isProfiled(context) ? context[PROFILE] : undefined;
 
       // Before any early return, so creating a missing folder still reruns `load`.
-      watch([
-        ...includes.map((pattern) => path.posix.join(folder, pattern)),
-        ...excludes.map((pattern) => `!${path.posix.join(folder, pattern)}`),
-      ]);
+      watch(
+        patterns.map((pattern) =>
+          pattern.startsWith("!")
+            ? `!${path.posix.join(folder, pattern.slice(1))}`
+            : path.posix.join(folder, pattern)
+        )
+      );
 
       const absolute = path.resolve(root, folder);
 
@@ -234,9 +242,9 @@ function directory(
         return { entries: [], issues: [issue] };
       }
 
-      const files = await filesIn(absolute, includes, excludes);
+      const found = await filesIn(absolute, includes, excludes);
 
-      if (files.length === 0) {
+      if (found.length === 0) {
         // Node's glob skips dotfiles, so a folder holding only `.gitkeep` counts as empty.
         const { length: others } = await filesIn(absolute, ["**/*"]);
 
@@ -245,12 +253,12 @@ function directory(
           warnings: [
             others === 0
               ? `${collection}: directory "${folder}" has no files, so the collection is empty`
-              : `${collection}: no files in "${folder}" match ${JSON.stringify(include)}, but it has ${others} other ${others === 1 ? "file" : "files"}, so the collection is empty`,
+              : `${collection}: no files in "${folder}" match ${JSON.stringify(files)}, but it has ${others} other ${others === 1 ? "file" : "files"}, so the collection is empty`,
           ],
         };
       }
 
-      const results = await cache.results(absolute, root, files, profile);
+      const results = await cache.results(absolute, root, found, profile);
 
       const entries: Entry<FileInfo>[] = [];
       const issues: LoadIssue[] = [];

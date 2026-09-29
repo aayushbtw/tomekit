@@ -29,14 +29,14 @@ import { z } from "zod";
 export default defineConfig({
   collections: {
     posts: {
-      loader: directory("content/posts", { exclude: "drafts/**" }),
+      loader: directory("content/posts", { files: ["**/*.md", "!drafts/**"] }),
       schema: z.strictObject({ title: z.string() }),
     },
   },
 });
 ```
 
-`include` defaults to `"**/*.md"`. Both options take one glob or a list, relative to the directory.
+`files` takes one glob or a list, relative to the directory, and defaults to `"**/*.md"`. A pattern that starts with `!` leaves out files the others match, wherever it sits in the list. Nothing else is left out for you, so a folder that holds other things, eg the project root, needs its own `!` patterns: `directory(".", { files: ["**/*.md", "!node_modules/**"] })`.
 
 ### Your own loader
 

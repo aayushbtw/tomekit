@@ -6,8 +6,7 @@ import { defineCollection, directory } from "../src/index";
 // Globs suggest common patterns but accept any string.
 export const globbed = defineCollection({
   loader: directory("content/notes", {
-    exclude: ["drafts/**"],
-    include: "**/*.markdown",
+    files: ["**/*.markdown", "!drafts/**"],
   }),
   schema: z.object({}),
 });

@@ -44,7 +44,7 @@ import { z } from "zod";
 export default defineConfig({
   collections: {
     posts: {
-      loader: directory("content/posts", { include: "**/*.mdx" }),
+      loader: directory("content/posts", { files: "**/*.mdx" }),
       schema: z.strictObject({ title: z.string() }),
       transform: ({ file }) => ({ body: fileModule<MDXModule>(file.path) }),
     },

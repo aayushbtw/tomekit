@@ -28,7 +28,7 @@ const config = defineConfig({
       schema: z.object({ order: z.number() }),
     }),
     posts: defineCollection({
-      loader: directory("content/posts", { include: "*.md" }),
+      loader: directory("content/posts", { files: "*.md" }),
       schema: z.object({
         date: z.coerce.date(),
         tags: z.array(z.string()),

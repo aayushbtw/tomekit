@@ -16,7 +16,7 @@ declare function read<TCollection>(
 
 const posts = read(
   defineCollection({
-    loader: directory("content/posts", { include: "**/*.mdx" }),
+    loader: directory("content/posts", { files: "**/*.mdx" }),
     schema: z.object({ title: z.string() }),
     transform: ({ file }) => ({ body: fileModule<PostModule>(file.path) }),
   })

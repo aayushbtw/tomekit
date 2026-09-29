@@ -121,12 +121,11 @@ describe("directory", () => {
     ]);
   });
 
-  it("matches several include patterns and leaves out excluded ones", async () => {
+  it("matches several patterns, and ! patterns leave files out wherever they are in the list", async () => {
     const mixed = defineCollection({
       ...posts,
       loader: directory("content/posts", {
-        exclude: ["drafts/**", "*.draft.md"],
-        include: ["**/*.md", "**/*.markdown"],
+        files: ["!drafts/**", "**/*.md", "**/*.markdown", "!*.draft.md"],
       }),
     });
 
@@ -387,8 +386,7 @@ describe("directory", () => {
     const watched: unknown[] = [];
 
     await directory("content/posts", {
-      exclude: "drafts/**",
-      include: ["*.md", "**/*.mdx"],
+      files: ["*.md", "!drafts/**", "**/*.mdx"],
     }).load({
       collection: "posts",
       dev: true,
@@ -401,8 +399,8 @@ describe("directory", () => {
     expect(watched).toStrictEqual([
       [
         "content/posts/*.md",
-        "content/posts/**/*.mdx",
         "!content/posts/drafts/**",
+        "content/posts/**/*.mdx",
       ],
     ]);
   });

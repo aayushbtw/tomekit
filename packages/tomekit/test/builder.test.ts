@@ -26,7 +26,7 @@ export default defineConfig({
       schema: z.object({}),
     }),
     posts: defineCollection({
-      loader: directory("content/posts", { exclude: "drafts/**" }),
+      loader: directory("content/posts", { files: ["**/*.md", "!drafts/**"] }),
       schema: z.object({ title: z.string() }),
     }),
   },
@@ -106,7 +106,7 @@ const composed = `
 import { z } from "zod";
 import { defineConfig, directory } from ${JSON.stringify(SOURCE)};
 
-const pages = directory("content", { exclude: "api/**" });
+const pages = directory("content", { files: ["**/*.md", "!api/**"] });
 
 export default defineConfig({
   collections: {
