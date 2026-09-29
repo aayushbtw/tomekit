@@ -87,6 +87,10 @@ To render the body, see [Transform](https://tomekit.aayush.cv/transform) and [MD
 
 Vite 8, TypeScript 7 and Node 24, or later.
 
+## Credits
+
+The docs site's design is based on [Audio](https://audio.raphaelsalaja.com) by [Raphael Salaja](https://github.com/raphaelsalaja).
+
 ## License
 
 MIT
