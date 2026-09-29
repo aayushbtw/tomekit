@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bench": "node src/run.ts"
+    "bench": "node src/run.ts",
+    "compare": "node src/compare.ts",
+    "profile": "node src/profile.ts"
   },
   "devDependencies": {
     "@content-collections/core": "^0.15.3",

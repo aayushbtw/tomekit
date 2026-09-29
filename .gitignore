@@ -6,3 +6,4 @@ packages/*/test/.tmp
 .claude/settings.local.json
 .claude/internal
 .vitest
+apps/bench/results

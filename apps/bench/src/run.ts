@@ -3,9 +3,10 @@ import { cpus, totalmem } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
+import { median, ms } from "./breakdown.ts";
 import { fixture, SCENARIOS } from "./fixtures.ts";
 import type { Scenario } from "./fixtures.ts";
-import { TOOLS } from "./tools.ts";
+import { isResult, TOOLS } from "./tools.ts";
 import type { Mode, Result, Tool } from "./tools.ts";
 
 const run = promisify(execFile);
@@ -17,10 +18,6 @@ interface Row {
   dev: Result;
   tool: Tool;
   warm: Result[];
-}
-
-function isResult(value: unknown): value is Result {
-  return value instanceof Object && "ms" in value && "documents" in value;
 }
 
 /** Each sample runs in its own process, so no tool keeps a cache or a watcher from the last one. */
@@ -63,25 +60,6 @@ async function samples(
   }
 
   return results;
-}
-
-function median(values: readonly number[]): number {
-  const sorted = values.toSorted((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-
-  return sorted.length % 2 === 0
-    ? ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2
-    : (sorted[middle] ?? 0);
-}
-
-function ms(value: number): string {
-  if (!Number.isFinite(value)) {
-    return "timed out";
-  }
-
-  return value >= 1000
-    ? `${(value / 1000).toFixed(2)} s`
-    : `${Math.round(value)} ms`;
 }
 
 function table(size: number, scenario: Scenario, rows: readonly Row[]): string {

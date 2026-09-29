@@ -13,8 +13,8 @@ import type { Plugin, RunnableDevEnvironment } from "vite";
 
 import { SCENARIOS } from "./fixtures.ts";
 import type { Scenario } from "./fixtures.ts";
-import { isMode, isTool, MODES, TOOLS } from "./tools.ts";
-import type { Mode, Result, Tool } from "./tools.ts";
+import { isBuildProfile, isMode, isTool, MODES, TOOLS } from "./tools.ts";
+import type { BuildProfile, Mode, Result, Tool } from "./tools.ts";
 
 interface Post {
   body: string;
@@ -116,6 +116,19 @@ async function sizeOf(folder: string): Promise<number> {
   return sizes.reduce((total, size) => total + size, 0);
 }
 
+/** tomekit's builds that started after `since`, when `TOMEKIT_PROFILE` is set. */
+function profilesSince(since: number): BuildProfile[] {
+  return performance
+    .getEntriesByName("tomekit", "measure")
+    .flatMap((entry) =>
+      entry.startTime >= since &&
+      "detail" in entry &&
+      isBuildProfile(entry.detail)
+        ? [entry.detail]
+        : []
+    );
+}
+
 function memory(): number {
   return Math.round(process.resourceUsage().maxRSS / 1024);
 }
@@ -149,6 +162,7 @@ async function measureBuild(tool: Tool, scenario: Scenario): Promise<Result> {
     memory: memory(),
     ms,
     output: Math.round((await sizeOf(outDir)) / 1024),
+    profiles: profilesSince(start),
   };
 }
 
@@ -216,6 +230,7 @@ async function measureDev(tool: Tool, scenario: Scenario): Promise<Result> {
   const ms = performance.now() - start;
   const original = await readFile(edited, "utf-8");
   const updates: number[] = [];
+  const profiles: BuildProfile[] = [];
   let failures = 0;
 
   try {
@@ -235,13 +250,27 @@ async function measureDev(tool: Tool, scenario: Scenario): Promise<Result> {
       updates.push(
         result.served ? performance.now() - written : Number.POSITIVE_INFINITY
       );
+
+      // The last build is the one that served the edit.
+      const last = profilesSince(written).at(-1);
+
+      if (last !== undefined) {
+        profiles.push(last);
+      }
     }
   } finally {
     await writeFile(edited, original);
     await server.close();
   }
 
-  return { documents: posts.length, failures, memory: memory(), ms, updates };
+  return {
+    documents: posts.length,
+    failures,
+    memory: memory(),
+    ms,
+    profiles,
+    updates,
+  };
 }
 
 async function measure(
