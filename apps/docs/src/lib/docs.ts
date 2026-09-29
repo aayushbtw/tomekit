@@ -5,8 +5,8 @@ import { docs, reference } from "tomekit/content";
 import type { DocumentOf } from "tomekit/content";
 
 import { sections } from "#/lib/sections";
-
-type Section = DocumentOf<"docs">["metadata"]["section"];
+import { sortedDocs } from "#/lib/sorted-docs";
+import type { Section } from "#/lib/sorted-docs";
 
 /** A reference page's route params: its index page's slug, its kind's folder and its name. */
 interface ReferenceParams {
@@ -17,22 +17,6 @@ interface ReferenceParams {
 
 // The root route, not this one: a 404 replaces the docs layout instead of rendering inside it.
 const notFoundHere: NotFoundError = { routeId: rootRouteId };
-
-/** A page with no section is a link of its own, above the sections. */
-function sectionRank(section: Section) {
-  return section === undefined ? -1 : sections.indexOf(section);
-}
-
-function compareDocs(a: DocumentOf<"docs">, b: DocumentOf<"docs">) {
-  const bySection =
-    sectionRank(a.metadata.section) - sectionRank(b.metadata.section);
-
-  return bySection === 0 ? a.metadata.order - b.metadata.order : bySection;
-}
-
-function sortedDocs() {
-  return docs.documents().toSorted(compareDocs);
-}
 
 function pageLink(doc: DocumentOf<"docs"> | undefined) {
   return doc ? { slug: doc.slug, title: doc.metadata.title } : undefined;

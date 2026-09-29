@@ -188,4 +188,4 @@ A feed or sitemap doesn't need this: serve it from a route in the app.
 - `MissingPluginError`, or "does not provide an export named", means the plugin isn't in `vite.config.ts` or the script runs without `tomekit/register`.
 - Types in `.tomekit` update on each build and while the dev server runs.
 
-Human docs, if still stuck: https://tomekit.aayush.cv
+If still stuck, the docs are Markdown too: https://tomekit.aayush.cv/llms.txt lists every page. They describe the latest version, so prefer this guide and the types where they differ.

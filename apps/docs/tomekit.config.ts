@@ -2,12 +2,14 @@ import type { ComponentNode } from "@tanstack/markdown";
 import { commentComponentsExtension } from "@tanstack/markdown/extensions/comment-components";
 import { collectMarkdownHeadings } from "@tanstack/markdown/extensions/headings";
 import { parseMarkdown } from "@tanstack/markdown/parser";
-import { defineConfig, directory } from "tomekit";
+import { defineConfig, defineLoader, directory } from "tomekit";
 import type { Source } from "tomekit";
 import { z } from "zod";
 
 import { apiReference, apiReferenceWatch } from "./src/lib/api-reference";
+import { agentMarkdown } from "./src/lib/markdown";
 import { sections } from "./src/lib/sections";
+import { site } from "./src/lib/site";
 
 // A component with no `tagName` renders as one generic element for every name, so
 // the components map cannot tell `install` from anything else. Naming the tag is what
@@ -42,21 +44,32 @@ function withHeadings<TMetadata extends object>({
 
 const pages = directory("content/docs");
 
+// The written pages, plus an API reference index page per tomekit entry point.
+const docsLoader = defineLoader({
+  async load(context) {
+    const written = await pages.load(context);
+    context.watch(apiReferenceWatch);
+
+    return {
+      ...written,
+      entries: [...written.entries, ...apiReference(context.root).index],
+    };
+  },
+});
+
+// One page per tomekit export, linked from the API reference index pages.
+const referenceLoader = defineLoader({
+  load: ({ root, watch }) => {
+    watch(apiReferenceWatch);
+
+    return { entries: apiReference(root).items };
+  },
+});
+
 export default defineConfig({
   collections: {
     docs: {
-      // The written pages, plus an API reference index page per tomekit entry point.
-      loader: {
-        async load(context) {
-          const written = await pages.load(context);
-          context.watch(apiReferenceWatch);
-
-          return {
-            ...written,
-            entries: [...written.entries, ...apiReference(context.root).index],
-          };
-        },
-      },
+      loader: docsLoader,
       schema: z.strictObject({
         description: z.string(),
         order: z.number(),
@@ -65,15 +78,37 @@ export default defineConfig({
       }),
       transform: withHeadings,
     },
-    // One page per tomekit export, linked from the API reference index pages.
-    reference: {
+    // Every page of both collections as Markdown for agents, kept apart so pages don't ship it to the browser.
+    markdown: {
       loader: {
-        load: ({ root, watch }) => {
-          watch(apiReferenceWatch);
+        async load(context) {
+          const [written, items] = await Promise.all([
+            docsLoader.load(context),
+            referenceLoader.load(context),
+          ]);
 
-          return { entries: apiReference(root).items };
+          return {
+            ...written,
+            entries: [...written.entries, ...items.entries],
+          };
         },
       },
+      schema: z.object({
+        description: z.string().optional(),
+        name: z.string().optional(),
+        title: z.string().optional(),
+      }),
+      transform: ({ body, metadata, slug }) => {
+        const title = metadata.title ?? metadata.name ?? slug;
+        const description = metadata.description ?? "";
+
+        return {
+          body: `# ${title}\n\n${description}\n\n> Every page: ${new URL("/llms.txt", site.url).href}\n\n${agentMarkdown(body).trimStart()}`,
+        };
+      },
+    },
+    reference: {
+      loader: referenceLoader,
       schema: z.strictObject({
         description: z.string().optional(),
         kind: z.enum([
