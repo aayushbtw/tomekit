@@ -29,7 +29,7 @@ type LookupKey<TKey extends string, TKnown extends string> = [TKnown] extends [
  *
  * @example
  * ```ts
- * const posts = collections.get("posts");
+ * import { posts } from "tomekit/content";
  *
  * posts.documents().filter((post) => post.metadata.tags.includes("vite"));
  * posts.get("hello-world").metadata.title;

@@ -41,9 +41,12 @@ describe("writeTypes", () => {
     expect(types).toContain('  "posts": "hello" | "guides/setup";');
     expect(types).toContain('  "notes": never;');
     expect(types).toContain("export declare const collections: {");
+    expect(types).toContain(
+      'export declare const posts: _Collection<DocumentOf<"posts">, SlugOf<"posts">, SlugOf<"posts">>;'
+    );
   });
 
-  it("exports the same names as the tomekit/content fallback", async () => {
+  it("exports the tomekit/content fallback's names plus one per collection", async () => {
     const root = await project();
     const directory = path.join(root, ".tomekit");
 
@@ -77,7 +80,7 @@ describe("writeTypes", () => {
     }
 
     expect(generatedNames.toSorted(byName)).toStrictEqual(
-      fallbackNames.toSorted(byName)
+      [...fallbackNames, "posts"].toSorted(byName)
     );
   });
 

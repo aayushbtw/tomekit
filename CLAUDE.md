@@ -58,7 +58,7 @@ Public exports get TSDoc: a one-sentence summary, then an `@example` that runs a
  *
  * @example
  * ```ts
- * collections.get("posts").get("hello-world").metadata.title // "Hello world"
+ * posts.get("hello-world").metadata.title // "Hello world"
  * ```
  */
 ````

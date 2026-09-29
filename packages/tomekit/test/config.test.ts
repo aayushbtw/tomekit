@@ -33,6 +33,14 @@ describe("configIssues", () => {
     );
   });
 
+  it("rejects names each collection can't be exported under", () => {
+    expect(issues("default", "class", "collections")).toStrictEqual([
+      'collection "default" can\'t be imported under that name, which JavaScript reserves. Rename it, eg "defaultItems".',
+      'collection "class" can\'t be imported under that name, which JavaScript reserves. Rename it, eg "classItems".',
+      'collection "collections" can\'t be imported under that name, which the list of every collection uses. Rename it, eg "collectionsItems".',
+    ]);
+  });
+
   it("names the loader a collection without one needs", () => {
     const { loader: _loader, ...withoutLoader } = collection;
 

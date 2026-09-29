@@ -52,9 +52,9 @@ export default defineConfig({
 **4. Read your content:**
 
 ```ts
-import { collections } from "tomekit/content";
+import { posts } from "tomekit/content";
 
-const post = collections.get("posts").get("hello-world");
+const post = posts.get("hello-world");
 
 post.metadata.title; // string
 post.body; // the Markdown

@@ -523,6 +523,49 @@ export default defineConfig({
     );
   });
 
+  it("bundles only the collections a module imports", async () => {
+    const project = await createProject({
+      "content/notes/a.md": "---\ntitle: NOTES_ONLY\n---\n",
+      "content/posts/hello.md": HELLO,
+      "src/main.ts":
+        'import { posts } from "tomekit/content";\nexport default posts.slugs();\n',
+      "tomekit.config.ts": `
+import { z } from "zod";
+import { defineConfig, directory } from ${JSON.stringify(SOURCE)};
+
+export default defineConfig({
+  collections: {
+    notes: { loader: directory("content/notes"), schema: z.object({ title: z.string() }) },
+    posts: { loader: directory("content/posts"), schema: z.object({ title: z.string() }) },
+  },
+});
+`,
+    });
+
+    ({ cleanup } = project);
+
+    const output = await build({
+      build: {
+        rolldownOptions: { input: "src/main.ts" },
+        ssr: true,
+        write: false,
+      },
+      configFile: false,
+      logLevel: "silent",
+      plugins: [tomekit()],
+      root: project.root,
+    });
+
+    const code = [output]
+      .flat()
+      .flatMap((result) => ("output" in result ? result.output : []))
+      .map((chunk) => ("code" in chunk ? chunk.code : ""))
+      .join("\n");
+
+    expect(code).toContain('"hello"');
+    expect(code).not.toContain("NOTES_ONLY");
+  });
+
   it("fails on broken content even when nothing imports it", async () => {
     const project = await createProject({
       "content/posts/a.md": "---\ntitle: A\n---\n",

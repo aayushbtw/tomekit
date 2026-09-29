@@ -5,26 +5,36 @@ section: Concepts
 order: 3
 ---
 
-Everything is built ahead of time, so reading is synchronous. Import `collections` from server code only: in the browser bundle, every document would ship to the client.
+Everything is built ahead of time, so reading is synchronous. Import collections from server code only: in the browser bundle, their documents would ship to the client.
 
 ## Collections
+
+Each collection is exported under its name in your config:
+
+```ts
+import { posts } from "tomekit/content";
+
+posts.documents(); // every post
+```
+
+A module bundles only the collections it imports, so a page that reads `posts` doesn't load your other collections.
+
+### Names known at runtime
+
+When the collection's name is a string, eg a route param, read it from `collections`. It returns the same collection objects. `has` narrows a string to a collection name, and a plain string returns the collection or `undefined`:
 
 ```ts
 import { collections } from "tomekit/content";
 
 collections.names(); // ["docs", "posts"], in config order
-const posts = collections.get("posts");
-```
-
-A name from your config returns its collection, and a misspelled name doesn't compile. A plain string, eg a route param, returns the collection or `undefined`. `has` narrows a string to a collection name:
-
-```ts
 collections.get(params.collection); // a collection, or undefined
 
 if (collections.has(params.collection)) {
   collections.get(params.collection).documents();
 }
 ```
+
+Reading through `collections` bundles every collection, since the name could be any of them.
 
 ## Documents
 
@@ -94,5 +104,5 @@ function titles<TDocument extends { metadata: { title: string } }>(
   return collection.documents().map((document) => document.metadata.title);
 }
 
-titles(collections.get("posts"));
+titles(posts);
 ```

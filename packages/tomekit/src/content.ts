@@ -45,15 +45,17 @@ function missingPlugin(): never {
 }
 
 /**
- * Every collection in your config. Provided by the `tomekit()` Vite plugin;
- * importing it without the plugin throws.
+ * Every collection in your config, for a name only known at runtime, eg a
+ * route param. Import a collection by its name otherwise, which bundles only
+ * that collection. Provided by the `tomekit()` Vite plugin; importing it
+ * without the plugin throws.
  *
  * @example
  * ```ts
  * import { collections } from "tomekit/content";
  *
- * collections.get("posts").get("hello-world").metadata.title;
  * collections.names(); // ["notes", "posts"]
+ * if (collections.has(params.collection)) collections.get(params.collection).slugs();
  * ```
  */
 const collections: Collections<Source> = missingPlugin();

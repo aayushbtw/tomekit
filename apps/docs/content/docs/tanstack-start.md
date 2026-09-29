@@ -58,16 +58,15 @@ A draft is skipped everywhere except dev, so it is not in `documents()`, not in 
 
 ## The server functions
 
-`collections` holds every document, so keep it on the server: a route that imports it ships all of them to the browser. Read it in a server function and return only what the page renders.
+A collection holds all of its documents, so keep it on the server: a route that imports it ships them to the browser. Read it in a server function and return only what the page renders.
 
 ```ts title="src/server/posts.ts"
 import { notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { collections } from "tomekit/content";
+import { authors, posts } from "tomekit/content";
 
 const getPosts = createServerFn({ method: "GET" }).handler(() =>
-  collections
-    .get("posts")
+  posts
     .documents()
     .toSorted(
       (a, b) =>
@@ -79,13 +78,13 @@ const getPosts = createServerFn({ method: "GET" }).handler(() =>
 const getPost = createServerFn({ method: "GET" })
   .validator((slug: string) => slug)
   .handler(({ data: slug }) => {
-    const post = collections.get("posts").get(slug);
+    const post = posts.get(slug);
 
     if (!post) {
       throw notFound();
     }
 
-    const author = collections.get("authors").get(post.metadata.author);
+    const author = authors.get(post.metadata.author);
 
     return { ...post, author: author.metadata.name };
   });

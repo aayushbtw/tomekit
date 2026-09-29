@@ -60,7 +60,14 @@ export type DocumentOf<TName extends CollectionName = CollectionName> = {
 // No known slugs for a union of names: a slug may exist in only one of them.
 type _KnownSlug<TName extends CollectionName, TEach extends CollectionName = TName> = TEach extends unknown ? ([TName] extends [TEach] ? SlugOf<TName> : never) : never;
 
-/** Every collection in your config. */
+${collections
+  .map(
+    ({ name }) => `/** The \`${name}\` collection. */
+export declare const ${name}: _Collection<DocumentOf<${JSON.stringify(name)}>, SlugOf<${JSON.stringify(name)}>, SlugOf<${JSON.stringify(name)}>>;
+`
+  )
+  .join("\n")}
+/** Every collection in your config, for a name only known at runtime, eg a route param. Import a collection by name otherwise. */
 export declare const collections: {
   /** The collection with this name. */
   get<TName extends CollectionName>(this: void, name: TName): _Collection<DocumentOf<TName>, SlugOf<TName>, _KnownSlug<TName>>;

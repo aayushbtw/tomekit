@@ -5,7 +5,7 @@ section: Concepts
 order: 1
 ---
 
-A collection is a named set of documents: `posts`, `authors`, `docs`. Everything in it comes from one `loader`, which says where its entries come from, and passes one `schema`, which validates each entry's metadata. The name you give it in `defineConfig` is the name you read it by, `collections.get("posts")`.
+A collection is a named set of documents: `posts`, `authors`, `docs`. Everything in it comes from one `loader`, which says where its entries come from, and passes one `schema`, which validates each entry's metadata. The name you give it in `defineConfig` is the name you import it by, `import { posts } from "tomekit/content"`, so it must be a valid JavaScript name that isn't reserved, eg not `default`, and not `collections`.
 
 A document is one validated entry. Every document in every collection has the same four fields, and only their types differ:
 
@@ -158,15 +158,15 @@ export default defineConfig({
 
 - A path goes through nested objects and arrays, eg `sections.author`. TypeScript accepts only paths to strings or arrays of strings, and names from `collections`.
 - A path goes at most 5 levels deep and never into a `Date`, `Map`, `Set`, `RegExp` or `URL`. A key that contains `.` can't be part of a path.
-- Every slug must belong to a document that `collections.get("authors")` returns, so a skipped or broken author doesn't count. Otherwise `vite build` fails, pointing at the file and line. Dev leaves the post out and shows the error in the overlay.
+- Every slug must belong to a document that `authors.get()` returns, so a skipped or broken author doesn't count. Otherwise `vite build` fails, pointing at the file and line. Dev leaves the post out and shows the error in the overlay.
 - The check runs on documents after `transform`, and only on strings, so a transform can replace a slug with something else.
 
 In the generated types the field holds that collection's slugs, so following it needs no `undefined` check:
 
 ```ts
-const post = collections.get("posts").get("hello");
+const post = posts.get("hello");
 
-collections.get("authors").get(post.metadata.author).metadata.name;
+authors.get(post.metadata.author).metadata.name;
 ```
 
 Inside `transform`, `metadata.author` is still a `string`: the check runs after every transform, since a transform's `skip()` decides which slugs exist.

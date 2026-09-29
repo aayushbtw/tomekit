@@ -80,7 +80,7 @@ describe("serialize", () => {
     const value = { list: [1, "two", true, null], nested: { quote: 'a "b"' } };
     const source = serialize(value);
 
-    expect(source).toMatch(/^JSON\.parse\(/u);
+    expect(source).toMatch(/^\/\*#__PURE__\*\/JSON\.parse\(/u);
     expect(await evaluate(source)).toStrictEqual(value);
   });
 
@@ -91,7 +91,7 @@ describe("serialize", () => {
       [-0],
       [Number.NaN],
     ]) {
-      expect(serialize(value)).not.toMatch(/^JSON\.parse/u);
+      expect(serialize(value)).not.toMatch(/JSON\.parse/u);
     }
   });
 });

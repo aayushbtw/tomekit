@@ -238,7 +238,9 @@ describe("ContentBuilder", () => {
     await project.write({ "tomekit.config.ts": config });
     const build = await builder.load();
 
-    expect(build.code).toContain('"posts":createCollection(');
+    expect(build.code).toContain(
+      "export const posts = /*#__PURE__*/_createCollection("
+    );
   });
 
   it("keeps broken files out of the module and in the errors", async () => {

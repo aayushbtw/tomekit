@@ -38,6 +38,8 @@ A config that can't be used fails `vite build`. The dev server logs it and keeps
 - `MissingDefaultExportError`: the file doesn't `export default defineConfig(...)`
 - `InvalidConfigError`: the config breaks a rule, eg a collection name that isn't a valid identifier, or a collection without a `loader`
 
+Without the `tomekit()` plugin, importing `collections` throws `MissingPluginError`, while importing a collection by name fails first, with the module "does not provide an export named" it. Add the plugin to `vite.config.ts` in both cases.
+
 ## Catching errors
 
 Every error is a class exported from `tomekit`, so check it with `instanceof`:

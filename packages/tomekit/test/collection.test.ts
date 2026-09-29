@@ -244,7 +244,7 @@ describe("loadCollection", () => {
     expect(outputs(documents)).toStrictEqual([
       { body: "Text", file: FILE, metadata: { title: "Hello" }, slug: "hello" },
     ]);
-    expect(documents[0]?.code).toMatch(/^JSON\.parse\(/u);
+    expect(documents[0]?.code).toMatch(/^\/\*#__PURE__\*\/JSON\.parse\(/u);
   });
 
   it("replaces only the body a transform returns", async () => {

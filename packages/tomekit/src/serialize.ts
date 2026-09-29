@@ -1,6 +1,9 @@
 import { isFields, isList, isMap, isNumber, isSet } from "./value";
 import type { ContentValue } from "./value";
 
+/** Lets a bundler drop a call whose result is unused, eg a collection nobody imports. */
+const PURE = "/*#__PURE__*/";
+
 interface WriteState {
   /** Whether `JSON.parse` would rebuild the value exactly. */
   json: boolean;
@@ -15,7 +18,7 @@ function serialize(value: ContentValue): string {
   const source = write(value, state);
 
   return state.json
-    ? `JSON.parse(${JSON.stringify(JSON.stringify(value))})`
+    ? `${PURE}JSON.parse(${JSON.stringify(JSON.stringify(value))})`
     : source;
 }
 
@@ -81,35 +84,35 @@ function write(value: ContentValue, state: WriteState): string {
       ([key, entry]) => `[${write(key, state)},${write(entry, state)}]`
     );
 
-    return `new Map([${pairs.join(",")}])`;
+    return `${PURE}new Map([${pairs.join(",")}])`;
   }
 
   if (isSet(value)) {
     state.json = false;
     const entries = [...value].map((entry) => write(entry, state));
 
-    return `new Set([${entries.join(",")}])`;
+    return `${PURE}new Set([${entries.join(",")}])`;
   }
 
   if (value instanceof Date) {
     state.json = false;
 
-    return `new Date(${number(value.getTime(), state)})`;
+    return `${PURE}new Date(${number(value.getTime(), state)})`;
   }
 
   if (value instanceof URL) {
     state.json = false;
 
-    return `new URL(${JSON.stringify(value.href)})`;
+    return `${PURE}new URL(${JSON.stringify(value.href)})`;
   }
 
   if (value instanceof RegExp) {
     state.json = false;
 
-    return `new RegExp(${JSON.stringify(value.source)},${JSON.stringify(value.flags)})`;
+    return `${PURE}new RegExp(${JSON.stringify(value.source)},${JSON.stringify(value.flags)})`;
   }
 
   return JSON.stringify(value);
 }
 
-export { serialize };
+export { PURE, serialize };

@@ -15,6 +15,7 @@ import type { ContentError } from "./errors";
 import { writeTypes } from "./generate";
 import type { Config } from "./index";
 import { checkReferences } from "./reference";
+import { PURE } from "./serialize";
 import { isPlainObject } from "./value";
 
 const MODULE_ID = "tomekit/content";
@@ -293,17 +294,22 @@ class ContentBuilder {
       }
     }
 
-    const byName = collections.map(({ documents, name }) => {
+    // One export per collection, so a page bundles only the collections it imports.
+    const exports = collections.map(({ documents, name }) => {
       const pairs = documents.map(
         ({ code, slug }) => `[${JSON.stringify(slug)},${code}]`
       );
 
-      return `${JSON.stringify(name)}:createCollection([${pairs.join(",")}])`;
+      return `export const ${name} = ${PURE}_createCollection([${pairs.join(",")}]);`;
     });
 
+    const names = collections.map(({ name }) => name).join(",");
+
     return {
-      code: `import { createCollection, createCollections } from ${JSON.stringify(runtime)};
-export const collections = createCollections({${byName.join(",")}});
+      // Aliased with "_", which no collection name starts with, so a collection can't shadow them.
+      code: `import { createCollection as _createCollection, createCollections as _createCollections } from ${JSON.stringify(runtime)};
+${exports.join("\n")}
+export const collections = ${PURE}_createCollections({${names}});
 `,
       errors: [
         ...loaded.flatMap((collection) => collection.errors),

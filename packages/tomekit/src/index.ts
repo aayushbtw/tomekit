@@ -281,7 +281,7 @@ interface Config<
   >,
   TReferences = Readonly<Record<string, Readonly<Record<string, string>>>>,
 > {
-  /** Keyed by collection name, eg `posts` for `collections.get("posts")`. */
+  /** Keyed by collection name, which is also the name each collection is imported by, eg `import { posts } from "tomekit/content"`. */
   collections: TCollections;
   /**
    * Metadata fields that hold slugs of another collection, keyed by collection
@@ -293,7 +293,7 @@ interface Config<
    * references: {
    *   posts: { author: "authors", "sections.author": "authors" },
    * }
-   * // collections.get("authors").get(post.metadata.author).metadata.name
+   * // authors.get(post.metadata.author).metadata.name
    * ```
    */
   references?: TReferences;

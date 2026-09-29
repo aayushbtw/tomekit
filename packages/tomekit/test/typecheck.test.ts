@@ -130,6 +130,26 @@ export { body, checked, dynamic, everything, file, maybe, names, narrowed, order
     expect(output).toBe("");
   }, 30_000);
 
+  it("type each collection's named export like collections.get", async () => {
+    const output = await typecheck(`
+import { authors, collections, posts, quotes } from "tomekit/content";
+
+const title: string = posts.get("hello").metadata.title;
+const name: string = authors.get(quotes.get("first").metadata.author).metadata.name;
+const same: typeof posts = collections.get("posts");
+const fromRoute: string = "anything";
+const maybe: string | undefined = posts.get(fromRoute)?.metadata.title;
+const typo = posts.get("helo");
+
+export { maybe, name, same, title, typo };
+`);
+
+    expect(output).toMatch(
+      /usage\.ts\(9,24\): error TS2769: .*'"helo"' is not assignable to parameter of type '"hello"'/su
+    );
+    expect(output.match(/error TS/gu)).toHaveLength(1);
+  }, 30_000);
+
   it("reject fields, slugs and names that do not exist, and unchecked lookups", async () => {
     const output = await typecheck(`
 import { collections, type CollectionName, type DocumentOf, type SlugOf } from "tomekit/content";
