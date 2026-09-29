@@ -475,6 +475,22 @@ describe("tomekit()", () => {
     expect(messages.join("\n")).toContain("imported in the browser bundle");
   });
 
+  // Vite reads a dev module's watch files as its imports once it is reloaded, and a content folder can't be imported.
+  it("serves tomekit/content to the browser bundle again after content changes", async () => {
+    const { project, server: dev } = await start({
+      "content/posts/hello.md": HELLO,
+    });
+
+    const { client } = dev.environments;
+    await client.transformRequest("tomekit/content");
+    await project.write({ "content/posts/later.md": LATER });
+    await expect.poll(() => globalThis.tomekitRuns).toBe(2);
+
+    const result = await client.transformRequest("tomekit/content");
+
+    expect(result?.code).toContain("Later");
+  });
+
   it("keeps tomekit out of dependency pre-bundling in every environment", async () => {
     const { server: dev } = await start({});
 

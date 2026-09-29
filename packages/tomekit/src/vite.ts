@@ -253,9 +253,13 @@ function tomekit({
         // No source map: generated data maps to nothing, and Vite would otherwise inline one as big as the module.
         return { code: build.code, map: { mappings: "" } };
       } finally {
-        // For `vite build --watch`; the dev server watches through `configureServer`.
-        for (const file of builder?.watchFiles ?? []) {
-          this.addWatchFile(file);
+        // For `vite build --watch` only: in dev, Vite also resolves watch files as the
+        // module's imports, and a content folder can't be imported. The dev server
+        // watches through `configureServer`.
+        if (server === undefined) {
+          for (const file of builder?.watchFiles ?? []) {
+            this.addWatchFile(file);
+          }
         }
       }
     },
