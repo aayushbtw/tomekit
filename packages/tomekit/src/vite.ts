@@ -6,6 +6,7 @@ import { ContentBuilder, MODULE_ID, MODULES_ID, OUTPUT } from "./builder";
 import type { Build } from "./builder";
 import { BrokenContentError, PluginNotReadyError } from "./errors";
 import type { ContentError } from "./errors";
+import { FileWatcher } from "./watcher";
 
 const RESOLVED_ID = `\0${MODULE_ID}`;
 
@@ -43,6 +44,8 @@ function tomekit({
   let logger: Logger | undefined;
   let root = process.cwd();
   let server: ViteDevServer | undefined;
+  // Content is watched with `fs.watch`, not Vite's watcher, whose fsevents stream reports changes on macOS about 100 ms late.
+  let watcher: FileWatcher | undefined;
   // Each build is reported once, however many modules or environments await it.
   const reported = new WeakSet<Build>();
   // The latest build's, for a browser that connects after it was reported.
@@ -109,8 +112,8 @@ function tomekit({
     const build = await builder.load();
     latestErrors = build.errors;
     latestCode = build.code;
-    // Watch globs can point outside the root, which the dev watcher does not cover on its own.
-    server?.watcher.add(builder.watchFiles);
+    // After every build, since a `load` can watch different files than the last one.
+    watcher?.watch(builder.watchFiles);
 
     if (!reported.has(build)) {
       reported.add(build);
@@ -142,8 +145,11 @@ function tomekit({
     }
   }
 
-  async function reload(dev: ViteDevServer, file: string) {
-    if (builder?.changed(file) !== true) {
+  async function reload(dev: ViteDevServer, files: readonly string[]) {
+    // Every file, not just until the first match: each one drops what it invalidates.
+    const changed = files.filter((file) => builder?.changed(file) === true);
+
+    if (changed.length === 0) {
       return;
     }
 
@@ -185,6 +191,11 @@ function tomekit({
       await (server === undefined ? load() : rebuild());
     },
 
+    // Called when the dev server closes, too.
+    closeBundle() {
+      watcher?.close();
+    },
+
     // Pre-bundling would cache tomekit's runtime by version, so a linked or
     // locally built tomekit could keep serving stale code, and the plugin's
     // own module must never be bundled from its stub.
@@ -206,8 +217,8 @@ function tomekit({
 
     configureServer(dev) {
       server = dev;
-      dev.watcher.on("all", (_event, file) => {
-        void reload(dev, file);
+      watcher = new FileWatcher((files) => {
+        void reload(dev, files);
       });
       dev.environments.client.hot.on("vite:client:connect", (_data, client) => {
         const payload = errorPayload(latestErrors);

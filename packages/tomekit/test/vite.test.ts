@@ -65,7 +65,10 @@ export default defineConfig({
     posts: {
       loader: directory("content/posts"),
       schema: z.object({ title: z.string() }),
-      transform: ({ file }) => ({ body: fileModule(file.path.replace(/\\.md$/u, ".js")) }),
+      transform: ({ file }) => {
+        globalThis.tomekitRuns = (globalThis.tomekitRuns ?? 0) + 1;
+        return { body: fileModule(file.path.replace(/\\.md$/u, ".js")) };
+      },
     },
   },
 });
@@ -190,11 +193,7 @@ async function start(
     server: options,
   });
 
-  function change(file: string) {
-    server?.watcher.emit("all", "change", path.join(project.root, file));
-  }
-
-  return { change, messages, project, server };
+  return { messages, project, server };
 }
 
 const HELLO = "---\ntitle: Hello\ndate: 2026-03-27\n---\n";
@@ -229,29 +228,23 @@ describe("tomekit()", () => {
   });
 
   it("reloads for a new file and reruns only what changed", async () => {
-    const {
-      change,
-      project,
-      server: dev,
-    } = await start({ "content/posts/hello.md": HELLO });
+    const { project, server: dev } = await start({
+      "content/posts/hello.md": HELLO,
+    });
 
     await loadPosts(dev);
     expect(globalThis.tomekitRuns).toBe(1);
 
     await project.write({ "content/posts/later.md": LATER });
-    change("content/posts/later.md");
-    const posts = await loadPosts(dev);
 
-    expect(posts.get("later")?.metadata.title).toBe("Later");
+    await expect
+      .poll(async () => (await loadPosts(dev)).get("later")?.metadata.title)
+      .toBe("Later");
     expect(globalThis.tomekitRuns).toBe(2);
   });
 
   it("leaves an edit that keeps the module the same to the bundler, without a full reload", async () => {
-    const {
-      change,
-      project,
-      server: dev,
-    } = await start({
+    const { project, server: dev } = await start({
       "content/posts/hello.js": 'export default "Hello";\n',
       "content/posts/hello.md": HELLO,
       "tomekit.config.ts": moduleConfig,
@@ -272,22 +265,22 @@ describe("tomekit()", () => {
 
     await loadCollections(dev);
     await project.write({ "content/posts/hello.md": `${HELLO}\nMore text\n` });
-    change("content/posts/hello.md");
+    await expect.poll(() => globalThis.tomekitRuns).toBe(2);
+    // Waits for the rebuild, which decides whether to reload.
     await loadCollections(dev);
+    expect(reloads).toStrictEqual([]);
+
     await project.write({
       "content/posts/hello.md": HELLO.replace("Hello", "Hi"),
     });
-    change("content/posts/hello.md");
 
     await expect.poll(() => reloads).toStrictEqual(["full-reload"]);
   });
 
   it("reloads the browser when content changes, even though only server code imports it", async () => {
-    const {
-      change,
-      project,
-      server: dev,
-    } = await start({ "content/posts/hello.md": HELLO });
+    const { project, server: dev } = await start({
+      "content/posts/hello.md": HELLO,
+    });
 
     const sent: HotPayload[] = [];
     dev.environments.client.hot.send = (payload: HotPayload) => {
@@ -296,7 +289,6 @@ describe("tomekit()", () => {
 
     await loadPosts(dev);
     await project.write({ "content/posts/later.md": LATER });
-    change("content/posts/later.md");
 
     await expect
       .poll(() => sent.some(({ type }) => type === "full-reload"))
@@ -306,19 +298,20 @@ describe("tomekit()", () => {
   });
 
   it("ignores changes to files outside the collection", async () => {
-    const {
-      change,
-      project,
-      server: dev,
-    } = await start({ "content/posts/hello.md": HELLO });
+    const { project, server: dev } = await start({
+      "content/posts/hello.md": HELLO,
+    });
 
     await loadPosts(dev);
 
     await project.write({ "content/posts/later.txt": LATER });
-    change("content/posts/later.txt");
-    const posts = await loadPosts(dev);
+    // A change the collection does watch, so the build after it has seen both.
+    await project.write({ "content/posts/later.md": LATER });
 
-    expect(posts.documents()).toHaveLength(1);
+    await expect
+      .poll(async () => (await loadPosts(dev)).documents())
+      .toHaveLength(2);
+    expect(globalThis.tomekitRuns).toBe(2);
   });
 
   it("keeps serving the other files when one is broken", async () => {
@@ -336,11 +329,9 @@ describe("tomekit()", () => {
   });
 
   it("shows broken files in the error overlay", async () => {
-    const {
-      change,
-      project,
-      server: dev,
-    } = await start({ "content/posts/hello.md": HELLO });
+    const { project, server: dev } = await start({
+      "content/posts/hello.md": HELLO,
+    });
 
     const sent: HotPayload[] = [];
     dev.environments.client.hot.send = (payload: HotPayload) => {
@@ -348,8 +339,9 @@ describe("tomekit()", () => {
     };
 
     await project.write({ "content/posts/broken.md": "---\ntitle: 1\n---\n" });
-    change("content/posts/broken.md");
-    await loadPosts(dev);
+    await expect
+      .poll(() => sent.some((payload) => payload.type === "error"))
+      .toBe(true);
 
     const overlay = sent.find((payload) => payload.type === "error");
     expect(overlay?.err.plugin).toBe("tomekit");
@@ -390,11 +382,7 @@ describe("tomekit()", () => {
   });
 
   it("reruns a loader when a file it watches changes", async () => {
-    const {
-      change,
-      project,
-      server: dev,
-    } = await start({
+    const { project, server: dev } = await start({
       "data/pages.json": pages("One"),
       "tomekit.config.ts": loaderConfig,
     });
@@ -403,18 +391,17 @@ describe("tomekit()", () => {
     expect(before?.metadata.title).toBe("One");
 
     await project.write({ "data/pages.json": pages("Two") });
-    change("data/pages.json");
-    const after = (await loadCollections(dev)).get("pages")?.get("0");
 
-    expect(after?.metadata.title).toBe("Two");
+    await expect
+      .poll(
+        async () =>
+          (await loadCollections(dev)).get("pages")?.get("0")?.metadata.title
+      )
+      .toBe("Two");
   });
 
   it("points the overlay at the config for an entry without a file", async () => {
-    const {
-      change,
-      project,
-      server: dev,
-    } = await start({
+    const { project, server: dev } = await start({
       "data/pages.json": pages("One"),
       "tomekit.config.ts": loaderConfig,
     });
@@ -425,8 +412,9 @@ describe("tomekit()", () => {
     };
 
     await project.write({ "data/pages.json": pages(undefined) });
-    change("data/pages.json");
-    await loadCollections(dev);
+    await expect
+      .poll(() => sent.some((payload) => payload.type === "error"))
+      .toBe(true);
 
     const overlay = sent.find((payload) => payload.type === "error");
     expect(overlay?.err.loc?.file).toBe(
@@ -491,12 +479,11 @@ describe("tomekit()", () => {
   });
 
   it("rewrites types after a change, before anything imports the content", async () => {
-    const { change, project } = await start({
+    const { project } = await start({
       "content/posts/hello.md": HELLO,
     });
 
     await project.write({ "content/posts/later.md": LATER });
-    change("content/posts/later.md");
 
     await expect
       .poll(
