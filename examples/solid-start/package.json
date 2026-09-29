@@ -1,0 +1,30 @@
+{
+  "name": "example-solid-start",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "check": "tsc",
+    "dev": "vite dev",
+    "preview": "vite preview",
+    "start": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "@solidjs/meta": "^0.29.4",
+    "@solidjs/router": "^1.0.0",
+    "@solidjs/start": "^2.0.5",
+    "marked": "^18.0.14",
+    "nitro": "^3.0.260903-beta",
+    "solid-js": "^1.9.15",
+    "tomekit": "latest",
+    "vite": "^8.0.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

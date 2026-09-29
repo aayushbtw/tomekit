@@ -43,7 +43,8 @@ export default defineConfig({
     useTabs: false,
   },
   lint: {
-    ignorePatterns,
+    // Examples are standalone apps outside the workspace: their dependencies aren't installed here, so type-aware rules can't resolve them.
+    ignorePatterns: [...ignorePatterns, "examples/**"],
     jsPlugins: [
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
       { name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" },
