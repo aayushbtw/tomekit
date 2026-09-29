@@ -83,6 +83,10 @@ To render the body, see [Transform](https://tomekit.aayush.cv/transform) and [MD
 - React Router: [guide](https://tomekit.aayush.cv/react-router), [StackBlitz](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/react-router)
 - SolidStart: [guide](https://tomekit.aayush.cv/solid-start), [StackBlitz](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/solid-start)
 
+## AI agents
+
+The package ships a guide for coding agents, matching the installed version. Point your `AGENTS.md` at it, see [AI agents](https://tomekit.aayush.cv/agents).
+
 ## Requirements
 
 Vite 8, TypeScript 7 and Node 24, or later.
