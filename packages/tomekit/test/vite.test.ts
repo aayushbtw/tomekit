@@ -217,6 +217,24 @@ describe("tomekit()", () => {
     expect(globalThis.tomekitDev).toBe(true);
   });
 
+  it("serves tomekit/content in dev SSR when tomekit is installed in node_modules", async () => {
+    // As npm installs it: a real folder in node_modules, which Vite's dev SSR externalizes unless told not to.
+    const { server: dev } = await start({
+      "content/posts/hello.md": HELLO,
+      "node_modules/tomekit/content.mjs":
+        'throw new Error("the stub loaded instead of the plugin\'s module");\n',
+      "node_modules/tomekit/package.json": JSON.stringify({
+        exports: { "./content": "./content.mjs" },
+        name: "tomekit",
+        type: "module",
+      }),
+      // Without its own package.json, the project sits inside tomekit's, and `tomekit/content` resolves to it by name.
+      "package.json": JSON.stringify({ name: "app", type: "module" }),
+    });
+
+    expect((await loadPosts(dev)).get("hello")?.metadata.title).toBe("Hello");
+  });
+
   it("serves collection names, and nothing for an unknown name", async () => {
     const { server: dev } = await start({ "content/posts/hello.md": HELLO });
 

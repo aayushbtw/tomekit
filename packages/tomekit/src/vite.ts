@@ -202,6 +202,9 @@ function tomekit({
     configEnvironment() {
       return {
         optimizeDeps: { exclude: ["tomekit", MODULE_ID, MODULES_ID] },
+        // Dev SSR hands an installed package's imports to Node without asking plugins, so Node would load the stub.
+        // Vite matches `noExternal` by package name, so this can't name only `tomekit/content`.
+        resolve: { noExternal: ["tomekit"] },
       };
     },
 
