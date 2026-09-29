@@ -85,7 +85,7 @@ To render the body, see [Transform](https://tomekit.aayush.cv/transform) and [MD
 
 ## AI agents
 
-The package ships a guide for coding agents, matching the installed version. Point your `AGENTS.md` at it, see [AI agents](https://tomekit.aayush.cv/agents).
+The package ships a guide for coding agents, matching the installed version. Set it up with one prompt, or point your `AGENTS.md` at it by hand, see the [Quick start](https://tomekit.aayush.cv).
 
 ## Requirements
 

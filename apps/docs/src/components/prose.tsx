@@ -287,16 +287,19 @@ function Code(props: ComponentPropsWithoutRef<"code">) {
   );
 }
 
-interface PromptProps {
-  /** The prompt, taken from the block's code at build time. */
+interface CopyProps {
+  /** The button's text, from the `label` attribute. */
+  label?: string;
+  /** What the button copies: the block's code, taken at build time. */
   text?: string;
 }
 
-function Prompt({ text = "" }: PromptProps) {
+// Copies text the page doesn't show, eg a prompt for an agent.
+function Copy({ label = "Copy", text = "" }: CopyProps) {
   return (
     <div {...stylex.props(styles.codeFrame)}>
-      <CopyButton label="Copy prompt" text={text}>
-        Copy prompt
+      <CopyButton label={label} text={text}>
+        {label}
       </CopyButton>
     </div>
   );
@@ -327,7 +330,7 @@ const components: MarkdownComponents = {
   img: (props) => <img {...props} {...stylex.props(styles.img)} />,
   li: (props) => <li {...props} {...stylex.props(styles.li)} />,
   "md-install": (props) => <Install {...props} style={styles.codeFrame} />,
-  "md-prompt": (props) => <Prompt {...props} />,
+  "md-copy": (props) => <Copy {...props} />,
   ol: (props) => <ol {...props} {...stylex.props(styles.ol)} />,
   p: (props) => <p {...props} {...stylex.props(styles.p)} />,
   pre: Pre,
