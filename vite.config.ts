@@ -21,6 +21,17 @@ export default defineConfig({
     // Examples are standalone apps outside the workspace: their dependencies aren't installed here, so type-aware rules can't resolve them.
     ignorePatterns: [...ignorePatterns, "examples/**"],
     options: { typeAware: true, typeCheck: true },
+    rules: {
+      // Declarations allow overloads, assertion signatures and hoisting, which arrows don't.
+      "func-style": ["error", "declaration"],
+      "react/function-component-definition": [
+        "error",
+        {
+          namedComponents: "function-declaration",
+          unnamedComponents: "arrow-function",
+        },
+      ],
+    },
   },
   run: { cache: true },
 });
