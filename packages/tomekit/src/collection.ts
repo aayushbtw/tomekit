@@ -9,15 +9,16 @@ import type { CollectionConfig, Entry, LoadResult } from "./index";
 import { isLocated, LOCATE } from "./parse";
 import type { Locate } from "./parse";
 import { serialize } from "./serialize";
+import type { Serialized } from "./serialize";
 import { REASON, Skipped } from "./skipped";
 import { validate } from "./validate";
 import { assertContentValue, isPlainObject } from "./value";
 import type { ContentValue } from "./value";
 
-/** A document as the build needs it: its output, the code for it, and where it came from. */
+/** A document as the build needs it: its output, serialized for the generated module, and where it came from. */
 interface BuiltDocument {
-  /** `output` as JavaScript source. */
-  code: string;
+  /** `output`, ready to write into the generated module. Empty for a skipped document. */
+  serialized: Serialized;
   /** Relative to the root, or `undefined` when the loader gave no file. */
   file: string | undefined;
   /** Where a metadata key is written, when the loader can tell. */
@@ -64,6 +65,18 @@ function skip(reason?: string): Skipped {
 
 function hash(text: string): string {
   return createHash("sha1").update(text).digest("base64");
+}
+
+/** Changes whenever anything the transform or the document could depend on changes. */
+function entryHashOf(entry: Entry, metadata: ContentValue): string {
+  const text = serialize({
+    body: entry.body,
+    file: entry.file === undefined ? undefined : { path: entry.file.path },
+    metadata,
+    slug: entry.slug,
+  });
+
+  return hash("json" in text ? text.json : text.source);
 }
 
 function messageOf(cause: unknown): string {
@@ -304,19 +317,7 @@ async function loadEntry(
     assertContentValue(raw);
     metadata = raw;
 
-    const fileInfo =
-      entry.file === undefined
-        ? undefined
-        : { name: entry.file.name, path: entry.file.path };
-
-    entryHash = hash(
-      serialize({
-        body: entry.body,
-        file: fileInfo,
-        metadata,
-        slug: entry.slug,
-      })
-    );
+    entryHash = entryHashOf(entry, metadata);
   } catch (error) {
     return failure(error);
   }
@@ -346,7 +347,7 @@ async function loadEntry(
   const { source } = validated;
 
   let output: ContentValue | Skipped;
-  let code = "";
+  let serialized: Serialized = { source: "" };
 
   try {
     const result: unknown = collection.transform
@@ -358,14 +359,14 @@ async function loadEntry(
     } else {
       assertTransformResult(result);
       output = buildDocument(source, result);
-      code = serialize(output);
+      serialized = serialize(output);
     }
   } catch (error) {
     return failure(error);
   }
 
   const document = {
-    code,
+    serialized,
     file,
     locate,
     output,

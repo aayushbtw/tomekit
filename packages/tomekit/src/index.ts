@@ -34,8 +34,6 @@ type InferOutput<TSchema> =
 
 /** Where a document's file lives. */
 interface FileInfo {
-  /** The file name with its extension, eg `setup.md`. */
-  name: string;
   /** Relative to the project root, eg `content/guides/setup.md`. */
   path: string;
 }

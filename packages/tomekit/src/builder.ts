@@ -15,7 +15,7 @@ import type { ContentError } from "./errors";
 import { writeTypes } from "./generate";
 import type { Config } from "./index";
 import { checkReferences } from "./reference";
-import { PURE } from "./serialize";
+import { listSource, PURE } from "./serialize";
 import { isPlainObject } from "./value";
 
 const MODULE_ID = "tomekit/content";
@@ -296,11 +296,9 @@ class ContentBuilder {
 
     // One export per collection, so a page bundles only the collections it imports.
     const exports = collections.map(({ documents, name }) => {
-      const pairs = documents.map(
-        ({ code, slug }) => `[${JSON.stringify(slug)},${code}]`
-      );
+      const list = listSource(documents.map(({ serialized }) => serialized));
 
-      return `export const ${name} = ${PURE}_createCollection([${pairs.join(",")}]);`;
+      return `export const ${name} = ${PURE}_createCollection(${list});`;
     });
 
     const names = collections.map(({ name }) => name).join(",");

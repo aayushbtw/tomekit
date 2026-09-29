@@ -100,17 +100,18 @@ interface Collections<TDocument> {
 }
 
 /**
- * Wraps a collection's documents for the generated `tomekit/content` module:
- * each pair is `[slug, document]`.
+ * Wraps a collection's documents for the generated `tomekit/content` module.
  *
  * @internal
  */
-function createCollection<TDocument>(
-  pairs: readonly (readonly [string, TDocument])[]
+function createCollection<TDocument extends { readonly slug: string }>(
+  documents: readonly TDocument[]
 ): Collection<TDocument> {
-  const bySlug = new Map(pairs);
-  const documents = pairs.map(([, document]) => document);
-  const slugs = pairs.map(([slug]) => slug);
+  const slugs = documents.map((document) => document.slug);
+
+  const bySlug = new Map(
+    documents.map((document) => [document.slug, document])
+  );
 
   function get(slug: never): TDocument;
   function get(slug: string): TDocument | undefined;

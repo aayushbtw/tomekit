@@ -474,7 +474,7 @@ export const unknownSource = defineConfig({
 // `defineLoader` keeps a shared loader's file type: required when its entries set files.
 const withFiles = defineLoader({
   load: () => ({
-    entries: [{ file: { name: "a.md", path: "content/a.md" }, slug: "a" }],
+    entries: [{ file: { path: "content/a.md" }, slug: "a" }],
   }),
 });
 

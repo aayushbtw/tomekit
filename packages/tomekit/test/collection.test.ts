@@ -15,7 +15,7 @@ import type { LocatedEntry } from "../src/parse";
 
 const ROOT = "/project";
 
-const FILE = { name: "hello.md", path: "content/posts/hello.md" };
+const FILE = { path: "content/posts/hello.md" };
 
 function loader(
   entries: readonly Entry[],
@@ -244,7 +244,7 @@ describe("loadCollection", () => {
     expect(outputs(documents)).toStrictEqual([
       { body: "Text", file: FILE, metadata: { title: "Hello" }, slug: "hello" },
     ]);
-    expect(documents[0]?.code).toMatch(/^\/\*#__PURE__\*\/JSON\.parse\(/u);
+    expect(documents[0]?.serialized).toHaveProperty("json");
   });
 
   it("replaces only the body a transform returns", async () => {

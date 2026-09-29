@@ -51,13 +51,13 @@ describe("directory", () => {
     expect(outputs(documents)).toStrictEqual([
       {
         body: "\nBody of B\n",
-        file: { name: "b.md", path: "content/posts/b.md" },
+        file: { path: "content/posts/b.md" },
         metadata: { tags: ["one", "two"], title: "B" },
         slug: "b",
       },
       {
         body: "Body of A",
-        file: { name: "a.md", path: "content/posts/nested/a.md" },
+        file: { path: "content/posts/nested/a.md" },
         metadata: { tags: [], title: "A" },
         slug: "nested/a",
       },
@@ -96,7 +96,7 @@ describe("directory", () => {
     expect(outputs(documents)).toMatchObject([
       {
         body: "Body",
-        file: { name: "clash.md" },
+        file: { path: "content/posts/clash.md" },
         metadata: { body: "mine", file: "mine", title: "Clash" },
       },
     ]);

@@ -4,29 +4,71 @@ import type { ContentValue } from "./value";
 /** Lets a bundler drop a call whose result is unused, eg a collection nobody imports. */
 const PURE = "/*#__PURE__*/";
 
-interface WriteState {
-  /** Whether `JSON.parse` would rebuild the value exactly. */
-  json: boolean;
-}
+/**
+ * A value as JSON text, when `JSON.parse` rebuilds it exactly, or else as
+ * JavaScript source, so values JSON would drop or change (Dates, Maps, NaN,
+ * `undefined`) come back as they went in.
+ */
+type Serialized = { json: string } | { source: string };
 
-// JavaScript source rather than JSON, so values JSON would drop or change
-// (Dates, Maps, NaN, `undefined`) come back as they went in. Plain JSON data
-// is emitted as `JSON.parse("...")` instead, which V8 loads about twice as
-// fast as the same object literal.
-function serialize(value: ContentValue): string {
-  const state: WriteState = { json: true };
-  const source = write(value, state);
-
-  return state.json
-    ? `${PURE}JSON.parse(${JSON.stringify(JSON.stringify(value))})`
-    : source;
-}
-
-function number(value: number, state: WriteState): string {
-  if (!Number.isFinite(value) || Object.is(value, -0)) {
-    state.json = false;
+/** Whether `JSON.parse(JSON.stringify(value))` gives the same value back. Checks without building any text. */
+function isJson(value: ContentValue): boolean {
+  if (value === undefined) {
+    return false;
   }
 
+  if (isNumber(value)) {
+    return Number.isFinite(value) && !Object.is(value, -0);
+  }
+
+  if (isList(value)) {
+    // `JSON.parse` would read a hole back as `null`.
+    return Array.from({ length: value.length }).every(
+      (_, index) => index in value && isJson(value[index])
+    );
+  }
+
+  if (isFields(value)) {
+    return Object.values(value).every(isJson);
+  }
+
+  return !(
+    isMap(value) ||
+    isSet(value) ||
+    value instanceof Date ||
+    value instanceof URL ||
+    value instanceof RegExp
+  );
+}
+
+function serialize(value: ContentValue): Serialized {
+  return isJson(value)
+    ? { json: JSON.stringify(value) }
+    : { source: write(value) };
+}
+
+// Single quotes, so the JSON's many `"` need no escaping.
+function quoted(json: string): string {
+  return `'${json.replaceAll(/['\\]/gu, "\\$&")}'`;
+}
+
+/** JavaScript source for one serialized value. `JSON.parse` of a string loads about twice as fast in V8 as the same object literal. */
+function sourceOf(serialized: Serialized): string {
+  return "json" in serialized
+    ? `${PURE}JSON.parse(${quoted(serialized.json)})`
+    : serialized.source;
+}
+
+/** JavaScript source for an array of serialized values: one `JSON.parse` when every item is JSON. */
+function listSource(items: readonly Serialized[]): string {
+  const json = items.flatMap((item) => ("json" in item ? [item.json] : []));
+
+  return json.length === items.length
+    ? `${PURE}JSON.parse(${quoted(`[${json.join(",")}]`)})`
+    : `[${items.map(sourceOf).join(",")}]`;
+}
+
+function number(value: number): string {
   if (Number.isNaN(value)) {
     return "NaN";
   }
@@ -38,28 +80,19 @@ function number(value: number, state: WriteState): string {
   return Object.is(value, -0) ? "-0" : String(value);
 }
 
-function write(value: ContentValue, state: WriteState): string {
+function write(value: ContentValue): string {
   if (value === undefined) {
-    state.json = false;
-
     return "undefined";
   }
 
   if (isNumber(value)) {
-    return number(value, state);
+    return number(value);
   }
 
   if (isList(value)) {
-    const items = Array.from({ length: value.length }, (_, index) => {
-      if (index in value) {
-        return write(value[index], state);
-      }
-
-      // `JSON.parse` would read a hole back as `null`.
-      state.json = false;
-
-      return "";
-    });
+    const items = Array.from({ length: value.length }, (_, index) =>
+      index in value ? write(value[index]) : ""
+    );
 
     // A trailing hole needs its own comma: `[1,,]` has two items, `[1,]` one.
     const trailing =
@@ -71,48 +104,39 @@ function write(value: ContentValue, state: WriteState): string {
   if (isFields(value)) {
     const entries = Object.entries(value).map(
       // Computed, so a `__proto__` key stays a key instead of setting the prototype.
-      ([key, entry]) => `[${JSON.stringify(key)}]:${write(entry, state)}`
+      ([key, entry]) => `[${JSON.stringify(key)}]:${write(entry)}`
     );
 
     return `{${entries.join(",")}}`;
   }
 
   if (isMap(value)) {
-    state.json = false;
-
     const pairs = [...value].map(
-      ([key, entry]) => `[${write(key, state)},${write(entry, state)}]`
+      ([key, entry]) => `[${write(key)},${write(entry)}]`
     );
 
     return `${PURE}new Map([${pairs.join(",")}])`;
   }
 
   if (isSet(value)) {
-    state.json = false;
-    const entries = [...value].map((entry) => write(entry, state));
+    const entries = [...value].map((entry) => write(entry));
 
     return `${PURE}new Set([${entries.join(",")}])`;
   }
 
   if (value instanceof Date) {
-    state.json = false;
-
-    return `${PURE}new Date(${number(value.getTime(), state)})`;
+    return `${PURE}new Date(${number(value.getTime())})`;
   }
 
   if (value instanceof URL) {
-    state.json = false;
-
     return `${PURE}new URL(${JSON.stringify(value.href)})`;
   }
 
   if (value instanceof RegExp) {
-    state.json = false;
-
     return `${PURE}new RegExp(${JSON.stringify(value.source)},${JSON.stringify(value.flags)})`;
   }
 
   return JSON.stringify(value);
 }
 
-export { PURE, serialize };
+export { listSource, PURE, serialize, type Serialized, sourceOf };

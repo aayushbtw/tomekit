@@ -11,7 +11,7 @@ import type { Source } from "../src/index";
 
 const source: Source<object> = {
   body: "Text",
-  file: { name: "a.md", path: "content/a.md" },
+  file: { path: "content/a.md" },
   metadata: { title: "A" },
   slug: "a",
 };

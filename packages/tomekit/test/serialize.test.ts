@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { serialize } from "../src/serialize";
+import { listSource, serialize, sourceOf } from "../src/serialize";
 import { assertContentValue } from "../src/value";
 import type { ContentValue } from "../src/value";
 
@@ -27,19 +27,19 @@ describe("serialize", () => {
   it("round-trips plain data", async () => {
     const value = { list: [1, "two", true, null], nested: { quote: 'a "b"' } };
 
-    expect(await evaluate(serialize(value))).toStrictEqual(value);
+    expect(await evaluate(sourceOf(serialize(value)))).toStrictEqual(value);
   });
 
   it("keeps dates and undefined", async () => {
     const value = { at: new Date("2026-03-27T00:00:00Z"), missing: undefined };
 
-    expect(await evaluate(serialize(value))).toStrictEqual(value);
+    expect(await evaluate(sourceOf(serialize(value)))).toStrictEqual(value);
   });
 
   it("keeps numbers JSON cannot represent", async () => {
     const value = [Number.NaN, Infinity, -Infinity, -0];
 
-    expect(await evaluate(serialize(value))).toStrictEqual(value);
+    expect(await evaluate(sourceOf(serialize(value)))).toStrictEqual(value);
   });
 
   it("keeps maps, sets, URLs and regular expressions", async () => {
@@ -52,7 +52,7 @@ describe("serialize", () => {
       url: new URL("https://example.com/a?b=c"),
     };
 
-    expect(await evaluate(serialize(value))).toStrictEqual(value);
+    expect(await evaluate(sourceOf(serialize(value)))).toStrictEqual(value);
   });
 
   it("keeps holes in sparse arrays", async () => {
@@ -64,8 +64,10 @@ describe("serialize", () => {
 
     trailing.length = 2;
 
-    expect(await evaluate(serialize(sparse))).toStrictEqual(sparse);
-    expect(await evaluate(serialize(trailing))).toStrictEqual(trailing);
+    expect(await evaluate(sourceOf(serialize(sparse)))).toStrictEqual(sparse);
+    expect(await evaluate(sourceOf(serialize(trailing)))).toStrictEqual(
+      trailing
+    );
   });
 
   it("keeps a __proto__ key as a key", async () => {
@@ -73,14 +75,18 @@ describe("serialize", () => {
 
     assertContentValue(value);
 
-    expect(await evaluate(serialize(value))).toStrictEqual(value);
+    expect(await evaluate(sourceOf(serialize(value)))).toStrictEqual(value);
   });
 
   it("emits plain JSON data through JSON.parse, which loads faster", async () => {
-    const value = { list: [1, "two", true, null], nested: { quote: 'a "b"' } };
-    const source = serialize(value);
+    const value = {
+      list: [1, "two", true, null],
+      nested: { quote: "a 'b' \\ \"c\"" },
+    };
 
-    expect(source).toMatch(/^\/\*#__PURE__\*\/JSON\.parse\(/u);
+    const source = sourceOf(serialize(value));
+
+    expect(source).toMatch(/^\/\*#__PURE__\*\/JSON\.parse\('/u);
     expect(await evaluate(source)).toStrictEqual(value);
   });
 
@@ -91,7 +97,18 @@ describe("serialize", () => {
       [-0],
       [Number.NaN],
     ]) {
-      expect(serialize(value)).not.toMatch(/JSON\.parse/u);
+      expect(serialize(value)).toHaveProperty("source");
     }
+  });
+
+  it("emits a list of JSON values as one JSON.parse, and a mixed list item by item", async () => {
+    const plain = [{ slug: "a" }, { slug: "b" }];
+    const mixed = [{ slug: "a" }, { at: new Date(0) }];
+    const plainSource = listSource(plain.map(serialize));
+    const mixedSource = listSource(mixed.map(serialize));
+
+    expect(plainSource.match(/JSON\.parse/gu)).toHaveLength(1);
+    expect(await evaluate(plainSource)).toStrictEqual(plain);
+    expect(await evaluate(mixedSource)).toStrictEqual(mixed);
   });
 });

@@ -64,7 +64,7 @@ describe("parse", () => {
     );
 
     expect(entry).toMatchObject({
-      file: { name: "setup.draft.md" },
+      file: { path: "content/posts/guides/setup.draft.md" },
       slug: "guides/setup.draft",
     });
   });

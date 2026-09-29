@@ -3,8 +3,8 @@ import { describe, expect, it } from "vite-plus/test";
 import { createCollection, createCollections } from "../src/query";
 
 const collection = createCollection([
-  ["b", { title: "Beta" }],
-  ["a", { title: "Alpha" }],
+  { slug: "b", title: "Beta" },
+  { slug: "a", title: "Alpha" },
 ]);
 
 describe("createCollection", () => {
@@ -34,10 +34,10 @@ describe("createCollection", () => {
 describe("createCollections", () => {
   const collections = createCollections({
     notes: createCollection([
-      ["a", { title: "A" }],
-      ["b", { title: "B" }],
+      { slug: "a", title: "A" },
+      { slug: "b", title: "B" },
     ]),
-    posts: createCollection([["hello", { title: "Hello" }]]),
+    posts: createCollection([{ slug: "hello", title: "Hello" }]),
   });
 
   it("lists collection names in config order", () => {

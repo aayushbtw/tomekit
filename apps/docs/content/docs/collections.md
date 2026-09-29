@@ -12,7 +12,7 @@ A document is one validated entry. Every document in every collection has the sa
 - `slug`: its key inside the collection, eg `hello-world`
 - `metadata`: the schema's output, eg a file's frontmatter
 - `body`: the text under the frontmatter, or whatever `transform` returned
-- `file`: `{ name, path }`, or `undefined` when the entry came from no file
+- `file`: `{ path }`, or `undefined` when the entry came from no file
 
 So a folder of Markdown and rows from an API are read the same way, and a field from your schema can never clash with a field tomekit sets.
 

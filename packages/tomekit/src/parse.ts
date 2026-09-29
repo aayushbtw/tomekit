@@ -314,7 +314,7 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
     issues: [...frontmatterIssues, ...slugIssues],
     entry: {
       body: match ? text.slice(match[0].length) : text,
-      file: { name: path.basename(file), path: filePath },
+      file: { path: filePath },
       [LOCATE]: locate,
       metadata: isPlainObject(metadata) ? metadata : {},
       slug: isSlug(slug)

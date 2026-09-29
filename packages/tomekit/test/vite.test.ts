@@ -562,7 +562,7 @@ export default defineConfig({
       .map((chunk) => ("code" in chunk ? chunk.code : ""))
       .join("\n");
 
-    expect(code).toContain('"hello"');
+    expect(code).toContain("content/posts/hello.md");
     expect(code).not.toContain("NOTES_ONLY");
   });
 

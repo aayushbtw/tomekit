@@ -59,7 +59,7 @@ Every document has four fields:
 - `slug`: its key in the collection
 - `metadata`: the schema's output, or what `transform` returned
 - `body`: the text after the frontmatter, or what `transform` returned
-- `file`: `{ name, path }`, or `undefined` when its loader gave no file
+- `file`: `{ path }`, relative to the project root, or `undefined` when its loader gave no file
 
 `documents()` returns a plain array, so sort and filter it like any other:
 
