@@ -1,3 +1,4 @@
+import interLatin from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 import * as stylex from "@stylexjs/stylex";
 import { createThemeCss } from "@tanstack/highlight/theme";
 import { githubDarkTheme } from "@tanstack/highlight/themes/github-dark";
@@ -97,6 +98,14 @@ export const Route = createRootRoute({
       {
         rel: "manifest",
         href: "/manifest.webmanifest",
+      },
+      // Without it, the font is found only after the CSS is parsed, so text renders in the fallback first.
+      {
+        rel: "preload",
+        href: interLatin,
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
       },
       {
         rel: "stylesheet",
