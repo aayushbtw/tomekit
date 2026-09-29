@@ -31,6 +31,7 @@ How to decide before designing or recommending anything. `naming.md` says what t
 
 - Delete a Markdown file once nothing in it is left to do, eg a todo list with every item ticked. Move anything still worth keeping, like a settled decision, into the right file in `.claude/internal/` first, or into the docs site if users need it.
 - No dead files: a doc that only records finished work is history, and git or the commit log already holds it.
+- Don't write what the code, a name or git history already says.
 - The why behind a specific line goes in a one-line comment next to it. `.claude/internal/` holds only what has no line to sit on: rejected options (`out-of-scope.md`), failed experiments (`experiments.md`) and settled design (`architecture.md`). Never both.
 
 ## Test designs before building
