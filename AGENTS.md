@@ -37,49 +37,11 @@ Pure modules, one class that owns state, and a thin adapter, each in its own fil
 - One explicit `export { ... }` list at the bottom of each file. No `export *` barrels.
 - One test file per source module in `test/` (`collection.ts` → `collection.test.ts`). Type-level tests go in `<module>.test-d.ts`, which `vpr check` type-checks and Vitest never runs.
 
-## Errors
+## Read when relevant
 
-- **Return problems, don't throw them.** Lower layers return results (`{ document } | { issues }`, `{ entries, errors }`). Only the adapter decides: `vite build` throws, dev logs the errors, shows them in the overlay and serves the files that work.
-- **Collect, don't stop.** Report every broken file in one pass.
-- **Point at the source.** A content problem is a `ContentError` printed as `file:line:column: message`, with `file` relative to the root. When a key is missing, point at the deepest parent that exists. With no frontmatter at all, leave line and column out.
-- **Messages name the fix**: ``transform returned "url", but it can only return `metadata` and `body`. Put derived values inside `metadata` instead``.
-- **Warnings state the consequence**: `directory "x" has no files, so the collection is empty`.
-- Only the adapter adds the `[tomekit]` prefix and talks to the logger.
-- **Every thrown error is a class in `src/errors/`**, one per file, exported from `src/errors/index.ts`. No `throw new Error(...)` in `src/`. Classes extend a category (`ConfigError`, `ContentError`, `TransformError`, `PluginError`), which extends `TomekitError`. Each sets `name` explicitly, and its constructor takes data and builds the message. Add a class per distinct failure, not per call site. Wrapped errors go in `cause`.
-
-## TSDoc
-
-Everything users import from `tomekit`, `tomekit/content`, `tomekit/content-modules` and `tomekit/vite`, plus each option field, gets a one-sentence summary, then an `@example` that runs as written, with results in trailing comments.
-
-````ts
-/**
- * The document with this slug.
- *
- * @example
- * ```ts
- * posts.get("hello-world").metadata.title // "Hello world"
- * ```
- */
-````
-
-- `@param` / `@returns` only when they say something the name and type don't.
-- Internal functions get no TSDoc unless they have a contract the types can't express.
-
-## Code style
-
-Lint is oxlint with anti-slop (vendored in `tools/oxlint/anti-slop/`) and a short explicit rule list in the root `vite.config.ts`, no preset. Anti-slop always wins:
-
-- Never turn off, loosen or suppress an anti-slop rule. Change the code.
-- When another rule conflicts with anti-slop, turn that rule off in the root `vite.config.ts` with a one-line reason.
-- Add a rule when it would have caught a real problem, not because a preset has it.
-- Unknown input is checked once at its boundary with an assertion or type predicate (eg `assertContentValue`), then handled as a named type. No `typeof`; tell primitives apart by boxing them (`new Object(value) instanceof Number`).
-- A parameter typed `unknown` is only allowed when it is named `cause` or is a type predicate's subject.
-
-Also enforced by lint, so write them up front: `interface` for object shapes (`type` only for unions, function, mapped and conditional types), function declarations over arrow consts, `async`/`await` over `.then`, sorted object keys, no `any` or unsafe assertions (in tests too).
-
-- Types inferred from user schemas are wrapped once in `Prettify`, so errors print flat fields. Use `PrettifyIfPlainObject` where a value might be an array or a built-in (Date, Map, Set, RegExp). Don't generate named interfaces to work around this.
-- Helper types that exist only for generated code or the type system get `@internal`.
-- Options objects with defaults go in the signature: `function tomekit({ config = "tomekit.config.ts" }: TomekitOptions = {})`.
+- `.agents/errors.md`: before adding or changing an error, warning or message
+- `.agents/tsdoc.md`: before adding or changing a public export or option
+- `.agents/code-style.md`: before writing code in `src/` or `test/`. Anti-slop lint rules are never turned off or suppressed; change the code
 
 ## Internal notes
 
