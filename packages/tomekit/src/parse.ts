@@ -13,7 +13,7 @@ import type { Event } from "js-yaml";
 
 import type { Issue } from "./errors";
 import type { Entry, FileInfo } from "./index";
-import { assertContentValue, isList, isPlainObject } from "./value";
+import { isPlainObject } from "./value";
 
 const FRONTMATTER = /^---\r?\n(?:(?<data>[\s\S]*?)\r?\n)?---(?:\r?\n|$)/u;
 
@@ -272,8 +272,8 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
   }
 
   const events = yaml?.events;
+  // Not checked here: YAML's core schema yields only plain data, and `loadCollection` checks every entry.
   const metadata: unknown = yaml?.value ?? {};
-  assertContentValue(metadata);
 
   const slug =
     isPlainObject(metadata) && "slug" in metadata ? metadata.slug : undefined;
@@ -295,7 +295,7 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
     : [
         {
           ...locate([]),
-          message: `frontmatter must be keys and values, eg "title: Hello", not ${isList(metadata) ? "a list" : "a single value"}`,
+          message: `frontmatter must be keys and values, eg "title: Hello", not ${Array.isArray(metadata) ? "a list" : "a single value"}`,
         },
       ];
 
