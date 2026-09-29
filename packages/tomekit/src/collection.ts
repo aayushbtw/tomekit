@@ -4,7 +4,6 @@ import path from "node:path";
 import type { Glob } from "./directory";
 import { assertTransformResult, buildDocument } from "./document";
 import { ContentError } from "./errors";
-import type { Issue } from "./errors";
 import type { CollectionConfig, Entry, LoadResult } from "./index";
 import { isLocated, LOCATE } from "./parse";
 import type { Locate } from "./parse";
@@ -26,8 +25,8 @@ interface BuiltDocument {
   output: ContentValue | Skipped;
   /** Computed before the transform, so lookups work whatever it returns. */
   slug: string;
-  /** Where the metadata sets `slug`, or `undefined` when the loader chose it. */
-  slugPosition: Omit<Issue, "message"> | undefined;
+  /** Whether the metadata sets `slug`, rather than the loader choosing it. */
+  setsSlug: boolean;
 }
 
 /** An entry's last result by slug, reused while the entry and the config are unchanged. */
@@ -265,15 +264,17 @@ function duplicateSlug(
     );
   }
 
-  const fix =
-    document.slugPosition === undefined
-      ? "Rename this file, or set a different `slug` in its frontmatter"
-      : "Change this file's `slug`";
+  const fix = document.setsSlug
+    ? "Change this file's `slug`"
+    : "Rename this file, or set a different `slug` in its frontmatter";
+
+  // Located here, only for a duplicate, from the current `locate`: an edit can move the line.
+  const position = document.setsSlug ? document.locate?.(["slug"]) : undefined;
 
   return new ContentError(
     { collection: name, file: document.file },
     {
-      ...document.slugPosition,
+      ...position,
       message: `${used} ${first.file ?? "another entry"}. ${fix}`,
     }
   );
@@ -310,26 +311,25 @@ async function loadEntry(
   }
 
   let metadata: ContentValue;
-  let entryHash: string;
 
   try {
     const raw: unknown = entry.metadata ?? {};
     assertContentValue(raw);
     metadata = raw;
-
-    entryHash = entryHashOf(entry, metadata);
   } catch (error) {
     return failure(error);
   }
 
+  // Only worth computing when a later build can reuse the result.
+  const entryHash =
+    cache === undefined ? undefined : entryHashOf(entry, metadata);
+
   const locate = isLocated(entry) ? entry[LOCATE] : undefined;
-  const setsSlug = isPlainObject(metadata) && "slug" in metadata;
-  // Not cached: the same data can sit on a different line after an edit.
-  const slugPosition = setsSlug ? locate?.(["slug"]) : undefined;
   const cached = broken ? undefined : cache?.get(entry.slug);
 
-  if (cached?.hash === entryHash) {
-    return { document: { ...cached.document, locate, slugPosition } };
+  // With the current `locate`, not the cached one: the same data can sit on a different line after an edit.
+  if (cached !== undefined && cached.hash === entryHash) {
+    return { document: { ...cached.document, locate } };
   }
 
   const validated = await validate(entry, metadata, collection.schema, locate);
@@ -370,11 +370,13 @@ async function loadEntry(
     file,
     locate,
     output,
+    setsSlug: isPlainObject(metadata) && "slug" in metadata,
     slug: source.slug,
-    slugPosition,
   };
 
-  cache?.set(entry.slug, { document, hash: entryHash });
+  if (entryHash !== undefined) {
+    cache?.set(entry.slug, { document, hash: entryHash });
+  }
 
   return { document };
 }

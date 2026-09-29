@@ -189,6 +189,7 @@ function tomekit({
       builder = new ContentBuilder({
         configPath: path.resolve(root, config),
         dev: resolved.command === "serve",
+        rebuilds: resolved.command === "serve" || resolved.build.watch !== null,
         root,
         runtime: RUNTIME,
         types: types === false ? false : path.resolve(root, types),

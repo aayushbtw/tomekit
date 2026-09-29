@@ -36,6 +36,8 @@ interface BuilderOptions {
   configPath: string;
   /** Whether the Vite dev server is running. Passed to loaders and transforms. */
   dev: boolean;
+  /** Whether this builder builds more than once, in dev or `vite build --watch`, so caching entries pays off. */
+  rebuilds: boolean;
   root: string;
   /** Absolute path of the runtime the generated module imports. */
   runtime: string;
@@ -188,7 +190,7 @@ class ContentBuilder {
   }
 
   async #run(): Promise<Build> {
-    const { configPath, dev, root, runtime, types } = this.#options;
+    const { configPath, dev, rebuilds, root, runtime, types } = this.#options;
     this.#config ??= this.#importConfig();
     const imported = this.#config;
     let config: Config;
@@ -213,8 +215,13 @@ class ContentBuilder {
 
     const loaded = await Promise.all(
       Object.entries(config.collections).map(async ([name, collection]) => {
-        const cache = this.#caches.get(name) ?? new Map();
-        this.#caches.set(name, cache);
+        const cache = rebuilds
+          ? (this.#caches.get(name) ?? new Map())
+          : undefined;
+
+        if (cache !== undefined) {
+          this.#caches.set(name, cache);
+        }
 
         const reused = this.#results.get(name);
         const watched: WatchGroup[] = [];
