@@ -38,7 +38,7 @@ A config that can't be used fails `vite build`. The dev server logs it and keeps
 - `MissingDefaultExportError`: the file doesn't `export default defineConfig(...)`
 - `InvalidConfigError`: the config breaks a rule, eg a collection name that isn't a valid identifier, or a collection without a `loader`
 
-Without the `tomekit()` plugin, importing `collections` throws `MissingPluginError`, while importing a collection by name fails first, with the module "does not provide an export named" it. Add the plugin to `vite.config.ts` in both cases.
+Without the `tomekit()` plugin, importing `collections` throws `MissingPluginError`, while importing a collection by name fails first, with the module "does not provide an export named" it. Add the plugin to `vite.config.ts` in both cases, or outside Vite run Node with `--import tomekit/register` (see [Outside Vite](/outside-vite)).
 
 ## Catching errors
 
@@ -52,7 +52,7 @@ Every error is a class exported from `tomekit`, so check it with `instanceof`:
 | `ConfigError` | `TomekitError` | The base of config errors |
 | `TransformError` | `TomekitError` | The base of errors from `transform`, set as a `ContentError`'s `cause` |
 | `PluginError` | `TomekitError` | The base of errors from the Vite plugin |
-| `MissingPluginError` | `PluginError` | `tomekit/content` is imported without the `tomekit()` plugin |
+| `MissingPluginError` | `PluginError` | `tomekit/content` is imported without the `tomekit()` plugin or `tomekit/register` |
 
 Vite wraps errors thrown by plugins and keeps the originals under `errors`:
 

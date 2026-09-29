@@ -29,6 +29,10 @@
       "types": "./dist/content.d.mts",
       "default": "./dist/content.mjs"
     },
+    "./register": {
+      "types": "./dist/register.d.mts",
+      "default": "./dist/register.mjs"
+    },
     "./vite": {
       "types": "./dist/vite.d.mts",
       "default": "./dist/vite.mjs"

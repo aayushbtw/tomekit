@@ -161,4 +161,4 @@ export default defineConfig({
 });
 ```
 
-Reading `collections` in `vite.config.ts` to list the paths yourself doesn't work: the plugin generates that module, so nothing can import it before the plugin runs.
+To list the paths yourself instead, import `posts` in `vite.config.ts` and run Vite with `tomekit/register`, as [Outside Vite](/outside-vite) shows.

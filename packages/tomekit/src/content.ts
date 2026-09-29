@@ -47,8 +47,8 @@ function missingPlugin(): never {
 /**
  * Every collection in your config, for a name only known at runtime, eg a
  * route param. Import a collection by its name otherwise, which bundles only
- * that collection. Provided by the `tomekit()` Vite plugin; importing it
- * without the plugin throws.
+ * that collection. Provided by the `tomekit()` Vite plugin, or by
+ * `tomekit/register` outside Vite; importing it without either throws.
  *
  * @example
  * ```ts
