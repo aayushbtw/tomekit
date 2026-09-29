@@ -2,7 +2,7 @@
 title: SolidStart
 description: "A blog with server queries."
 section: Frameworks
-order: 4
+order: 3
 ---
 
 A blog whose posts are read in `"use server"` queries, so a page gets only what it renders. [Open the example in StackBlitz](https://stackblitz.com/github/aayushbtw/tomekit/tree/main/examples/solid-start).
