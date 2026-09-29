@@ -2,8 +2,6 @@
 
 Fully typed content collections for Markdown. Content is parsed and validated at build time and served as generated modules, so nothing is parsed at runtime.
 
-Goal: the best API and DX, fully typed, fast.
-
 ## Commands
 
 A Vite+ monorepo: `vp install`, `vpx`, and `vpr <script>` for package.json scripts, never `pnpm`, `npm` or `npx`. The library is `packages/tomekit`, apps are in `apps/`, and `examples/` holds standalone framework apps that depend on the published `tomekit`. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts. Paths below are relative to `packages/tomekit` unless they say otherwise.
