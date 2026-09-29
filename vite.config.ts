@@ -21,7 +21,43 @@ export default defineConfig({
     // Examples are standalone apps outside the workspace: their dependencies aren't installed here, so type-aware rules can't resolve them.
     ignorePatterns: [...ignorePatterns, "examples/**"],
     options: { typeAware: true, typeCheck: true },
+    overrides: [
+      {
+        files: ["apps/bench/**"],
+        // Benchmark runs must not overlap, or they skew each other's timings.
+        rules: { "no-await-in-loop": "off" },
+      },
+    ],
     rules: {
+      // The docs site renders TSDoc, whose `@remarks` isn't a JSDoc tag.
+      "jsdoc/check-tag-names": ["error", { definedTags: ["remarks"] }],
+      // Methods are checked bivariantly, so a collection with known slugs still fits `Collection<T>`.
+      "typescript/method-signature-style": "off",
+      // `this: void` tells lint that destructuring a method off a collection is safe.
+      "typescript/no-invalid-void-type": [
+        "error",
+        { allowAsThisParameter: true },
+      ],
+      // TanStack Router stops a loader by throwing these.
+      "typescript/only-throw-error": [
+        "error",
+        {
+          allow: [
+            {
+              from: "package",
+              name: ["NotFoundError", "Redirect"],
+              package: "@tanstack/router-core",
+            },
+          ],
+        },
+      ],
+      // A union switch lists its cases, and `default-case` then wants a `default` too.
+      "typescript/switch-exhaustiveness-check": [
+        "error",
+        { considerDefaultExhaustiveForUnions: true },
+      ],
+      // Contradicts `consistent-return` in functions that return `T | undefined`.
+      "unicorn/no-useless-undefined": "off",
       // Declarations allow overloads, assertion signatures and hoisting, which arrows don't.
       "func-style": ["error", "declaration"],
       "react/function-component-definition": [

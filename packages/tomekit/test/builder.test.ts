@@ -181,6 +181,7 @@ declare global {
 function gate() {
   let open: (() => void) | undefined;
 
+  // oxlint-disable-next-line promise/avoid-new -- `Promise.withResolvers` needs lib ES2024, and the package targets ES2023.
   globalThis.tomekitGate = new Promise<void>((resolve) => {
     open = resolve;
   });

@@ -11,6 +11,7 @@ const config = defineConfig({
     // Imported lazily: `vp run` reads this config before tomekit's dist is built.
     const { tomekit } = await import("tomekit/vite");
 
+    // oxlint-disable-next-line typescript/no-unsafe-return -- `@stylexjs/unplugin/vite` is typed as returning `any`; its typed factory skips the Vite hooks that emit CSS.
     return [
       tomekit(),
       cloudflare({

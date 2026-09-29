@@ -28,6 +28,7 @@ function createImportModule(
     }
   }
 
+  // oxlint-disable-next-line typescript/promise-function-async -- Returns the cached promise itself, which `use()` needs to see again; `async` would wrap it in a new one.
   return function importModule(module) {
     const cached = imported.get(module);
 

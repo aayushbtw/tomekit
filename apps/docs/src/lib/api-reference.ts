@@ -212,7 +212,7 @@ function declaredName(statement: Statement) {
     }
 
     default: {
-      return;
+      return undefined;
     }
   }
 }
@@ -329,7 +329,7 @@ function docComment(parsed: Module, start: number) {
     comment === undefined ||
     parsed.code.slice(comment.end, start).trim() !== ""
   ) {
-    return;
+    return undefined;
   }
 
   return `/*${comment.value}*/`;
@@ -554,7 +554,7 @@ function sourceDeclaration({ nodes, parsed }: Resolved, packageRoot: string) {
   const [first] = nodes;
 
   if (first === undefined) {
-    return;
+    return undefined;
   }
 
   // The build keeps `//#region src/<file>.d.ts` markers around each source file's declarations.
@@ -568,7 +568,7 @@ function sourceDeclaration({ nodes, parsed }: Resolved, packageRoot: string) {
   const name = declaredName(first);
 
   if (region === undefined || name === undefined) {
-    return;
+    return undefined;
   }
 
   const file = region.value
@@ -598,7 +598,7 @@ function memberName(member: Member) {
     member.computed ||
     member.key.type !== "Identifier"
   ) {
-    return;
+    return undefined;
   }
 
   return member.key.name;
@@ -620,7 +620,7 @@ function memberCategory(member: Member) {
     }
 
     default: {
-      return;
+      return undefined;
     }
   }
 }

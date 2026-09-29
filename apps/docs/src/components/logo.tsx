@@ -13,6 +13,7 @@ function Logo() {
     <svg
       aria-label="tomekit"
       fill="currentColor"
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- An inline SVG keeps `currentColor`, which an `<img>` loses.
       role="img"
       // The artwork is 47 tall, ending on the baseline. The extra 10 is descender
       // space, so centering the box centers the glyphs optically.

@@ -9,6 +9,7 @@ import type { Scenario } from "./fixtures.ts";
 import { isResult, TOOLS } from "./tools.ts";
 import type { Mode, Result, Tool } from "./tools.ts";
 
+// oxlint-disable-next-line typescript/strict-void-return -- `promisify` types its callback as returning void; `execFile` also returns its child process.
 const run = promisify(execFile);
 
 const MEASURE = path.join(import.meta.dirname, "measure.ts");

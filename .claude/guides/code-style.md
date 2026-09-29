@@ -1,5 +1,7 @@
 # Code style
 
+- Follow the linter. Where a rule is wrong for the code, disable it for that line with `-- reason`, or in the root `vite.config.ts` with a one-line reason. Never for an anti-slop rule.
+
 - Unknown input is checked once at its boundary with an assertion or type predicate (eg `assertContentValue`), then handled as a named type. No `typeof`.
 - A parameter typed `unknown` is only allowed when it is named `cause` or is a type predicate's subject.
 - `interface` for object shapes; `type` for unions, function, mapped and conditional types, and reshapes like `Pick<…>`.

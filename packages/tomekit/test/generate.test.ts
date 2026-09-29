@@ -108,6 +108,8 @@ describe(writeTypes, () => {
     const complete = new Set([await readFile(file, "utf-8")]);
     let writing = true;
 
+    // Writes and reads must interleave one at a time, so every read can catch a write halfway.
+    /* oxlint-disable no-await-in-loop */
     const written = (async () => {
       for (const count of [200_000, 100_000, 200_000]) {
         await writeTypes(root, configPath, many(count));
@@ -119,9 +121,11 @@ describe(writeTypes, () => {
 
     const reads: string[] = [];
 
+    // oxlint-disable-next-line no-unmodified-loop-condition -- `written` sets it from another task.
     while (writing) {
       reads.push(await readFile(file, "utf-8"));
     }
+    /* oxlint-enable no-await-in-loop */
 
     await written;
 

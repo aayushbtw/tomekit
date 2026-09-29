@@ -116,9 +116,6 @@ function startOf(events: readonly Event[], index: number): number | undefined {
       return event.anchorStart - 1;
     }
 
-    case undefined:
-    case EVENT_ID.DOCUMENT:
-    case EVENT_ID.POP:
     default: {
       return undefined;
     }

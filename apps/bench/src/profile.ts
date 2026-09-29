@@ -12,6 +12,7 @@ import { machine, RESULTS } from "./results.ts";
 import { isResult } from "./tools.ts";
 import type { Mode, Result } from "./tools.ts";
 
+// oxlint-disable-next-line typescript/strict-void-return -- `promisify` types its callback as returning void; `execFile` also returns its child process.
 const run = promisify(execFile);
 
 const MEASURE = path.join(import.meta.dirname, "measure.ts");

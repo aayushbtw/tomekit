@@ -324,6 +324,7 @@ const components: MarkdownComponents = {
   ),
   code: Code,
   figcaption: () => null,
+  // oxlint-disable-next-line react/jsx-no-useless-fragment -- Unwraps the figure: `children` may be a promise, which a component can't return bare.
   figure: (props) => <>{props.children}</>,
   h2: ({ children, ...props }) => (
     <h2 {...props} {...stylex.props(typography.lg, styles.h2)}>
