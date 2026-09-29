@@ -1,6 +1,7 @@
 ---
-title: Getting started
+title: Quick start
 description: Install tomekit, define a collection, read it typed.
+section: Guide
 order: 1
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: Errors
 description: How problems in content and config are reported.
-section: Concepts
+section: Guide
 order: 5
 ---
 
@@ -11,7 +11,7 @@ tomekit reports every broken file in one pass, pointing at where to fix it.
 
 A problem in a document is printed as `file:line:column: message`, with the file relative to the project root.
 
-```
+```text title="Terminal"
 content/posts/hello.md:2:1: title: Invalid input: expected string, received undefined
 content/posts/typo.md:2:1: author: no document in collection "authors" has the slug "adaa". Fix the slug, or add a document with it to "authors"
 ```
@@ -25,7 +25,7 @@ An entry from a loader without a file is named by its collection and slug instea
 
 Warnings don't stop anything. Each one says what happens because of it:
 
-```
+```text title="Terminal"
 posts: directory "content/posts" has no files, so the collection is empty
 posts: no files in "content/posts" match "**/*.md", but it has 12 other files, so the collection is empty
 ```
@@ -38,7 +38,7 @@ A config that can't be used fails `vite build`. The dev server logs it and keeps
 - `MissingDefaultExportError`: the file doesn't `export default defineConfig(...)`
 - `InvalidConfigError`: the config breaks a rule, eg a collection name that isn't a valid identifier, or a collection without a `loader`
 
-Without the `tomekit()` plugin, importing `collections` throws `MissingPluginError`, while importing a collection by name fails first, with the module "does not provide an export named" it. Add the plugin to `vite.config.ts` in both cases, or outside Vite run Node with `--import tomekit/register` (see [Outside Vite](/outside-vite)).
+Without the `tomekit()` plugin, importing `collections` throws `MissingPluginError`, while importing a collection by name fails first, with the module "does not provide an export named" it. Add the plugin to `vite.config.ts` in both cases, or outside Vite run Node with `--import tomekit/register` (see [Register](/register)).
 
 ## Catching errors
 

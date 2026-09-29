@@ -1,8 +1,8 @@
 ---
 title: MDX
 description: Render MDX with your own components, on any server, Cloudflare Workers included.
-section: Concepts
-order: 3
+section: Content
+order: 2
 ---
 
 tomekit reads an MDX file's frontmatter like any other file. Your bundler compiles the rest, and each page imports only the body it renders. Nothing is compiled or evaluated at runtime, so it works where `eval` is blocked, eg on Cloudflare Workers.
@@ -11,7 +11,7 @@ tomekit reads an MDX file's frontmatter like any other file. Your bundler compil
 
 Add MDX to Vite, with `remark-frontmatter` so the frontmatter isn't rendered as text:
 
-```sh
+```sh title="Terminal"
 pnpm add -D @mdx-js/rollup remark-frontmatter @types/mdx
 ```
 
@@ -115,6 +115,6 @@ import { Chart } from "../../src/components/chart";
 
 The bundler compiles the MDX, so a syntax error shows in Vite's overlay in dev and fails `vite build`, pointing at the file.
 
-## Outside Vite
+## Register
 
 `tomekit/register` also sends `tomekit/content-modules` to the generated `.tomekit/content-modules.js`. A script that only reads metadata works as it is. To render a body, Node has to load `.mdx` files too, eg with `@mdx-js/node-loader`.

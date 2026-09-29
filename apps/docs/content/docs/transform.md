@@ -1,8 +1,8 @@
 ---
 title: Transform
 description: Parse Markdown once, at build time.
-section: Concepts
-order: 2
+section: Guide
+order: 3
 ---
 
 `transform` runs on each document at build time, after the schema. Do the expensive work here, eg rendering Markdown, so pages only read the result.
@@ -11,7 +11,7 @@ order: 2
 
 `transform` receives the source, `{ slug, metadata, body, file }`, and returns a new `metadata` and/or `body`. Whatever it leaves out stays as it was, and the types of what it returns become the document's.
 
-```ts
+```ts title="tomekit.config.ts"
 import { marked } from "marked";
 
 export default defineConfig({

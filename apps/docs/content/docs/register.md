@@ -1,21 +1,26 @@
 ---
-title: Outside Vite
-description: Read collections from Node scripts, Bun and vite.config.ts.
-section: Concepts
-order: 6
+title: Register
+description: Read collections in vite.config.ts and in scripts that run without Vite.
+section: Tools
+order: 2
 ---
 
-Every build writes the generated module to `.tomekit/content.js`, next to its types. The file imports nothing, so code outside Vite can read the same typed collections through `tomekit/content`.
+Every build writes the generated module to `.tomekit/content.js`, next to its types. The file imports nothing, so a plain Node or Bun process can read the same typed collections through `tomekit/content`. Use it where the Vite plugin can't reach:
+
+- `vite.config.ts`, eg to list every post to prerender. Vite loads its config before any plugin runs.
+- Build steps that run on their own, eg a search index, Open Graph images, or uploading content elsewhere.
+
+A feed or a sitemap doesn't need it: serve it from a route in your app, which reads collections through the plugin.
 
 ## Node
 
 Run the script with `tomekit/register`:
 
-```sh
-node --import tomekit/register scripts/feed.ts
+```sh title="Terminal"
+node --import tomekit/register scripts/search-index.ts
 ```
 
-```ts title="scripts/feed.ts"
+```ts title="scripts/search-index.ts"
 import { posts } from "tomekit/content";
 
 for (const post of posts.documents()) {
@@ -59,17 +64,10 @@ Content is built twice this way, once for the config and once by the plugin.
 
 Bun reads the `tomekit/content*` path in `tsconfig.json`, so it imports `.tomekit/content.js` with no setup. Preload `tomekit/register` to build first, so the file is up to date:
 
-```sh
-bun --preload tomekit/register scripts/feed.ts
+```sh title="Terminal"
+bun --preload tomekit/register scripts/search-index.ts
 ```
 
-## The tomekit command
+## Other tools
 
-For a tool that reads the `tsconfig.json` path but can't preload a module, build the file with the `tomekit` command first:
-
-```sh
-tomekit build   # build once; exits 1 on broken content
-tomekit watch   # build, then rebuild on every change, with dev set to true
-```
-
-Both read `tomekit.config.ts` from the current folder, or the file `--config` names. `tomekit build` also checks content in CI without a Vite build.
+For a tool that reads the `tsconfig.json` path but can't preload a module, build the file first with the [CLI](/cli).

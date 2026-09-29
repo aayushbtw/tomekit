@@ -1,8 +1,8 @@
 ---
 title: Collections
 description: Group entries under one schema, from files or any loader.
-section: Concepts
-order: 1
+section: Guide
+order: 2
 ---
 
 A collection is a named set of documents: `posts`, `authors`, `docs`. Everything in it comes from one `loader`, which says where its entries come from, and passes one `schema`, which validates each entry's metadata. The name you give it in `defineConfig` is the name you import it by, `import { posts } from "tomekit/content"`, so it must be a valid JavaScript name that isn't reserved, eg not `default`, and not `collections`.
@@ -22,7 +22,7 @@ So a folder of Markdown and rows from an API are read the same way, and a field 
 
 `directory()` loads each Markdown file in a folder. Its frontmatter becomes the metadata and the rest becomes the body. The slug is the frontmatter's `slug`, or the file's path without the extension.
 
-```ts
+```ts title="tomekit.config.ts"
 import { defineConfig, directory } from "tomekit";
 import { z } from "zod";
 
@@ -42,7 +42,7 @@ export default defineConfig({
 
 A loader is an object with a `load` function that returns `entries`. Use it for content that isn't a folder of Markdown, eg JSON or an API.
 
-```ts
+```ts title="tomekit.config.ts"
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -83,7 +83,7 @@ Call `watch` with globs, relative to the project root, whose changes rerun `load
 
 `defineLoader` keeps a loader's types when it lives outside the config, eg in its own file.
 
-```ts
+```ts title="loaders/authors.ts"
 import { defineLoader } from "tomekit";
 
 export const authors = defineLoader({
@@ -133,7 +133,7 @@ schema: type({ "+": "reject", title: "string" });
 
 `references` names the metadata fields that hold slugs of another collection. It sits next to `collections`, keyed by collection name and then by key path.
 
-```ts
+```ts title="tomekit.config.ts"
 export default defineConfig({
   collections: {
     authors: {

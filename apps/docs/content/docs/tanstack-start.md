@@ -1,7 +1,7 @@
 ---
 title: TanStack Start
 description: "A blog, end to end: config, server functions and routes."
-section: Examples
+section: Frameworks
 order: 1
 ---
 
@@ -161,4 +161,4 @@ export default defineConfig({
 });
 ```
 
-To list the paths yourself instead, import `posts` in `vite.config.ts` and run Vite with `tomekit/register`, as [Outside Vite](/outside-vite) shows.
+To list the paths yourself instead, import `posts` in `vite.config.ts` and run Vite with `tomekit/register`, as [Register](/register) shows.
