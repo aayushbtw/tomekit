@@ -2,21 +2,21 @@
 
 Fully typed content collections for Markdown. Content is parsed and validated at build time and served as generated modules, so nothing is parsed at runtime.
 
-Goal: the best API and DX, fully typed, fast. The one real consumer is `../portfolio` (it depends on the published `tomekit` from npm).
+Goal: the best API and DX, fully typed, fast.
 
 ## Commands
 
-A Vite+ monorepo: use `vp` (`vp install`, `vpx`) and run package.json scripts with `vpr <script>`, never `pnpm`, `npm` or `npx`. The library is `packages/tomekit`, apps go in `apps/`. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts. Paths below are relative to `packages/tomekit` unless they say otherwise.
+A Vite+ monorepo: `vp install`, `vpx`, and `vpr <script>` for package.json scripts, never `pnpm`, `npm` or `npx`. The library is `packages/tomekit`, apps are in `apps/`, and `examples/` holds standalone framework apps that depend on the published `tomekit`. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts. Paths below are relative to `packages/tomekit` unless they say otherwise.
 
 ```sh
-vpr check   # format + lint + typecheck for the whole repo (vp check); `vpr fix` autofixes
-vpr test    # vitest in every package (vp run -r test)
-vpr build   # every package; the library runs vp pack → packages/tomekit/dist
+vpr check   # format + lint + typecheck for the whole repo; `vpr fix` autofixes
+vpr test    # vitest in every package
+vpr build   # every package
 ```
 
-Shared fmt and lint config lives in the root `vite.config.ts`; package-specific lint rules go in its `overrides` with workspace globs, since Vite+ ignores `lint` in package configs. Each package's own `vite.config.ts` holds only its build, test or app config.
+Shared fmt and lint config lives in the root `vite.config.ts`; package-specific lint rules go in its `overrides`, since Vite+ ignores `lint` in package configs.
 
-Before calling a change done, run `vpr check` and `vpr test`. For changes to runtime output or generated types, also check the portfolio: `vpr build`, then in `../portfolio` temporarily set the `tomekit` dependency to `file:../tomekit/packages/tomekit` and run `vp install && vp build && vpx tsc --noEmit`. Afterwards restore its `package.json` and `pnpm-lock.yaml` to what they were, and run `vp install` again. Its uncommitted files belong to the user, so never revert them.
+Before calling a change done, run `vpr check` and `vpr test`. For changes to runtime output or generated types, also `vpr build`, then in each of `examples/*` temporarily set `tomekit` to `file:../../packages/tomekit` and run `vp install && vpr build && vpr check`. Afterwards restore its `package.json` and delete the lockfile and `node_modules` it created.
 
 ## Structure
 
@@ -31,26 +31,25 @@ Pure modules, one class that owns state, and a thin adapter, each in its own fil
 | State | `builder.ts` (`ContentBuilder`) | Owns config, per-collection results and caches, and the in-flight build. Knows nothing about how errors are shown |
 | Adapter | `vite.ts` | Maps Vite hooks to loader calls and reports results. No content logic |
 
-- New logic goes into the lowest layer that can hold it. If a function needs neither the disk nor state, put it in a pure module.
-- Name each file after its one concern (`parse.ts`, `serialize.ts`). Split a file when it takes on a second concern, not when it gets long.
-- State lives in a class with `#private` fields and `readonly` where possible, not in `let`s inside a closure.
-- Keep one explicit `export { ... }` list at the bottom of each file. No `export *` barrels, since the public surface is only what `package.json` `exports` lists.
-- One test file per source module in `test/` (`collection.ts` → `collection.test.ts`). Type-level tests go in `<module>.test-d.ts` (`query.ts` → `query.test-d.ts`), which `vpr check` type-checks and Vitest never runs.
+- New logic goes into the lowest layer that can hold it.
+- Split a file when it takes on a second concern, not when it gets long.
+- State lives in a class with `#private` fields, not in `let`s inside a closure.
+- One explicit `export { ... }` list at the bottom of each file. No `export *` barrels.
+- One test file per source module in `test/` (`collection.ts` → `collection.test.ts`). Type-level tests go in `<module>.test-d.ts`, which `vpr check` type-checks and Vitest never runs.
 
 ## Errors
 
-- **Return problems, don't throw them.** Lower layers return results (`{ document } | { issues }`, `{ entries, errors }`). The throw-or-report decision is made once, in the adapter: `vite build` throws, dev logs the errors, shows them in the overlay and serves the files that work.
+- **Return problems, don't throw them.** Lower layers return results (`{ document } | { issues }`, `{ entries, errors }`). Only the adapter decides: `vite build` throws, dev logs the errors, shows them in the overlay and serves the files that work.
 - **Collect, don't stop.** Report every broken file in one pass.
 - **Point at the source.** A content problem is a `ContentError` printed as `file:line:column: message`, with `file` relative to the root. When a key is missing, point at the deepest parent that exists. With no frontmatter at all, leave line and column out.
-- **Messages name the fix.** Say what went wrong, then what to do: ``transform returned "url", but it can only return `metadata` and `body`. Put derived values inside `metadata` instead``.
+- **Messages name the fix**: ``transform returned "url", but it can only return `metadata` and `body`. Put derived values inside `metadata` instead``.
 - **Warnings state the consequence**: `directory "x" has no files, so the collection is empty`.
-- Only the adapter adds the `[tomekit]` prefix and talks to the logger. Lower layers return plain strings.
-- **Every thrown error is a class in `src/errors/`**, one per file, exported from `src/errors/index.ts`. No `throw new Error(...)` in `src/`. Classes extend a category (`ConfigError`, `ContentError`, `TransformError`, `PluginError`), which extends `TomekitError`. Each sets `name` explicitly, and its constructor takes data and builds the message, so the wording lives with the class. Add a class per distinct failure, not per call site.
-- An error that wraps another passes it as `cause`.
+- Only the adapter adds the `[tomekit]` prefix and talks to the logger.
+- **Every thrown error is a class in `src/errors/`**, one per file, exported from `src/errors/index.ts`. No `throw new Error(...)` in `src/`. Classes extend a category (`ConfigError`, `ContentError`, `TransformError`, `PluginError`), which extends `TomekitError`. Each sets `name` explicitly, and its constructor takes data and builds the message. Add a class per distinct failure, not per call site. Wrapped errors go in `cause`.
 
 ## TSDoc
 
-Public exports get TSDoc: a one-sentence summary, then an `@example` that runs as written. Results go in trailing comments.
+Everything users import from `tomekit`, `tomekit/content`, `tomekit/content-modules` and `tomekit/vite`, plus each option field, gets a one-sentence summary, then an `@example` that runs as written, with results in trailing comments.
 
 ````ts
 /**
@@ -63,40 +62,33 @@ Public exports get TSDoc: a one-sentence summary, then an `@example` that runs a
  */
 ````
 
-- Document everything users import from `tomekit`, `tomekit/content`, `tomekit/content-modules` and `tomekit/vite`, plus each option field.
-- Add `@param` / `@returns` only when they say something the name and type don't (units, what `undefined` means, ownership).
-- Internal functions get no TSDoc unless they have a contract the types can't express. Never add docs to a function just because its neighbors have them.
-- Inline comments explain only the non-obvious _why_, never restate the line.
+- `@param` / `@returns` only when they say something the name and type don't.
+- Internal functions get no TSDoc unless they have a contract the types can't express.
 
 ## Code style
 
-Lint is oxlint with anti-slop (vendored in the root `tools/oxlint/anti-slop/`) and a short explicit rule list in the root `vite.config.ts`, no preset. Anti-slop always wins:
+Lint is oxlint with anti-slop (vendored in `tools/oxlint/anti-slop/`) and a short explicit rule list in the root `vite.config.ts`, no preset. Anti-slop always wins:
 
-- Never turn off, loosen or suppress an anti-slop rule to make code pass. Change the code.
-- When another rule conflicts with writing code the anti-slop way, turn that rule off in the root `vite.config.ts` with a one-line reason. Don't write code that dodges both.
-- Add a rule to the list when it would have caught a real problem, not because a preset has it.
+- Never turn off, loosen or suppress an anti-slop rule. Change the code.
+- When another rule conflicts with anti-slop, turn that rule off in the root `vite.config.ts` with a one-line reason.
+- Add a rule when it would have caught a real problem, not because a preset has it.
 - Unknown input is checked once at its boundary with an assertion or type predicate (eg `assertContentValue`), then handled as a named type. No `typeof`; tell primitives apart by boxing them (`new Object(value) instanceof Number`).
 - A parameter typed `unknown` is only allowed when it is named `cause` or is a type predicate's subject.
 
-The linter enforces most of these, so match them up front instead of relying on `vpr fix`:
+Also enforced by lint, so write them up front: `interface` for object shapes (`type` only for unions, function, mapped and conditional types), function declarations over arrow consts, `async`/`await` over `.then`, sorted object keys, no `any` or unsafe assertions (in tests too).
 
-- Use `interface` for object shapes, including reshaped ones (`interface A extends Omit<B, "k"> {}`). Use `type` only for unions, function types and mapped or conditional types.
-- Types inferred from user schemas are wrapped once in `Prettify` (`{ [K in keyof T]: T[K] } & {}`), so errors print the flat fields instead of nested helper names. Use `PrettifyIfPlainObject` where a value might be an array or a built-in (Date, Map, Set, RegExp), which must keep their own type. Don't generate named interfaces to work around this.
-- Helper types that exist only for generated code or the type system get `@internal` in their TSDoc.
-- Use function declarations, not arrow consts (`func-style`). Arrows are fine as inline callbacks.
-- Use `async`/`await` with `try`/`catch`, not `.then`/`.catch` chains.
-- Object keys sorted, no chained assignment, no `any` or unsafe assertions (in tests too).
-- Put options objects with defaults in the signature: `function tomekit({ config = "tomekit.config.ts" }: TomekitOptions = {})`.
-- Name the value a function returns (`serialize`, `accessor`, `summary`) or the action it takes (`loadCollection`, `writeTypes`).
+- Types inferred from user schemas are wrapped once in `Prettify`, so errors print flat fields. Use `PrettifyIfPlainObject` where a value might be an array or a built-in (Date, Map, Set, RegExp). Don't generate named interfaces to work around this.
+- Helper types that exist only for generated code or the type system get `@internal`.
+- Options objects with defaults go in the signature: `function tomekit({ config = "tomekit.config.ts" }: TomekitOptions = {})`.
 
 ## Internal notes
 
-User-facing behavior, including what fails at compile time, build time or not at all, is documented in the docs site (`apps/docs/content/docs`). Update it in the same change as the code. `.claude/internal/` holds only what users don't need. Read it before designing, naming or recommending anything:
+User-facing behavior, including what fails at compile time, build time or not at all, is documented in `apps/docs/content/docs`, updated in the same change as the code. `.claude/internal/` holds only what users don't need. Read it before designing, naming or recommending anything:
 
-- `principles.md`: how to decide and what to recommend
+- `principles.md`: how to decide
 - `naming.md`: one word per concept
-- `architecture.md`: settled design, reopened only when one blocks the best API
+- `architecture.md`: settled design
 - `out-of-scope.md`: what tomekit doesn't do on purpose
-- `experiments.md`: designs that failed, and measurements
+- `experiments.md`: failed designs and measurements
 
 Record a new rule, decision or name there, not here.
