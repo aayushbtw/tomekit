@@ -25,14 +25,10 @@ interface Result {
   documents: number;
   /** Dev imports that threw while an edit was being served. */
   failures?: number;
-  /** Peak resident memory of the process, in MB. */
-  memory: number;
   /** Cold or warm `vite build`, or dev start until the first import returns. */
   ms: number;
   /** tomekit's profile of each build: the one in a cold or warm build, and the last one after each dev edit. */
   profiles?: BuildProfile[];
-  /** Size of the `vite build` output, in KB. */
-  output?: number;
   /** Each edit's time from writing the file until the dev server serves it. */
   updates?: number[];
 }

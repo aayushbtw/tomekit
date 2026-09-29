@@ -1,4 +1,4 @@
-import { readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
@@ -65,7 +65,8 @@ function velitePlugin(dev: boolean): Plugin {
 
   return {
     async buildStart() {
-      started ??= velite({ clean: !dev, logLevel: "silent", watch: dev });
+      // No `clean`: a cold run already starts without `.velite`, and a warm one keeps it, as for the others.
+      started ??= velite({ logLevel: "silent", watch: dev });
       await started;
     },
     name: "velite",
@@ -102,24 +103,6 @@ function pluginsFor(tool: Tool, scenario: Scenario, dev: boolean): Plugin[] {
   }
 }
 
-async function sizeOf(folder: string): Promise<number> {
-  const files = await readdir(folder, { recursive: true, withFileTypes: true });
-
-  const sizes = await Promise.all(
-    files.map(async (file) => {
-      if (!file.isFile()) {
-        return 0;
-      }
-
-      const stats = await stat(path.join(file.parentPath, file.name));
-
-      return stats.size;
-    })
-  );
-
-  return sizes.reduce((total, size) => total + size, 0);
-}
-
 /** tomekit's builds that started after `since`, when `TOMEKIT_PROFILE` is set. */
 function profilesSince(since: number): BuildProfile[] {
   return performance
@@ -131,10 +114,6 @@ function profilesSince(since: number): BuildProfile[] {
         ? [entry.detail]
         : []
     );
-}
-
-function memory(): number {
-  return Math.round(process.resourceUsage().maxRSS / 1024);
 }
 
 async function measureBuild(tool: Tool, scenario: Scenario): Promise<Result> {
@@ -163,9 +142,7 @@ async function measureBuild(tool: Tool, scenario: Scenario): Promise<Result> {
 
   return {
     documents: posts.length,
-    memory: memory(),
     ms,
-    output: Math.round((await sizeOf(outDir)) / 1024),
     profiles: profilesSince(start),
   };
 }
@@ -270,7 +247,6 @@ async function measureDev(tool: Tool, scenario: Scenario): Promise<Result> {
   return {
     documents: posts.length,
     failures,
-    memory: memory(),
     ms,
     profiles,
     updates,

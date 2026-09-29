@@ -16,7 +16,7 @@ const MEASURE = path.join(import.meta.dirname, "measure.ts");
 
 interface Row {
   cold: Result[];
-  dev: Result;
+  dev: Result[];
   tool: Tool;
   warm: Result[];
 }
@@ -46,27 +46,48 @@ async function sample(
   return result;
 }
 
-async function samples(
+/** Tools take turns, each round starting from the next one, so drift over the run, eg heat or the file cache, favors none of them. */
+async function rounds(
   root: string,
   scenario: Scenario,
-  tool: Tool,
   mode: Mode,
   count: number
-): Promise<Result[]> {
-  const results: Result[] = [];
+): Promise<Map<Tool, Result[]>> {
+  const results = new Map<Tool, Result[]>(TOOLS.map((tool) => [tool, []]));
 
   // One after another: parallel samples would compete for the CPU.
-  for (let index = 0; index < count; index += 1) {
-    results.push(await sample(root, scenario, tool, mode));
+  for (let round = 0; round < count; round += 1) {
+    const first = round % TOOLS.length;
+
+    for (const tool of [...TOOLS.slice(first), ...TOOLS.slice(0, first)]) {
+      results.get(tool)?.push(await sample(root, scenario, tool, mode));
+    }
   }
 
   return results;
 }
 
+const COLUMNS = ["Cold build", "Warm build", "Dev start", "Dev update"];
+
+function columnsOf({ cold, dev, warm }: Row): number[] {
+  return [
+    median(cold.map((result) => result.ms)),
+    median(warm.map((result) => result.ms)),
+    median(dev.map((result) => result.ms)),
+    median(dev.flatMap((result) => result.updates ?? [])),
+  ];
+}
+
 function table(size: number, scenario: Scenario, rows: readonly Row[]): string {
-  const lines = rows.map(({ cold, dev, tool, warm }) => {
+  const values = rows.map(columnsOf);
+  const best = COLUMNS.map((_, column) =>
+    Math.min(...values.map((row) => row[column] ?? Number.POSITIVE_INFINITY))
+  );
+
+  const lines = rows.map((row, index) => {
+    const { cold, dev, tool, warm } = row;
     const counts = new Set(
-      [...cold, ...warm, dev].map((result) => result.documents)
+      [...cold, ...warm, ...dev].map((result) => result.documents)
     );
 
     const documents =
@@ -74,17 +95,24 @@ function table(size: number, scenario: Scenario, rows: readonly Row[]): string {
         ? ""
         : ` (docs: ${[...counts].join("/")})`;
 
-    const failures =
-      (dev.failures ?? 0) > 0 ? ` (${dev.failures} failed imports)` : "";
+    const failed = dev.reduce(
+      (total, result) => total + (result.failures ?? 0),
+      0
+    );
+    const failures = failed > 0 ? ` (${failed} failed imports)` : "";
 
-    return `| ${tool}${documents} | ${ms(median(cold.map((result) => result.ms)))} | ${ms(median(warm.map((result) => result.ms)))} | ${ms(dev.ms)} | ${ms(median(dev.updates ?? []))}${failures} | ${Math.max(...cold.map((result) => result.memory))} MB | ${cold[0]?.output ?? 0} KB |`;
+    const cells = (values[index] ?? []).map((value, column) =>
+      value === best[column] ? `**${ms(value)}**` : ms(value)
+    );
+
+    return `| ${tool}${documents} | ${cells.join(" | ")}${failures} |`;
   });
 
   return [
     `### ${size} files, ${scenario}`,
     "",
-    "| Tool | Cold build | Warm build | Dev start | Dev update | Peak memory | Output |",
-    "| --- | --- | --- | --- | --- | --- | --- |",
+    `| Tool | ${COLUMNS.join(" | ")} |`,
+    `| --- |${" --- |".repeat(COLUMNS.length)}`,
     ...lines,
     "",
   ].join("\n");
@@ -95,7 +123,7 @@ const sizes = process.argv.slice(2).map(Number);
 const SIZES = sizes.length > 0 ? sizes : [1000, 10_000];
 
 console.log(
-  `Node ${process.version}, ${cpus()[0]?.model ?? "unknown CPU"} x${cpus().length}, ${Math.round(totalmem() / 1024 ** 3)} GB\n`
+  `Node ${process.version}, ${cpus()[0]?.model ?? "unknown CPU"} x${cpus().length}, ${Math.round(totalmem() / 1024 ** 3)} GB. Medians; lower is better, fastest in bold. Warm builds keep each tool's cache from the build before; dev update is from saving a file until the dev server serves it.\n`
 );
 
 for (const size of SIZES) {
@@ -103,14 +131,17 @@ for (const size of SIZES) {
 
   for (const scenario of SCENARIOS) {
     const root = await fixture(size, scenario);
-    const rows: Row[] = [];
+    // Warm rounds come after cold ones, so each tool's first warm build finds its last cold build's cache.
+    const cold = await rounds(root, scenario, "cold", count);
+    const warm = await rounds(root, scenario, "warm", count);
+    const dev = await rounds(root, scenario, "dev", count);
 
-    for (const tool of TOOLS) {
-      const cold = await samples(root, scenario, tool, "cold", count);
-      const warm = await samples(root, scenario, tool, "warm", count);
-      const dev = await sample(root, scenario, tool, "dev");
-      rows.push({ cold, dev, tool, warm });
-    }
+    const rows = TOOLS.map((tool) => ({
+      cold: cold.get(tool) ?? [],
+      dev: dev.get(tool) ?? [],
+      tool,
+      warm: warm.get(tool) ?? [],
+    }));
 
     console.log(table(size, scenario, rows));
   }
