@@ -1,6 +1,5 @@
-import { collections } from "tomekit/content";
+import { posts } from "tomekit/content";
 
-export default collections
-  .get("posts")
+export default posts
   .documents()
   .map(({ body, metadata }) => ({ body, title: metadata.title }));
