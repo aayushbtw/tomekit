@@ -34,7 +34,7 @@ if (collections.has(params.collection)) {
 }
 ```
 
-Reading through `collections` bundles every collection, since the name could be any of them.
+Reading through `collections` bundles every collection, since the name could be any of them. So for a name you know in code, import the collection: `collections.get("posts")` works, but ships your other collections too.
 
 ## Documents
 
