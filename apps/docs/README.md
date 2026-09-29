@@ -15,11 +15,12 @@ Cloudflare Workers, built and deployed by Workers Builds on every push to `main`
 
 The build settings in the dashboard (Workers & Pages → tomekit-docs → Settings → Builds):
 
-| Setting        | Value                    |
-| -------------- | ------------------------ |
-| Root directory | `apps/docs`              |
-| Build command  | `pnpm exec vp run build` |
-| Deploy command | `pnpm run deploy`        |
+| Setting         | Value                                  |
+| --------------- | -------------------------------------- |
+| Root directory  | `apps/docs`                            |
+| Build command   | `pnpm exec vp run build`               |
+| Deploy command  | `pnpm run deploy`                      |
+| Version command | `pnpm exec cf workers versions create` |
 
 Build watch paths, include:
 
