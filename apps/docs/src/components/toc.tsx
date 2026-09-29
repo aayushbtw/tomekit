@@ -28,7 +28,7 @@ interface Highlight {
 }
 
 // Where content starts under the fixed header, matching `layout.contentTop`.
-const passedLine = 104;
+const passedLine = 64;
 
 const styles = stylex.create({
   active: {

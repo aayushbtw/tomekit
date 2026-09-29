@@ -113,8 +113,8 @@ export const zIndices = stylex.defineConsts({
 export const layout = stylex.defineConsts({
   bodyWidth: "768px",
   columnGap: "48px",
-  // The header height plus a 40px gap: where sidebar, article and TOC start.
-  contentTop: "104px",
+  // Equals the header height: where sidebar, article and TOC start.
+  contentTop: "64px",
   itemHeight: "28px",
   pagePadding: "32px",
   pageTop: "64px",
