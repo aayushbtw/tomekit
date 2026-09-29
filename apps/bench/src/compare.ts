@@ -35,20 +35,29 @@ for (const [scenario, run] of Object.entries(after.scenarios)) {
 
   const old = new Map(breakdown(previous).map((line) => [line.label, line]));
 
-  const lines = breakdown(run).map(({ cold, dev, label }) => {
+  const lines = breakdown(run).map(({ cold, dev, label, warm }) => {
     const was = old.get(label);
-    const coldBefore = median(was?.cold ?? []);
-    const devBefore = median(was?.dev ?? []);
 
-    return `| ${label.replaceAll(" ", "&nbsp;")} | ${ms(coldBefore)} → ${ms(median(cold))} | ${delta(coldBefore, median(cold))} | ${ms(devBefore)} → ${ms(median(dev))} | ${delta(devBefore, median(dev))} |`;
+    const columns = [
+      [was?.cold, cold],
+      [was?.warm, warm],
+      [was?.dev, dev],
+    ].map(([previousValues = [], values = []]) => {
+      const earlier = median(previousValues);
+      const now = median(values);
+
+      return `${ms(earlier)} → ${ms(now)} | ${delta(earlier, now)}`;
+    });
+
+    return `| ${label.replaceAll(" ", "&nbsp;")} | ${columns.join(" | ")} |`;
   });
 
   console.log(
     [
       `### ${size} files, ${scenario}: ${from} → ${to}`,
       "",
-      "| | Cold build | Change | Dev update | Change |",
-      "| --- | --- | --- | --- | --- |",
+      "| | Cold build | Change | Warm build | Change | Dev update | Change |",
+      "| --- | --- | --- | --- | --- | --- | --- |",
       ...lines,
       "",
     ].join("\n")

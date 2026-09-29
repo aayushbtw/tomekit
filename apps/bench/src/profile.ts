@@ -44,17 +44,17 @@ async function sample(
 
 function table(size: number, scenario: Scenario, scenarioRun: ScenarioRun) {
   const lines = breakdown(scenarioRun).map(
-    ({ cold, dev, label }) =>
-      `| ${label.replaceAll(" ", "&nbsp;")} | ${ms(median(cold))} | ±${ms(spread(cold))} | ${ms(median(dev))} | ±${ms(spread(dev))} |`
+    ({ cold, dev, label, warm }) =>
+      `| ${label.replaceAll(" ", "&nbsp;")} | ${ms(median(cold))} | ±${ms(spread(cold))} | ${ms(median(warm))} | ±${ms(spread(warm))} | ${ms(median(dev))} | ±${ms(spread(dev))} |`
   );
 
   return [
     `### ${size} files, ${scenario}`,
     "",
-    `Medians of ${scenarioRun.cold.length} cold builds and ${scenarioRun.dev.updates?.length ?? 0} dev updates; ± is half the range. \`total\` is what the bench measured, \`rest\` is that minus tomekit's build: Vite, and in dev the watcher and the reload.`,
+    `Medians of ${scenarioRun.cold.length} cold builds, ${scenarioRun.warm?.length ?? 0} warm builds and ${scenarioRun.dev.updates?.length ?? 0} dev updates; ± is half the range. \`total\` is what the bench measured, \`rest\` is that minus tomekit's build: Vite, and in dev the watcher and the reload.`,
     "",
-    "| | Cold build | ± | Dev update | ± |",
-    "| --- | --- | --- | --- | --- |",
+    "| | Cold build | ± | Warm build | ± | Dev update | ± |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
     ...lines,
     "",
   ].join("\n");
@@ -84,9 +84,16 @@ for (const scenario of scenarios) {
     cold.push(await sample(root, scenario, "cold"));
   }
 
+  const warm: Result[] = [];
+
+  // After the cold builds, so the first warm build finds the last cold one's `.tomekit`.
+  for (let index = 0; index < COLD_SAMPLES; index += 1) {
+    warm.push(await sample(root, scenario, "warm"));
+  }
+
   const dev = await sample(root, scenario, "dev");
-  scenarioRuns[scenario] = { cold, dev };
-  console.log(table(Number(size), scenario, { cold, dev }));
+  scenarioRuns[scenario] = { cold, dev, warm };
+  console.log(table(Number(size), scenario, { cold, dev, warm }));
 }
 
 const sha = await commit();

@@ -4,6 +4,8 @@ import type { BuildProfile, Result } from "./tools.ts";
 interface ScenarioRun {
   cold: Result[];
   dev: Result;
+  /** Builds that keep `.tomekit` from the one before. Missing from runs saved before it was measured. */
+  warm?: Result[];
 }
 
 /** One line of the breakdown, with a value per sample. */
@@ -11,6 +13,7 @@ interface Line {
   cold: number[];
   dev: number[];
   label: string;
+  warm: number[];
 }
 
 function median(values: readonly number[]): number {
@@ -86,23 +89,28 @@ function linesOf(
   return lines;
 }
 
-/** Cold builds and dev updates side by side. `rest` is Vite's part: everything the bench measured outside tomekit's build. */
-function breakdown({ cold, dev }: ScenarioRun): Line[] {
-  const coldLines = linesOf(
-    cold.map((result) => result.ms),
-    cold.flatMap((result) => result.profiles?.at(-1) ?? []),
+function buildLines(results: readonly Result[]): Map<string, number[]> {
+  return linesOf(
+    results.map((result) => result.ms),
+    results.flatMap((result) => result.profiles?.at(-1) ?? []),
     "rest"
   );
+}
 
+/** Cold builds, warm builds and dev updates side by side. `rest` is Vite's part: everything the bench measured outside tomekit's build. */
+function breakdown({ cold, dev, warm = [] }: ScenarioRun): Line[] {
+  const coldLines = buildLines(cold);
+  const warmLines = buildLines(warm);
   const devLines = linesOf(dev.updates ?? [], dev.profiles ?? [], "rest");
 
-  return [...new Set([...coldLines.keys(), ...devLines.keys()])].map(
-    (label) => ({
-      cold: coldLines.get(label) ?? [],
-      dev: devLines.get(label) ?? [],
-      label,
-    })
-  );
+  return [
+    ...new Set([...coldLines.keys(), ...warmLines.keys(), ...devLines.keys()]),
+  ].map((label) => ({
+    cold: coldLines.get(label) ?? [],
+    dev: devLines.get(label) ?? [],
+    label,
+    warm: warmLines.get(label) ?? [],
+  }));
 }
 
 export { breakdown, type Line, median, ms, type ScenarioRun, spread };
