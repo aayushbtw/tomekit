@@ -1,22 +1,25 @@
 {
-  "name": "tomekit-workspace",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "vp run -r build",
-    "check": "vp check",
-    "fix": "vp check --fix",
-    "test": "vp run -r test",
-    "release": "GITHUB_TOKEN=$(gh auth token) changeset version && vp fmt"
-  },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.1",
     "@changesets/cli": "^3.0.3",
     "@types/node": "catalog:",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
     "typescript": "catalog:",
+    "ultracite": "7.12.1",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
+  "name": "tomekit-workspace",
+  "scripts": {
+    "build": "vp run -r build",
+    "check": "ultracite check",
+    "fix": "ultracite fix",
+    "test": "vp run -r test",
+    "release": "GITHUB_TOKEN=$(gh auth token) changeset version && vp fmt"
+  },
+  "type": "module",
+  "private": true,
   "engines": {
     "node": ">=24"
   },
