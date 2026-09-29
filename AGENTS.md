@@ -1,6 +1,6 @@
 # tomekit
 
-Fully typed content collections for Markdown. Content is parsed and validated at build time and served as generated modules, so nothing is parsed at runtime.
+Fully typed content collections for Markdown and MDX. Content is parsed and validated at build time and served as generated modules, so nothing is parsed at runtime.
 
 ## Commands
 

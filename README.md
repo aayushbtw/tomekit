@@ -1,6 +1,6 @@
 # tomekit
 
-Fully typed content collections for Markdown.
+Fully typed content collections for Markdown and MDX.
 
 Import your Markdown as typed data. Every file is parsed and validated at build time, so nothing parses at runtime. [Read the docs](https://tomekit.aayush.cv).
 

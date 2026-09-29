@@ -1,7 +1,7 @@
 {
   "name": "tomekit",
   "version": "0.8.1",
-  "description": "Fully typed content collections for Markdown.",
+  "description": "Fully typed content collections for Markdown and MDX.",
   "keywords": [
     "content-collection",
     "markdown",

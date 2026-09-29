@@ -1,6 +1,6 @@
 # tomekit
 
-tomekit gives a Vite app fully typed content collections for Markdown. It parses and validates content while Vite builds, and serves it as a generated module, so nothing parses Markdown at runtime.
+tomekit gives a Vite app fully typed content collections for Markdown and MDX. It parses and validates content while Vite builds, and serves it as a generated module, so nothing parses Markdown at runtime.
 
 This guide matches the installed version. Prefer it over what you remember: tomekit is new, and examples from elsewhere may be outdated. For an API it doesn't cover, read the TSDoc and `@example`s in the `*.d.mts` files next to this one.
 
