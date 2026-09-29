@@ -30,19 +30,19 @@ Stages add up to the total. Indented phases are CPU time summed over entries, an
 
 The unindented rows are stages. They run one after another, so they add up to the total:
 
-- `config`: importing `tomekit.config.ts`, only when it or a file it imports changed.
+- `config`: importing `tomekit.config.ts`, only when it or a file it imports changed, and working out whether the cache still holds.
 - `collections`: running every loader, schema and transform.
 - `references`: checking [references](/collections#references) between collections.
 - `generate`: building the `tomekit/content` module.
-- `write`: writing `.tomekit/`, including the types.
+- `write`: writing `.tomekit/`, including the types and the cache.
 
 The indented rows split `collections`. Entries are built in parallel, so each row is the time spent in that step, added up over every entry:
 
 - `parse`: reading frontmatter with `directory()`. In dev, only files that changed are parsed; the rest count as reused.
 - `validate`: your schema.
-- `transform`: your `transform`. In dev, entries that didn't change are reused without calling it.
+- `transform`: your `transform`. Entries that didn't change are reused from the [cache](/transform#caching) without calling it.
 - `serialize`: checking and serializing documents for the module.
-- `hash`: telling changed entries apart in dev.
+- `hash`: telling changed entries apart, for collections with a `transform` and in dev.
 - `other`: what is left, mostly waiting on files and your loaders. A step that awaits something counts only up to its first `await`, so the rest of an async `transform` lands here too.
 
 With the Vite plugin, the rest of `vite build` is Vite's own work, eg bundling your app.

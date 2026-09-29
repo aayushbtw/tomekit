@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { hash } from "node:crypto";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 
@@ -53,6 +53,8 @@ interface WatchGroup {
 interface CollectionResult {
   /** Slugs of entries with errors, so a reference to one can say why it does not resolve. */
   broken: Set<string>;
+  /** Whether this load added to or removed from the cache, so it needs saving. */
+  cacheChanged: boolean;
   /** Every kept document, in the loader's order. Broken entries are left out. */
   documents: BuiltDocument[];
   errors: ContentError[];
@@ -73,20 +75,19 @@ function skip(reason?: string): Skipped {
   return new Skipped(reason);
 }
 
-function hash(text: string): string {
-  return createHash("sha1").update(text).digest("base64");
-}
-
 /** Changes whenever anything the transform or the document could depend on changes. */
 function entryHashOf(entry: Entry, metadata: ContentValue): string {
-  const text = serialize({
-    body: entry.body,
+  const serialized = serialize({
     file: entry.file === undefined ? undefined : { path: entry.file.path },
     metadata,
     slug: entry.slug,
   });
 
-  return hash("json" in text ? text.json : text.source);
+  const rest = "json" in serialized ? serialized.json : serialized.source;
+  // The body goes in as it is, since escaping it into the JSON costs more than hashing it.
+  const body = entry.body === undefined ? "-" : `+${entry.body}`;
+
+  return hash("sha1", `${rest.length}:${rest}${body}`, "base64");
 }
 
 function metadataOf(entry: Entry): ContentValue {
@@ -162,6 +163,7 @@ async function loadCollection(
   } catch (error) {
     return {
       broken: new Set(),
+      cacheChanged: false,
       documents: [],
       errors: [
         new ContentError(
@@ -180,6 +182,7 @@ async function loadCollection(
   if (!isLoadResult(loaded)) {
     return {
       broken: new Set(),
+      cacheChanged: false,
       documents: [],
       errors: [
         new ContentError(
@@ -209,6 +212,8 @@ async function loadCollection(
     )
   );
 
+  const before = new Map(cache);
+
   const results = await Promise.all(
     loaded.entries.map(async (entry) => {
       const key =
@@ -226,15 +231,8 @@ async function loadCollection(
     })
   );
 
-  if (cache !== undefined) {
-    const present = new Set(loaded.entries.map((entry) => entry.slug));
-
-    for (const slug of cache.keys()) {
-      if (!present.has(slug)) {
-        cache.delete(slug);
-      }
-    }
-  }
+  const cacheChanged =
+    cache !== undefined && pruneCache(cache, before, loaded.entries);
 
   const bySlug = new Map<string, BuiltDocument>();
   const documents: BuiltDocument[] = [];
@@ -273,6 +271,7 @@ async function loadCollection(
 
   return {
     broken,
+    cacheChanged,
     documents,
     errors,
     failed: false,
@@ -280,6 +279,26 @@ async function loadCollection(
     warnings: [...(loaded.warnings ?? [])],
     watched,
   };
+}
+
+/** Drops slugs the loader no longer returns. Returns whether the cache differs from `before`. */
+function pruneCache(
+  cache: EntryCache,
+  before: EntryCache,
+  entries: readonly Entry[]
+): boolean {
+  const present = new Set(entries.map((entry) => entry.slug));
+
+  for (const slug of cache.keys()) {
+    if (!present.has(slug)) {
+      cache.delete(slug);
+    }
+  }
+
+  return (
+    cache.size !== before.size ||
+    [...cache].some(([slug, cached]) => before.get(slug) !== cached)
+  );
 }
 
 function duplicateSlug(
@@ -472,6 +491,7 @@ export {
   type BuiltDocument,
   type CollectionResult,
   type EntryCache,
+  isFile,
   loadCollection,
   type WatchGroup,
 };

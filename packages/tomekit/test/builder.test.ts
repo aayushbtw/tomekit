@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
@@ -146,11 +146,35 @@ export default defineConfig({
 });
 `;
 
+// Counts transform runs, and returns a Date and `dev`, so a cached result must keep both.
+const transforming = `
+import { z } from "zod";
+import { defineConfig, directory } from ${JSON.stringify(SOURCE)};
+import { suffix } from "./suffix.ts";
+
+export default defineConfig({
+  collections: {
+    posts: {
+      loader: directory("content/posts"),
+      schema: z.object({ draft: z.boolean().optional(), title: z.string() }),
+      transform: ({ metadata }, { dev, skip }) => {
+        globalThis.tomekitTransforms = (globalThis.tomekitTransforms ?? 0) + 1;
+
+        return metadata.draft
+          ? skip("draft")
+          : { metadata: { ...metadata, date: new Date(0), dev, title: metadata.title + suffix } };
+      },
+    },
+  },
+});
+`;
+
 declare global {
   var tomekitGate: Promise<void> | undefined;
   var tomekitImports: number | undefined;
   var tomekitLoads: number | undefined;
   var tomekitStarted: boolean | undefined;
+  var tomekitTransforms: number | undefined;
 }
 
 /** Sets `globalThis.tomekitGate` and returns the function that opens it. */
@@ -175,6 +199,7 @@ afterEach(async () => {
   globalThis.tomekitImports = 0;
   globalThis.tomekitLoads = 0;
   globalThis.tomekitStarted = false;
+  globalThis.tomekitTransforms = 0;
   await cleanup?.();
 });
 
@@ -481,5 +506,113 @@ export default defineConfig({
       expect.stringContaining('tsconfig.json does not map "tomekit/content"'),
     ]);
     expect(second.warnings).toStrictEqual([]);
+  });
+});
+
+describe("the cache in .tomekit", () => {
+  async function createCachedProject(files: Record<string, string> = {}) {
+    const project = await createProject({
+      "content/posts/draft.md": "---\ntitle: Draft\ndraft: true\n---\n",
+      "content/posts/hello.md": HELLO,
+      // Its own, so editing it can't touch the repo's.
+      "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+      "suffix.ts": 'export const suffix = "!";\n',
+      "tomekit.config.ts": transforming,
+      ...files,
+    });
+
+    ({ cleanup } = project);
+
+    return project;
+  }
+
+  /** A build by a new builder, as a new process runs it, and how many transforms it ran. */
+  async function build(root: string, { dev = false } = {}) {
+    globalThis.tomekitTransforms = 0;
+
+    const builder = new ContentBuilder({
+      configPath: path.join(root, "tomekit.config.ts"),
+      dev,
+      rebuilds: false,
+      root,
+    });
+
+    const { code, errors } = await builder.load();
+
+    return { code, errors, transforms: globalThis.tomekitTransforms };
+  }
+
+  it("reruns no transform in a new process, and only an edited entry's", async () => {
+    const { root, write } = await createCachedProject();
+
+    const cold = await build(root);
+    const warm = await build(root);
+
+    expect(cold.transforms).toBe(2);
+    expect(warm).toStrictEqual({ ...cold, transforms: 0 });
+
+    await write({ "content/posts/hello.md": "---\ntitle: Hi\n---\n" });
+    const edited = await build(root);
+
+    expect(edited.transforms).toBe(1);
+    expect(edited.code).toContain('"Hi!"');
+  });
+
+  it.each(["tomekit.config.ts", "suffix.ts", "pnpm-lock.yaml"])(
+    "reruns every transform after %s changes",
+    async (file) => {
+      const { root, write } = await createCachedProject();
+      await build(root);
+
+      const source = await readFile(path.join(root, file), "utf-8");
+      await write({ [file]: `${source}\n` });
+
+      expect((await build(root)).transforms).toBe(2);
+    }
+  );
+
+  it("keeps dev results apart from build results", async () => {
+    const { root } = await createCachedProject();
+
+    await build(root, { dev: true });
+
+    expect((await build(root)).transforms).toBe(2);
+    expect((await build(root, { dev: true })).transforms).toBe(0);
+  });
+
+  it("builds as if there were no cache when its file is broken", async () => {
+    const { root, write } = await createCachedProject();
+    const cold = await build(root);
+
+    await write({ ".tomekit/cache/build/posts.json": "{ not json" });
+
+    expect(await build(root)).toStrictEqual({ ...cold, transforms: 2 });
+  });
+
+  it("reruns a transform whose module file is gone", async () => {
+    const { root } = await createCachedProject({
+      "components/intro.js": "export default 1;\n",
+      "tomekit.config.ts": `
+import { z } from "zod";
+import { defineConfig, directory, fileModule } from ${JSON.stringify(SOURCE)};
+
+export default defineConfig({
+  collections: {
+    posts: {
+      loader: directory("content/posts"),
+      schema: z.object({ title: z.string() }),
+      transform: () => ({ body: fileModule("components/intro.js") }),
+    },
+  },
+});
+`,
+    });
+
+    await build(root);
+    await rm(path.join(root, "components/intro.js"));
+
+    expect((await build(root)).errors.map((error) => error.message)).toContain(
+      'content/posts/hello.md: fileModule("components/intro.js") points at a file that does not exist. Pass a path relative to the project root, eg `file.path`.'
+    );
   });
 });

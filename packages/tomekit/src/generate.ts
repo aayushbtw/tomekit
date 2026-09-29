@@ -147,6 +147,13 @@ async function writeChanged(file: string, text: string): Promise<boolean> {
     return false;
   }
 
+  await replaceFile(file, text);
+
+  return true;
+}
+
+/** Writes through a temporary file and `rename`, so a reader never sees half a file. */
+async function replaceFile(file: string, text: string): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.${randomUUID()}.tmp`;
 
@@ -156,8 +163,6 @@ async function writeChanged(file: string, text: string): Promise<boolean> {
   } finally {
     await rm(temporary, { force: true });
   }
-
-  return true;
 }
 
 /**
@@ -200,6 +205,7 @@ export {
   type GeneratedCollection,
   type ModuleCollection,
   modulesModule,
+  replaceFile,
   writeModule,
   writeModules,
   writeTypes,

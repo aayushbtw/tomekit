@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { runnerImport } from "vite";
 
+import { cacheKey, codeKey, readCache, writeCache } from "./cache";
 import { loadCollection } from "./collection";
 import type { CollectionResult, EntryCache, WatchGroup } from "./collection";
 import { configIssues } from "./config";
@@ -55,7 +56,7 @@ interface BuilderOptions {
   configPath: string;
   /** Whether content rebuilds on change for development, in the Vite dev server or `tomekit watch`. Passed to loaders and transforms. */
   dev: boolean;
-  /** Whether this builder builds more than once, in dev, `vite build --watch` or `tomekit watch`, so caching entries pays off. */
+  /** Whether this builder builds more than once, in dev, `vite build --watch` or `tomekit watch`, so caching entries in memory pays off without a cache on disk. */
   rebuilds: boolean;
   root: string;
 }
@@ -98,7 +99,12 @@ class ContentBuilder {
   #config: Promise<Config> | undefined;
   // Kept after a failed import, so fixing a dependency of the config still reloads.
   #dependencies: string[] = [];
-  readonly #caches = new Map<string, EntryCache>();
+  // Once per builder: a process never reloads an installed package, so the code it runs stays the one this key describes.
+  #codeKey: Promise<string | undefined> | undefined;
+  /** What cached results depend on besides their entries, from `cacheKey`. Reset with the config. */
+  #cacheKey: Promise<string | undefined> | undefined;
+  /** Each collection's cache, read from disk once per key. */
+  readonly #caches = new Map<string, Promise<EntryCache>>();
   /** Each collection's last result, reused until a file it watches or the config changes. */
   readonly #results = new Map<string, CollectionResult>();
   /** Each collection's `watch` calls from its last `load`. */
@@ -183,6 +189,7 @@ class ContentBuilder {
 
     if (file === configPath || this.#dependencies.includes(file)) {
       this.#config = undefined;
+      this.#cacheKey = undefined;
       this.#caches.clear();
       this.#results.clear();
     } else {
@@ -208,6 +215,8 @@ class ContentBuilder {
 
   async #importConfig(): Promise<Config> {
     const { configPath, root } = this.#options;
+    // Needs no config, so it runs while the config imports.
+    this.#codeKey ??= codeKey(root);
     const name = path.relative(root, configPath);
     let result: Awaited<ReturnType<typeof runnerImport<{ default?: unknown }>>>;
 
@@ -234,7 +243,7 @@ class ContentBuilder {
   }
 
   async #run(): Promise<Build> {
-    const { configPath, dev, rebuilds, root } = this.#options;
+    const { configPath, dev, root } = this.#options;
     const profile = this.#profiling ? new Profile() : undefined;
     this.#config ??= this.#importConfig();
     const imported = this.#config;
@@ -256,19 +265,15 @@ class ContentBuilder {
       throw new InvalidConfigError(path.relative(root, configPath), issues);
     }
 
+    const key = await this.#currentKey();
     profile?.lap("config");
     const version = this.#version;
 
     const loaded = await Promise.all(
       Object.entries(config.collections).map(async ([name, collection]) => {
-        const cache = rebuilds
-          ? (this.#caches.get(name) ?? new Map())
-          : undefined;
-
-        if (cache !== undefined) {
-          this.#caches.set(name, cache);
-        }
-
+        // Without a transform, the cache would only skip validating and serializing, which cost less than reading and writing it.
+        const saved = collection.transform === undefined ? undefined : key;
+        const cache = await this.#cacheOf(name, saved);
         const reused = this.#results.get(name);
         const watched: WatchGroup[] = [];
 
@@ -304,7 +309,14 @@ class ContentBuilder {
           }
         }
 
-        return { name, ...result };
+        return {
+          name,
+          ...result,
+          cache,
+          // A reused result was saved by the build that made it.
+          cacheChanged: reused === undefined && result.cacheChanged,
+          saved,
+        };
       })
     );
 
@@ -359,6 +371,9 @@ class ContentBuilder {
         writeTypes(directory, configPath, generated),
         writeModule(directory, code),
         writeModules(directory, modules),
+        ...loaded.map(async (collection) => {
+          await this.#saveCache(collection);
+        }),
       ]);
 
       if (types) {
@@ -391,6 +406,79 @@ class ContentBuilder {
       typesWritten,
       warnings,
     };
+  }
+
+  /** `cacheKey` for the imported config, computed once per config. */
+  async #currentKey(): Promise<string | undefined> {
+    const { configPath, root } = this.#options;
+
+    this.#cacheKey ??= (async () => {
+      const code = await this.#codeKey;
+
+      return code === undefined
+        ? undefined
+        : await cacheKey(code, root, [configPath, ...this.#dependencies]);
+    })();
+
+    return await this.#cacheKey;
+  }
+
+  /** Dev and builds keep separate files, since `dev` can change what a transform returns. */
+  #cacheFile(name: string): string {
+    const { dev, root } = this.#options;
+
+    return path.join(
+      root,
+      OUTPUT,
+      "cache",
+      dev ? "dev" : "build",
+      `${name}.json`
+    );
+  }
+
+  /** The collection's cache: read from disk under `key`, in memory only without one, or none when it would never be reused. */
+  async #cacheOf(
+    name: string,
+    key: string | undefined
+  ): Promise<EntryCache | undefined> {
+    const { rebuilds, root } = this.#options;
+
+    if (!rebuilds && key === undefined) {
+      return undefined;
+    }
+
+    let cache = this.#caches.get(name);
+
+    if (cache === undefined) {
+      cache =
+        key === undefined
+          ? Promise.resolve(new Map())
+          : readCache(this.#cacheFile(name), { collection: name, key, root });
+
+      this.#caches.set(name, cache);
+    }
+
+    return await cache;
+  }
+
+  async #saveCache({
+    cache,
+    cacheChanged,
+    name,
+    saved,
+  }: {
+    cache: EntryCache | undefined;
+    cacheChanged: boolean;
+    name: string;
+    saved: string | undefined;
+  }): Promise<void> {
+    if (saved !== undefined && cache !== undefined && cacheChanged) {
+      await writeCache(this.#cacheFile(name), {
+        cache,
+        collection: name,
+        key: saved,
+      });
+    }
   }
 
   /** A warning when the root tsconfig does not map `tomekit/content` to the generated types. */

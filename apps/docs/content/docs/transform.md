@@ -32,7 +32,7 @@ export default defineConfig({
 - Return data only: plain objects, arrays, strings, numbers, booleans, `null`, `Date`, `Map`, `Set`, `URL` and `RegExp`. A function or a class instance fails the build, naming its key path. TypeScript doesn't check this, since Markdown ASTs are too deeply recursive to type.
 - `body` can also be a file your bundler compiles, eg an MDX file. See [MDX](/mdx).
 - `transform` can be `async`.
-- In dev, a change reruns `transform` only for the entries whose data changed.
+- Results are cached, so `transform` reruns only for entries that changed. See [Caching](#caching).
 
 The second argument holds:
 
@@ -67,3 +67,19 @@ function withUrl<TMetadata extends object>(
 ```
 
 Each collection that uses `withUrl` keeps its own schema's fields, plus `url`.
+
+## Caching
+
+tomekit keeps each transform's result in `.tomekit/cache`, so the next build, dev server, `tomekit build` or `tomekit/register` run calls `transform` only for entries whose slug, file path, metadata or body changed.
+
+Every result is thrown away when any of these change:
+
+- `tomekit.config.ts`, or a file it imports
+- your lockfile, eg after installing or upgrading a package
+- the version of tomekit
+
+Dev and builds keep separate results, since `dev` can change what a transform returns. A collection without `transform` isn't cached on disk, since it would save less than reading the cache costs. Without a lockfile, results are kept only in memory, while the dev server runs.
+
+So `transform` must depend only on its arguments and the code it imports. Read anything else, eg a file's last commit date or data from an API, in a [loader](/collections#your-own-loader), which runs on every build, and pass it in as metadata.
+
+tomekit can't see changes to a package linked from your workspace, since the lockfile stays the same. After editing one that a transform uses, delete `.tomekit/cache`. Deleting `.tomekit` is always safe: the next build writes it again.
