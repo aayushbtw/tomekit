@@ -26,11 +26,6 @@ peerDependencyRules:
     vite: "*"
     vitest: "*"
 minimumReleaseAgeExclude:
-  - "@tanstack/react-start-rsc@0.1.53"
-  - "@tanstack/react-start@1.168.54"
-  - "@tanstack/start-plugin-core@1.171.44"
-  - "@cloudflare/vite-plugin@1.62.0"
-  - wrangler@4.143.0
   - "@voidzero-dev/vite-plus-core@1.1.0"
   - "@voidzero-dev/vite-plus-darwin-arm64@1.1.0"
   - "@voidzero-dev/vite-plus-darwin-x64@1.1.0"
