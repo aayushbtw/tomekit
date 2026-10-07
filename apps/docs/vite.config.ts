@@ -8,6 +8,11 @@ import { defineConfig, lazyPlugins } from "vite-plus";
 
 const config = defineConfig({
   plugins: lazyPlugins(async () => {
+    // Tests cover plain modules, and the Cloudflare plugin would run them in workerd.
+    if (process.env.VITEST !== undefined) {
+      return [];
+    }
+
     // Imported lazily: `vp run` reads this config before tomekit's dist is built.
     const { tomekit } = await import("tomekit/vite");
 

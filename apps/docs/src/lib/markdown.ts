@@ -25,4 +25,20 @@ function agentMarkdown(body: string) {
     .replaceAll(/<!-- ::(?:start|end):copy[^>]*-->\n+/gu, "");
 }
 
-export { agentMarkdown, markdownPath, markdownUrl };
+/** A 404 an agent can act on: says what's missing and where the page index is. */
+function markdownNotFound(pathname: string) {
+  const index = new URL("/llms.txt", site.url).href;
+
+  return new Response(
+    `# Page not found\n\nThere's no page at \`${pathname}\`. Every page of the tomekit docs is listed at ${index}.\n`,
+    {
+      headers: {
+        "Content-Type": "text/markdown; charset=utf-8",
+        Vary: "Accept",
+      },
+      status: 404,
+    }
+  );
+}
+
+export { agentMarkdown, markdownNotFound, markdownPath, markdownUrl };
