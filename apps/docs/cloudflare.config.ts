@@ -19,9 +19,10 @@ export default defineConfig({
     // A prerendered docs site serves almost everything from assets, so a log per
     // request is noise. 1% is enough to see the worker is alive and erroring.
     observability: {
-      enabled: true,
-      headSamplingRate: 0.01,
-      logs: { invocationLogs: false },
+      logs: { enabled: true, headSamplingRate: 0.01, invocationLogs: false },
+      traces: { enabled: false },
     },
+    previewUrls: false,
+    workersDev: false,
   },
 });
