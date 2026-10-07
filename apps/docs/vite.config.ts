@@ -19,10 +19,7 @@ const config = defineConfig({
     // oxlint-disable-next-line typescript/no-unsafe-return -- `@stylexjs/unplugin/vite` is typed as returning `any`; its typed factory skips the Vite hooks that emit CSS.
     return [
       tomekit(),
-      cloudflare({
-        experimental: { newConfig: true },
-        viteEnvironment: { name: "ssr" },
-      }),
+      cloudflare({ viteEnvironment: { name: "ssr" } }),
       tanstackStart({
         // Crawling only follows links, and no page links to these.
         pages: [{ path: "/robots.txt" }, { path: "/sitemap.xml" }],

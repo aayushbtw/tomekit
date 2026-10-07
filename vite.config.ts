@@ -20,12 +20,18 @@ export default defineConfig({
     extends: [core, react, tanstack, vitest, antiSlop],
     // Examples are standalone apps outside the workspace: their dependencies aren't installed here, so type-aware rules can't resolve them.
     ignorePatterns: [...ignorePatterns, "examples/**"],
+    jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
     options: { typeAware: true, typeCheck: true },
     overrides: [
       {
         files: ["apps/bench/**"],
         // Benchmark runs must not overlap, or they skew each other's timings.
         rules: { "no-await-in-loop": "off" },
+      },
+      {
+        files: ["packages/tomekit/**"],
+        // `Record<never, never>` is the type-level "no fields" the collection types build on.
+        rules: { "typescript/no-generated-empty-object-type": "off" },
       },
     ],
     rules: {
@@ -59,14 +65,18 @@ export default defineConfig({
       // Contradicts `consistent-return` in functions that return `T | undefined`.
       "unicorn/no-useless-undefined": "off",
       // Declarations allow overloads, assertion signatures and hoisting, which arrows don't.
-      "func-style": ["error", "declaration"],
+      "func-style": ["error", "declaration", { allowArrowFunctions: false }],
+      "no-use-before-define": ["error", { functions: false }],
       "react/function-component-definition": [
         "error",
-        {
-          namedComponents: "function-declaration",
-          unnamedComponents: "arrow-function",
-        },
+        { namedComponents: "function-declaration" },
       ],
+      // Base UI's checkbox is a span with a hidden input, so the label wraps it rather than pointing at it.
+      "jsx-a11y/label-has-associated-control": [
+        "error",
+        { controlComponents: ["Checkbox", "Switch"], depth: 3 },
+      ],
+      "vite-plus/prefer-vite-plus-imports": "error",
     },
   },
   run: { cache: true },

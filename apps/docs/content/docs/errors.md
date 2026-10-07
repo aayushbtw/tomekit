@@ -57,8 +57,8 @@ Every error is a class exported from `tomekit`, so check it with `instanceof`:
 Vite wraps errors thrown by plugins and keeps the originals under `errors`:
 
 ```ts
-import { build } from "vite";
 import { BrokenContentError } from "tomekit";
+import { build } from "vite";
 
 const failure = await build().catch((cause: unknown) => cause);
 const errors =
