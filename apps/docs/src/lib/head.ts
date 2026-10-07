@@ -12,7 +12,11 @@ function pageHead({
   pathname,
   title,
 }: PageHeadOptions) {
-  const fullTitle = title === undefined ? site.name : `${title} | ${site.name}`;
+  // The home page says what tomekit is, so a search for the name and the product finds it.
+  const fullTitle =
+    title === undefined
+      ? `${site.name}: ${site.description.replace(/\.$/u, "")}`
+      : `${title} | ${site.name}`;
   const url = new URL(pathname, site.url).href;
 
   return {
