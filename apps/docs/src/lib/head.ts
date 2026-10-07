@@ -22,6 +22,7 @@ function pageHead({
   return {
     links: [{ href: url, rel: "canonical" }],
     meta: [
+      ...(title === undefined ? [{ "script:ld+json": structuredData() }] : []),
       { title: fullTitle },
       { content: description, name: "description" },
       { content: fullTitle, property: "og:title" },
@@ -30,6 +31,23 @@ function pageHead({
       { content: fullTitle, name: "twitter:title" },
       { content: description, name: "twitter:description" },
     ],
+  };
+}
+
+/** schema.org data for the home page, so crawlers and agents read what tomekit is without parsing prose. */
+function structuredData() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    author: { "@type": "Person", ...site.author },
+    codeRepository: site.repository,
+    description: site.description,
+    license: `https://spdx.org/licenses/${site.license}.html`,
+    name: site.name,
+    programmingLanguage: "TypeScript",
+    runtimePlatform: "Node.js",
+    url: site.url,
+    version: site.version,
   };
 }
 
