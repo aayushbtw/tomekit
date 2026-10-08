@@ -65,7 +65,7 @@ export default defineConfig({
       // Contradicts `consistent-return` in functions that return `T | undefined`.
       "unicorn/no-useless-undefined": "off",
       // Declarations allow overloads, assertion signatures and hoisting, which arrows don't.
-      "func-style": ["error", "declaration", { allowArrowFunctions: false }],
+      "func-style": ["error", "declaration", { allowArrowFunctions: true }],
       "no-use-before-define": ["error", { functions: false }],
       "react/function-component-definition": [
         "error",
