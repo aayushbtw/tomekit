@@ -22,8 +22,6 @@ Run `check` and `test` before calling a change done.
 
 ## Workflow
 
-- Check: `vpr check`, `vpr test`, then `vpr build`.
-- Land: `main`.
 - Review also checks: the matching guide in `.claude/guides/`, and that user-facing behavior is documented in `apps/docs/content/docs`.
 
 ## Guides
