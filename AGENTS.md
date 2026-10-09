@@ -4,7 +4,7 @@ Fully typed content collections for Markdown and MDX. Content is parsed and vali
 
 ## Commands
 
-Vite+ monorepo: `vp` and `vpx`, never `pnpm`, `npm` or `npx`. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts.
+Vite+ monorepo. Prefer Vite+ built-ins (`vp create`, `vp run`, `pack` options) over custom scripts.
 
 ```sh
 vpr check   # format + lint + typecheck; `vpr fix` autofixes
