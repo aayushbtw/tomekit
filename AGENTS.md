@@ -20,6 +20,12 @@ Run `check` and `test` before calling a change done.
 
 - User-facing behavior, including what fails at compile time, build time or not at all, is documented in `apps/docs/content/docs`, in the same change as the code.
 
+## Workflow
+
+- Check: `vpr check`, `vpr test`, then `vpr build`.
+- Land: `main`.
+- Review also checks: the matching guide in `.claude/guides/`, and that user-facing behavior is documented in `apps/docs/content/docs`.
+
 ## Guides
 
 Read the one that applies before starting. All are in `.claude/guides/`:
