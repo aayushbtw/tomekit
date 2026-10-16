@@ -4,6 +4,7 @@ on:
     branches: [main]
     # The API reference pages come from the library's build.
     paths:
+      - .github/workflows/void-deploy.yml
       - apps/docs/**
       - "!apps/docs/README.md"
       - packages/tomekit/src/**
