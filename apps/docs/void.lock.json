@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "source": {
+    "assets": {
+      "html_handling": "drop-trailing-slash"
+    },
+    "name": "tomekit-docs",
+    "observability": {
+      "logs": {
+        "enabled": true,
+        "head_sampling_rate": 0.01,
+        "invocation_logs": false
+      },
+      "traces": {
+        "enabled": false
+      }
+    },
+    "preview_urls": false,
+    "routes": [
+      {
+        "custom_domain": true,
+        "pattern": "tomekit.aayush.cv"
+      }
+    ],
+    "workers_dev": false
+  },
+  "resolved": {
+    "assets": {
+      "html_handling": "drop-trailing-slash"
+    },
+    "name": "tomekit-docs",
+    "observability": {
+      "logs": {
+        "enabled": true,
+        "head_sampling_rate": 0.01,
+        "invocation_logs": false
+      },
+      "traces": {
+        "enabled": false
+      }
+    },
+    "preview_urls": false,
+    "routes": [
+      {
+        "custom_domain": true,
+        "pattern": "tomekit.aayush.cv"
+      }
+    ],
+    "workers_dev": false,
+    "account_id": "908138c815eac9d3d4eb9c0f5d0ba8cc"
+  },
+  "text": "{\n  \"assets\": {\n    \"html_handling\": \"drop-trailing-slash\"\n  },\n  \"name\": \"tomekit-docs\",\n  \"observability\": {\n    \"logs\": {\n      \"enabled\": true,\n      \"head_sampling_rate\": 0.01,\n      \"invocation_logs\": false\n    },\n    \"traces\": {\n      \"enabled\": false\n    }\n  },\n  \"preview_urls\": false,\n  \"routes\": [\n    {\n      \"custom_domain\": true,\n      \"pattern\": \"tomekit.aayush.cv\"\n    }\n  ],\n  \"workers_dev\": false,\n  \"account_id\": \"908138c815eac9d3d4eb9c0f5d0ba8cc\"\n}\n"
+}

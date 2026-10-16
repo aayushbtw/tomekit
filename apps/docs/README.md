@@ -11,7 +11,7 @@ Pages live in `content/docs` as Markdown; frontmatter sets the title, descriptio
 
 ## Deploy
 
-Cloudflare Workers through [Void](https://void.cloud), deployed by `.github/workflows/deploy-docs.yml` on every push to `main` that touches the docs or the library. `void.config.ts` holds the worker name, the `tomekit.aayush.cv` custom domain and the build command; Void keeps resource IDs in `void.lock.json`.
+Cloudflare Workers through [Void](https://void.cloud), deployed by `.github/workflows/void-deploy.yml` on every push to `main` that touches the docs or the library. `void.config.ts` holds the worker name, the `tomekit.aayush.cv` custom domain and the build command; Void keeps resource IDs in `void.lock.json`.
 
 | Name | Kind | Value |
 | --- | --- | --- |

@@ -16,3 +16,6 @@ __unconfig*
 todos.json
 .void
 .void-wrangler.jsonc
+.env.*
+!.env.example
+*.tsbuildinfo
