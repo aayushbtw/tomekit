@@ -47,3 +47,5 @@ minimumReleaseAgeExclude:
   - "@tanstack/start-plugin-core@1.171.53"
   - "@tanstack/start-server-core@1.169.43"
   - "@tanstack/router-cli@1.167.44"
+patchedDependencies:
+  void@1.1.11: patches/void@1.1.11.patch

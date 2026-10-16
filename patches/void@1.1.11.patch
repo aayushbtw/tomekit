@@ -1,0 +1,22 @@
+diff --git a/dist/deploy-DsW-PrRQ.mjs b/dist/deploy-DsW-PrRQ.mjs
+index 6bcba2d22c97078bd1dd775e93ce2fffe15aec06..419da0164e122c344b7c3f3bf840f57905e5e141 100644
+--- a/dist/deploy-DsW-PrRQ.mjs
++++ b/dist/deploy-DsW-PrRQ.mjs
+@@ -2912,12 +2912,15 @@ function createCfVersionRunner(options) {
+ 			};
+ 			if (!isCleanCloudflareExit(result)) return result;
+ 			const version = result.data;
+-			if (!isRecord(version) || version.id !== operation.versionId || !Array.isArray(version.bindings)) return failed("The Cloudflare Worker version was not readable.");
++			if (!isRecord(version) || version.id !== operation.versionId) return failed("The Cloudflare Worker version was not readable.");
++			const bindings = version.bindings ?? [];
++			if (!Array.isArray(bindings)) return failed("The Cloudflare Worker version was not readable.");
+ 			return {
+ 				...result,
+ 				data: {
+ 					...version,
+-					resources: { bindings: version.bindings }
++					bindings,
++					resources: { bindings }
+ 				}
+ 			};
+ 		}
