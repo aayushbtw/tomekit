@@ -18,8 +18,9 @@ export default defineConfig({
     routes: [{ custom_domain: true, pattern: "tomekit.aayush.cv" }],
     workers_dev: false,
   },
-  // The task, unlike Void's default `vite build`, packs tomekit first for the API reference pages.
-  inference: { build: "vp run build" },
+  // Not `vp run build`: Vite+ tasks drop env vars they don't declare, including Void's deploy-build flags.
+  // The API reference pages need tomekit packed first; the deploy workflow does that.
+  inference: { build: "vp build" },
   // TanStack Start prerenders at build time, so there's nothing for an ISR cache to hold.
   routing: { isr: false },
   worker: {
