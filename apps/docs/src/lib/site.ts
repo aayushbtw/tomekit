@@ -12,7 +12,7 @@ const site = {
   license,
   name,
   repository: "https://github.com/aayushbtw/tomekit",
-  // Also set as the custom domain in cloudflare.config.ts.
+  // Also set as the custom domain in void.config.ts.
   url: homepage,
   version,
 };

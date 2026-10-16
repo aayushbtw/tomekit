@@ -1,10 +1,10 @@
 import path from "node:path";
 
-import { cloudflare } from "@cloudflare/vite-plugin";
 import stylex from "@stylexjs/unplugin/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig, lazyPlugins } from "vite-plus";
+import { voidPlugin } from "void";
 
 const config = defineConfig({
   plugins: lazyPlugins(async () => {
@@ -19,7 +19,7 @@ const config = defineConfig({
     // oxlint-disable-next-line typescript/no-unsafe-return -- `@stylexjs/unplugin/vite` is typed as returning `any`; its typed factory skips the Vite hooks that emit CSS.
     return [
       tomekit(),
-      cloudflare({ viteEnvironment: { name: "ssr" } }),
+      voidPlugin(),
       tanstackStart({
         // Crawling only follows links, and no page links to these.
         pages: [{ path: "/robots.txt" }, { path: "/sitemap.xml" }],

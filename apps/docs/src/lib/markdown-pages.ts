@@ -36,7 +36,7 @@ function llmsTxt() {
   return [
     `# ${site.name}`,
     `> ${site.description}`,
-    "Every page is Markdown at its URL plus `/index.md`, or at its URL when requested with `Accept: text/markdown`. In a project that installed tomekit, `node_modules/tomekit/dist/AGENTS.md` is the guide for that version.",
+    "Every page is Markdown at its URL plus `/index.md`. In a project that installed tomekit, `node_modules/tomekit/dist/AGENTS.md` is the guide for that version.",
     ...groups,
   ].join("\n\n");
 }

@@ -6,8 +6,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "cf-typegen": "cf workers types",
-    "deploy": "cf deploy",
+    "deploy": "void deploy --platform cloudflare",
     "generate-routes": "tsr generate",
     "preview": "vp preview",
     "test": "vp test run"
@@ -26,7 +25,6 @@
     "tomekit": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^2.0.0-beta.sha-52b0dc0e9",
     "@microsoft/tsdoc": "^0.16.0",
     "@stylexjs/unplugin": "^0.19.1",
     "@tanstack/intent": "^0.5.5",
@@ -35,11 +33,11 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
-    "cf": "1.0.0-beta.12",
     "oxc-parser": "^0.150.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
+    "void": "1.1.11",
     "zod": "catalog:"
   },
   "intent": {

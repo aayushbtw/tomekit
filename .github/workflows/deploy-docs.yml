@@ -1,0 +1,41 @@
+name: Deploy docs
+
+on:
+  push:
+    branches: [main]
+    # The API reference pages come from the library's build.
+    paths:
+      - apps/docs/**
+      - "!apps/docs/README.md"
+      - packages/tomekit/src/**
+      - packages/tomekit/package.json
+      - packages/tomekit/vite.config.ts
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/docs
+    steps:
+      - uses: actions/checkout@v5
+      - uses: voidzero-dev/setup-vp@v1.20.0
+        with:
+          node-version: 24
+          cache: true
+          run-install: true
+      - run: vp run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # The worker has no preview URLs, so readiness checks go through the workers.dev subdomain.
+          CLOUDFLARE_WORKERS_SUBDOMAIN: ${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}
