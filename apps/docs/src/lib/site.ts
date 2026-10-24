@@ -11,6 +11,8 @@ const site = {
   description,
   license,
   name,
+  // Prerendered to `404.html`; also marked noindex in public/_headers.
+  notFoundPath: "/404",
   repository: "https://github.com/aayushbtw/tomekit",
   // Also set as the custom domain in void.config.ts.
   url: homepage,

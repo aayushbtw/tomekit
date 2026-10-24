@@ -150,7 +150,7 @@ function Post() {
 
 ## Prerendering
 
-Every post is known before the server starts, so the whole blog can be static. Let the crawler follow the links from the index page:
+Every post is known before the server starts, so every page can be rendered at build time. Let the crawler follow the links from the index page:
 
 ```ts title="vite.config.ts"
 export default defineConfig({
@@ -162,3 +162,16 @@ export default defineConfig({
 ```
 
 To list the paths yourself instead, import `posts` in `vite.config.ts` and run Vite with `tomekit/register`, as [Register](/register) shows.
+
+A prerendered page still calls its server function when a link opens it in the browser. To host the blog as static files, with no server at all, save each server function's result during prerendering with [`@tanstack/start-static-server-functions`](https://tanstack.com/start/latest/docs/framework/react/guide/static-server-functions):
+
+```ts title="src/start.ts"
+import { createStart } from "@tanstack/react-start";
+import { staticFunctionMiddleware } from "@tanstack/start-static-server-functions";
+
+export const startInstance = createStart(() => ({
+  functionMiddleware: [staticFunctionMiddleware],
+}));
+```
+
+Only the calls made while prerendering are saved. In the browser, a call with any other input fails with an error instead of `notFound()`, so link only to pages the crawler reaches.

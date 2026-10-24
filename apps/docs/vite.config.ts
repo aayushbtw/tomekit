@@ -4,11 +4,12 @@ import stylex from "@stylexjs/unplugin/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig, lazyPlugins } from "vite-plus";
-import { voidPlugin } from "void";
+
+import { site } from "./src/lib/site";
 
 const config = defineConfig({
   plugins: lazyPlugins(async () => {
-    // Tests cover plain modules, and the Cloudflare plugin would run them in workerd.
+    // Tests cover plain modules, and the plugins keep Vitest's servers from closing.
     if (process.env.VITEST !== undefined) {
       return [];
     }
@@ -19,11 +20,21 @@ const config = defineConfig({
     // oxlint-disable-next-line typescript/no-unsafe-return -- `@stylexjs/unplugin/vite` is typed as returning `any`; its typed factory skips the Vite hooks that emit CSS.
     return [
       tomekit(),
-      voidPlugin(),
       tanstackStart({
         // Crawling only follows links, and no page links to these.
-        pages: [{ path: "/robots.txt" }, { path: "/sitemap.xml" }],
-        prerender: { crawlLinks: true, enabled: true },
+        pages: [
+          { path: site.notFoundPath },
+          { path: "/llms.txt" },
+          { path: "/robots.txt" },
+          { path: "/sitemap.xml" },
+        ],
+        // `errors.html`, not `errors/index.html`: void's static deploy forces auto trailing
+        // slashes, which redirect a directory index to `/errors/` but serve a file as is.
+        prerender: {
+          autoSubfolderIndex: false,
+          crawlLinks: true,
+          enabled: true,
+        },
       }),
       // Before the React plugin, or Fast Refresh breaks.
       stylex({
