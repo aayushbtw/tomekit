@@ -30,6 +30,7 @@ const config = defineConfig({
         ],
         // `errors.html`, not `errors/index.html`: void's static deploy forces auto trailing
         // slashes, which redirect a directory index to `/errors/` but serve a file as is.
+        // Until voidzero-dev/void#580 lets `html_handling` through.
         prerender: {
           autoSubfolderIndex: false,
           crawlLinks: true,
