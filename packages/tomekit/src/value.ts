@@ -3,7 +3,14 @@ import {
   UnserializableInstanceError,
   UnserializableValueError,
 } from "./errors";
-import { isBigInt, isFunction, isObject, isPrimitive, isSymbol } from "./kind";
+import {
+  isBigInt,
+  isFunction,
+  isObject,
+  isPrimitive,
+  isString,
+  isSymbol,
+} from "./kind";
 import { isFileModule } from "./module";
 
 const IDENTIFIER = /^[$_\p{ID_Start}][$\p{ID_Continue}]*$/u;
@@ -70,6 +77,9 @@ function isFields(value: ContentValue): value is ContentFields {
   );
 }
 
+/** An object key, or an index into an array, Set or Map entry. */
+type PathSegment = number | string;
+
 /** Where `key` sits inside `at`, eg `meta.tags` or `meta["a-b"]`. */
 function keyPath(at: string, key: string): string {
   if (!IDENTIFIER.test(key)) {
@@ -77,6 +87,17 @@ function keyPath(at: string, key: string): string {
   }
 
   return at === "" ? key : `${at}.${key}`;
+}
+
+/** The key path of `path`, eg `meta.tags[0]` or `meta["a-b"]`. */
+function formatPath(path: readonly PathSegment[]): string {
+  let at = "";
+
+  for (const segment of path) {
+    at = isString(segment) ? keyPath(at, segment) : `${at}[${segment}]`;
+  }
+
+  return at;
 }
 
 /** Whether a value is written whole, with nothing inside it to check. */
@@ -90,21 +111,26 @@ function isWholeValue(value: unknown): value is Date | RegExp | URL {
  * Checks that a value can be written into content, and throws an
  * `UnserializableValueError` naming the key path of the first one that cannot.
  */
-function assertContentValue(
+function assertContentValue(value: unknown): asserts value is ContentValue {
+  assertValueAt(value, [], new WeakSet<object>());
+}
+
+// `path` is one stack shared by the whole walk, so key paths are only built when a check throws.
+function assertValueAt(
   value: unknown,
-  at = "",
-  parents = new WeakSet<object>()
+  path: PathSegment[],
+  parents: WeakSet<object>
 ): asserts value is ContentValue {
   if (value === undefined || value === null) {
     return;
   }
 
   if (isSymbol(value)) {
-    throw new UnserializableValueError("a symbol", at);
+    throw new UnserializableValueError("a symbol", formatPath(path));
   }
 
   if (isBigInt(value)) {
-    throw new UnserializableValueError("a bigint", at);
+    throw new UnserializableValueError("a bigint", formatPath(path));
   }
 
   if (isPrimitive(value)) {
@@ -114,53 +140,68 @@ function assertContentValue(
   const boxed = new Object(value);
 
   if (isFunction(boxed)) {
-    throw new UnserializableValueError("a function", at);
+    throw new UnserializableValueError("a function", formatPath(path));
   }
 
   if (parents.has(boxed)) {
-    throw new UnserializableValueError("a circular reference", at);
+    throw new UnserializableValueError(
+      "a circular reference",
+      formatPath(path)
+    );
   }
 
   if (isWholeValue(value)) {
     return;
   }
 
-  let children: (readonly [string, unknown])[];
-
-  if (boxed instanceof Map) {
-    children = [...boxed].flatMap(([key, entry], index) => [
-      [`${at}[${index}][0]`, key],
-      [`${at}[${index}][1]`, entry],
-    ]);
-  } else if (boxed instanceof Set) {
-    children = [...boxed].map((entry, index) => [`${at}[${index}]`, entry]);
-  } else if (Array.isArray(boxed)) {
-    // `entries()`, not `map`: `map` keeps a sparse array's holes, which the loop below can't destructure.
-    children = Array.from(boxed.entries(), ([index, entry]) => [
-      `${at}[${index}]`,
-      entry,
-    ]);
-  } else {
-    // Its only key is a symbol, so without this it would pass as an empty object.
-    if (isFileModule(boxed)) {
-      throw new MisplacedModuleError(at);
-    }
-
-    if (!PLAIN_PROTOTYPES.has(Reflect.getPrototypeOf(boxed))) {
-      throw new UnserializableInstanceError(boxed.constructor.name, at);
-    }
-
-    children = Object.entries(boxed).map(([key, entry]) => [
-      keyPath(at, key),
-      entry,
-    ]);
-  }
-
   parents.add(boxed);
 
   try {
-    for (const [path, child] of children) {
-      assertContentValue(child, path, parents);
+    if (boxed instanceof Map) {
+      let index = 0;
+
+      for (const [key, entry] of boxed) {
+        path.push(index, 0);
+        assertValueAt(key, path, parents);
+        path[path.length - 1] = 1;
+        assertValueAt(entry, path, parents);
+        path.length -= 2;
+        index += 1;
+      }
+    } else if (boxed instanceof Set) {
+      let index = 0;
+
+      for (const entry of boxed) {
+        path.push(index);
+        assertValueAt(entry, path, parents);
+        path.pop();
+        index += 1;
+      }
+    } else if (Array.isArray(boxed)) {
+      // Indexed, not `forEach`: `forEach` skips a sparse array's holes, which are checked as `undefined`.
+      for (let index = 0; index < boxed.length; index += 1) {
+        path.push(index);
+        assertValueAt(boxed[index], path, parents);
+        path.pop();
+      }
+    } else {
+      // Its only key is a symbol, so without this it would pass as an empty object.
+      if (isFileModule(boxed)) {
+        throw new MisplacedModuleError(formatPath(path));
+      }
+
+      if (!PLAIN_PROTOTYPES.has(Reflect.getPrototypeOf(boxed))) {
+        throw new UnserializableInstanceError(
+          boxed.constructor.name,
+          formatPath(path)
+        );
+      }
+
+      for (const [key, entry] of Object.entries(boxed)) {
+        path.push(key);
+        assertValueAt(entry, path, parents);
+        path.pop();
+      }
     }
   } finally {
     parents.delete(boxed);

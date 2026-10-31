@@ -84,6 +84,22 @@ describe(assertContentValue, () => {
     }).toThrow("cannot write an object at a into content");
   });
 
+  it("names the key path inside nested Maps and Sets", () => {
+    expect(() => {
+      assertContentValue({
+        a: {
+          "b-c": new Map<unknown, number>([
+            ["x", 1],
+            [() => 1, 2],
+          ]),
+        },
+      });
+    }).toThrow('cannot write a function at a["b-c"][1][0] into content');
+    expect(() => {
+      assertContentValue({ tags: new Set(["a", 1n]) });
+    }).toThrow("cannot write a bigint at tags[1] into content");
+  });
+
   it("rejects circular references, but not a value used twice", () => {
     const cyclic: Cyclic = {};
 
