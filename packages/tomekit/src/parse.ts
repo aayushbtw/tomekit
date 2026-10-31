@@ -211,18 +211,19 @@ function offsetOf(
   return offset;
 }
 
-/** The frontmatter's value and the events its positions are read from, or the first problem in it. */
+/** The frontmatter's value, or the first problem in it. */
 function readYaml(
   source: string
 ):
-  | { events: Event[]; issue?: undefined; value: unknown }
+  | { issue?: undefined; value: unknown }
   | { issue: { message: string; offset: number | undefined } } {
-  let events: Event[];
   let documents: unknown[];
 
   try {
-    events = parseEvents(source, {});
-    documents = constructFromEvents(events, { schema: CORE_SCHEMA, source });
+    documents = constructFromEvents(parseEvents(source, {}), {
+      schema: CORE_SCHEMA,
+      source,
+    });
   } catch (error) {
     if (error instanceof YAMLException) {
       return {
@@ -243,7 +244,7 @@ function readYaml(
     };
   }
 
-  return { events, value: documents[0] };
+  return { value: documents[0] };
 }
 
 /** Splits a Markdown file into an entry: frontmatter as metadata, the rest as body. Reads nothing from disk. */
@@ -272,23 +273,27 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
     return { entry: undefined, issues: [{ ...positionAt(offset), message }] };
   }
 
-  const events = yaml?.events;
   // Not checked here: YAML's core schema yields only plain data, and `loadCollection` checks every entry.
   const metadata: unknown = yaml?.value ?? {};
 
   const slug =
     isPlainObject(metadata) && "slug" in metadata ? metadata.slug : undefined;
 
+  // Parsed again only when a file has an issue, so a build doesn't hold every file's events.
+  let events: Event[] | undefined;
+
   function locate(keys: readonly string[]): Position | undefined {
     if (match === null) {
       return undefined;
     }
 
-    return positionAt(
-      events === undefined || frontmatter === undefined
-        ? undefined
-        : offsetOf(events, frontmatter, keys)
-    );
+    if (frontmatter === undefined) {
+      return positionAt(undefined);
+    }
+
+    events ??= parseEvents(frontmatter, {});
+
+    return positionAt(offsetOf(events, frontmatter, keys));
   }
 
   const frontmatterIssues = isPlainObject(metadata)
