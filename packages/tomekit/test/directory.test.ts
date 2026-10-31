@@ -30,6 +30,53 @@ function messages(errors: readonly Error[]) {
   return errors.map((error) => error.message);
 }
 
+/** What `directory()` loads from a tree of the names globs treat specially. */
+async function loadTree(files: string[]) {
+  const root = await project({
+    "content/posts/.dot.md": "",
+    "content/posts/.hid/f.md": "",
+    "content/posts/B.MD": "",
+    "content/posts/a.md": "",
+    "content/posts/c.Md": "",
+    "content/posts/d.mdx": "",
+    "content/posts/drafts/h.md": "",
+    "content/posts/e.markdown": "",
+    "content/posts/notes": "",
+    "content/posts/sp ace/i.md": "",
+    "content/posts/sub/.e.md": "",
+    "content/posts/sub/deep/g.md": "",
+    "content/posts/x.md/inner.md": "",
+    "content/posts/x.mdx/inner.mdx": "",
+    "content/posts/über.md": "",
+    "content/posts/üni/ï.md": "",
+    // A Kelvin sign, which lowercases to `k`.
+    [`content/posts/kelvin.${String.fromCodePoint(0x21_2a)}`]: "",
+  });
+  const folder = path.join(root, "content/posts");
+
+  await symlink("a.md", path.join(folder, "link.md"));
+  await symlink("nowhere.md", path.join(folder, "broken.md"));
+  await symlink("sub", path.join(folder, "linkdir"));
+  await symlink("sub", path.join(folder, "y.md"));
+  await symlink("../a.md", path.join(folder, "sub/lr.md"));
+
+  const { entries, issues = [] } = await directory("content/posts", {
+    files,
+  }).load({
+    collection: "posts",
+    dev: false,
+    root,
+    watch: () => {
+      // Nothing to watch in a one-off load.
+    },
+  });
+
+  return {
+    files: entries.map((entry) => entry.file?.path),
+    issues: issues.map((issue) => issue.file),
+  };
+}
+
 describe(directory, () => {
   it("builds slug, metadata, body and file, in file name order", async () => {
     const root = await project({
@@ -425,6 +472,30 @@ describe(directory, () => {
       'content/posts/b.md:3:1: slug "same" is already used by content/posts/a.md. Change this file\'s `slug`',
       'content/posts/same.md: slug "same" is already used by content/posts/a.md. Rename this file, or set a different `slug` in its frontmatter',
     ]);
+  });
+
+  describe("lists the files fs.glob does", () => {
+    it.for([
+      { files: ["**/*.md"] },
+      { files: ["**/*.md", "**/*.mdx"] },
+      { files: ["**/*.MD"] },
+      { files: ["**/*.k"] },
+    ])("$files", async ({ files }) => {
+      // An exclude that leaves nothing out, so `fs.glob` lists the files.
+      const globbed = await loadTree([...files, "!no such folder/**"]);
+
+      await expect(loadTree(files)).resolves.toStrictEqual(globbed);
+    });
+
+    it("leaves out what ! patterns match", async () => {
+      const all = await loadTree(["**/*.md"]);
+
+      expect(all.files).toContain("content/posts/drafts/h.md");
+      await expect(loadTree(["**/*.md", "!drafts/**"])).resolves.toStrictEqual({
+        ...all,
+        files: all.files.filter((file) => file !== "content/posts/drafts/h.md"),
+      });
+    });
   });
 
   it("watches its patterns, even before its directory exists", async () => {

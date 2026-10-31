@@ -1,8 +1,9 @@
 import type { Dirent } from "node:fs";
-import { glob, readFile, stat } from "node:fs/promises";
+import { glob, readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 import type { Entry, FileInfo, Loader, LoadIssue } from "./index";
+import { isString } from "./kind";
 import { parse } from "./parse";
 import type { LocatedEntry } from "./parse";
 import { isProfiled, PROFILE, timed } from "./profile";
@@ -87,29 +88,117 @@ interface FileResult {
   issues: LoadIssue[];
 }
 
-async function filesIn(
+/** A name `fs.glob` matched, by its path relative to the folder. */
+interface Match {
+  file: string;
+  match: Dirent;
+}
+
+const EXTENSION_GLOB = /^\*\*\/\*(?<ending>\.[\w.-]+)$/u;
+
+// Like Node's glob, which lowercases both sides on macOS.
+const IGNORES_CASE = process.platform === "darwin";
+
+/** The endings `**\/*.<ext>` includes match, or `undefined` for other patterns, which `fs.glob` matches. */
+function endingsOf(
+  include: readonly string[],
+  exclude: readonly string[]
+): string[] | undefined {
+  const endings = include.map(
+    (pattern) => EXTENSION_GLOB.exec(pattern)?.groups?.ending
+  );
+
+  return process.platform === "win32" ||
+    exclude.length > 0 ||
+    !endings.every(isString)
+    ? undefined
+    : endings.map((ending) => (IGNORES_CASE ? ending.toLowerCase() : ending));
+}
+
+/** What `fs.glob` matches for `**\/*<ending>`: it skips dot names and doesn't enter symlinked folders. */
+async function walk(
+  absolute: string,
+  endings: readonly string[]
+): Promise<Match[]> {
+  const matches: Match[] = [];
+
+  async function visit(folder: string): Promise<void> {
+    let entries: Dirent[];
+
+    try {
+      entries = await readdir(`${absolute}/${folder}`, { withFileTypes: true });
+    } catch {
+      // Like `fs.glob`, which skips a folder it can't read.
+      return;
+    }
+
+    const below: Promise<void>[] = [];
+
+    for (const match of entries) {
+      const { name } = match;
+
+      if (name.startsWith(".")) {
+        continue;
+      }
+
+      if (match.isDirectory()) {
+        below.push(visit(`${folder}${name}/`));
+      } else if (
+        endings.some((ending) =>
+          (IGNORES_CASE ? name.toLowerCase() : name).endsWith(ending)
+        )
+      ) {
+        matches.push({ file: folder + name, match });
+      }
+    }
+
+    await Promise.all(below);
+  }
+
+  await visit("");
+
+  return matches;
+}
+
+async function globbed(
   absolute: string,
   include: readonly string[],
-  exclude: readonly string[] = []
-): Promise<string[]> {
-  const matches: Dirent[] = [];
+  exclude: readonly string[]
+): Promise<Match[]> {
+  const matches: Match[] = [];
 
   for await (const match of glob(include, {
     cwd: absolute,
     exclude,
     withFileTypes: true,
   })) {
-    matches.push(match);
+    matches.push({
+      file: path.relative(
+        absolute,
+        path.resolve(absolute, match.parentPath, match.name)
+      ),
+      match,
+    });
   }
+
+  return matches;
+}
+
+async function filesIn(
+  absolute: string,
+  include: readonly string[],
+  exclude: readonly string[] = []
+): Promise<string[]> {
+  const endings = endingsOf(include, exclude);
+
+  const matches =
+    endings === undefined
+      ? await globbed(absolute, include, exclude)
+      : await walk(absolute, endings);
 
   // Globs match folders too, eg `archive.md/`. Only a symlink needs `stat`, to see whether it links to a file.
   const found = await Promise.all(
-    matches.map(async (match) => {
-      const file = path.relative(
-        absolute,
-        path.resolve(absolute, match.parentPath, match.name)
-      );
-
+    matches.map(async ({ file, match }) => {
       if (!match.isSymbolicLink()) {
         return match.isFile() ? [file] : [];
       }
