@@ -20,6 +20,7 @@ import mdx from "@mdx-js/rollup";
 import viteReact from "@vitejs/plugin-react";
 import remarkFrontmatter from "remark-frontmatter";
 import { cached, tomekit } from "tomekit/vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [
