@@ -2,6 +2,7 @@ import { hash } from "node:crypto";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 
+import { hasStableEntries } from "./directory";
 import type { Glob } from "./directory";
 import { assertTransformResult, buildDocument } from "./document";
 import { ContentError, MissingModuleError } from "./errors";
@@ -72,12 +73,19 @@ type EntryResult =
   | { document: BuiltDocument; errors?: undefined }
   | { errors: ContentError[] };
 
+/** Each entry's hash when first loaded, for loaders whose `load` has stable entries, so reloading an unchanged one skips hashing. */
+const hashes = new WeakMap<Entry, string>();
+
 function skip(reason?: string): Skipped {
   return new Skipped(reason);
 }
 
-/** Changes whenever anything the transform or the document could depend on changes. */
-function entryHashOf(entry: Entry, metadata: ContentValue): string {
+/** Changes whenever anything the transform or the document could depend on changes. Kept in `hashes` when `stable`. */
+function entryHashOf(
+  entry: Entry,
+  metadata: ContentValue,
+  stable: boolean
+): string {
   const serialized = serialize({
     file: entry.file === undefined ? undefined : { path: entry.file.path },
     metadata,
@@ -88,7 +96,13 @@ function entryHashOf(entry: Entry, metadata: ContentValue): string {
   // The body goes in as it is, since escaping it into the JSON costs more than hashing it.
   const body = entry.body === undefined ? "-" : `+${entry.body}`;
 
-  return hash("sha1", `${rest.length}:${rest}${body}`, "base64");
+  const entryHash = hash("sha1", `${rest.length}:${rest}${body}`, "base64");
+
+  if (stable) {
+    hashes.set(entry, entryHash);
+  }
+
+  return entryHash;
 }
 
 function metadataOf(entry: Entry): ContentValue {
@@ -226,12 +240,15 @@ async function loadEntry(
     dev,
     profile,
     root,
+    stable,
   }: {
     broken: boolean;
     cache?: EntryCache;
     dev: boolean;
     profile?: Profile;
     root: string;
+    /** Whether the loader's `load` has stable entries. */
+    stable: boolean;
   }
 ): Promise<EntryResult> {
   const file = entry.file?.path;
@@ -258,6 +275,20 @@ async function loadEntry(
     };
   }
 
+  const locate = isLocated(entry) ? entry[LOCATE] : undefined;
+  const cached = broken ? undefined : cache?.get(entry.slug);
+
+  // With the current `locate`, not the cached one: the same data can sit on a different line after an edit.
+  function reuse(document: BuiltDocument): EntryResult {
+    profile?.reuse("transform");
+
+    return { document: { ...document, locate } };
+  }
+
+  if (stable && cached !== undefined && hashes.get(entry) === cached.hash) {
+    return reuse(cached.document);
+  }
+
   let metadata: ContentValue;
 
   try {
@@ -270,16 +301,10 @@ async function loadEntry(
   const entryHash =
     cache === undefined
       ? undefined
-      : timed(profile, "hash", () => entryHashOf(entry, metadata));
+      : timed(profile, "hash", () => entryHashOf(entry, metadata, stable));
 
-  const locate = isLocated(entry) ? entry[LOCATE] : undefined;
-  const cached = broken ? undefined : cache?.get(entry.slug);
-
-  // With the current `locate`, not the cached one: the same data can sit on a different line after an edit.
   if (cached !== undefined && cached.hash === entryHash) {
-    profile?.reuse("transform");
-
-    return { document: { ...cached.document, locate } };
+    return reuse(cached.document);
   }
 
   // Awaited apart from the call, like `transform`.
@@ -424,6 +449,7 @@ async function loadCollection(
   );
 
   const before = new Map(cache);
+  const stable = hasStableEntries(collection.loader.load);
 
   const results = await Promise.all(
     loaded.entries.map(async (entry) => {
@@ -438,6 +464,7 @@ async function loadCollection(
         dev,
         profile,
         root,
+        stable,
       });
     })
   );

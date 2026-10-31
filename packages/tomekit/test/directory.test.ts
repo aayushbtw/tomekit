@@ -258,6 +258,42 @@ describe(directory, () => {
     expect(errors[0]).toMatchObject({ line: 4 });
   });
 
+  it("reuses an unchanged file's document after another file changes", async () => {
+    const created = await createProject({
+      "content/posts/a.md": "---\ntitle: A\n---\n",
+      "content/posts/b.md": "---\ntitle: B\n---\n",
+    });
+
+    const transformed: string[] = [];
+
+    const counted = defineCollection({
+      loader: directory("content/posts"),
+      schema: z.object({ title: z.string() }),
+      transform: ({ slug }) => {
+        transformed.push(slug);
+
+        return {};
+      },
+    });
+
+    const cache = new Map();
+
+    await loadCollection("posts", counted, created.root, { cache, dev: true });
+    await created.write({ "content/posts/b.md": "---\ntitle: B2\n---\n" });
+
+    const { documents } = await loadCollection("posts", counted, created.root, {
+      cache,
+      dev: true,
+    });
+
+    // Entries load in parallel, so only which ones reran is stable, not their order.
+    expect(transformed.toSorted()).toStrictEqual(["a", "b", "b"]);
+    expect(outputs(documents)).toMatchObject([
+      { metadata: { title: "A" } },
+      { metadata: { title: "B2" } },
+    ]);
+  });
+
   it("reloads a file edited without changing its size or mtime", async () => {
     const created = await createProject({
       "content/posts/a.md": "---\ntitle: A\n---\n",

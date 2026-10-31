@@ -411,6 +411,25 @@ describe(loadCollection, () => {
     ]);
   });
 
+  it("rebuilds an entry the loader changed in place", async () => {
+    const metadata = { title: "A" };
+    const changing = defineCollection({
+      loader: loader([{ metadata, slug: "a" }]),
+      schema,
+    });
+
+    const cache: EntryCache = new Map();
+
+    await loadCollection("posts", changing, ROOT, { cache });
+    metadata.title = "A2";
+
+    const { documents } = await loadCollection("posts", changing, ROOT, {
+      cache,
+    });
+
+    expect(outputs(documents)).toMatchObject([{ metadata: { title: "A2" } }]);
+  });
+
   it("drops cached entries the loader no longer returns", async () => {
     let entries: Entry[] = [
       { metadata: { title: "A" }, slug: "a" },

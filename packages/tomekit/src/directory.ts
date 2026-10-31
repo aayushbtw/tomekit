@@ -11,6 +11,17 @@ import type { PhaseRecorder } from "./profile";
 const DEFAULT_FILES = "**/*.md";
 
 /**
+ * Marks a `load` that returns a new entry object whenever an entry's content
+ * changes and never changes one it returned. Symbol.for, since the config's
+ * copy of tomekit, which runs `directory()`, differs from the builder's.
+ */
+const STABLE_ENTRIES = Symbol.for("tomekit.stableEntries");
+
+function hasStableEntries(load: Loader["load"]): boolean {
+  return STABLE_ENTRIES in load;
+}
+
+/**
  * A glob pattern. Suggests common ones and accepts any string.
  *
  * @internal
@@ -236,7 +247,7 @@ function directory(
 
   const cache = new ParseCache();
 
-  return {
+  const loader: Loader<FileInfo> = {
     async load(context) {
       const { collection, dev, root, watch } = context;
       const profile = isProfiled(context) ? context[PROFILE] : undefined;
@@ -300,6 +311,11 @@ function directory(
       return { entries, issues };
     },
   };
+
+  // On `load`, not the loader, so a wrapper that replaces `load` drops it.
+  Object.assign(loader.load, { [STABLE_ENTRIES]: true });
+
+  return loader;
 }
 
-export { directory, type DirectoryOptions, type Glob };
+export { directory, type DirectoryOptions, type Glob, hasStableEntries };
