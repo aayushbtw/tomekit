@@ -73,19 +73,14 @@ type EntryResult =
   | { document: BuiltDocument; errors?: undefined }
   | { errors: ContentError[] };
 
-/** Each entry's hash when first loaded, for loaders whose `load` has stable entries, so reloading an unchanged one skips hashing. */
-const hashes = new WeakMap<Entry, string>();
+const stableEntryHashes = new WeakMap<Entry, string>();
 
 function skip(reason?: string): Skipped {
   return new Skipped(reason);
 }
 
-/** Changes whenever anything the transform or the document could depend on changes. Kept in `hashes` when `stable`. */
-function entryHashOf(
-  entry: Entry,
-  metadata: ContentValue,
-  stable: boolean
-): string {
+/** Changes whenever anything the transform or the document could depend on changes. */
+function entryHashOf(entry: Entry, metadata: ContentValue): string {
   const serialized = serialize({
     file: entry.file === undefined ? undefined : { path: entry.file.path },
     metadata,
@@ -96,10 +91,13 @@ function entryHashOf(
   // The body goes in as it is, since escaping it into the JSON costs more than hashing it.
   const body = entry.body === undefined ? "-" : `+${entry.body}`;
 
-  const entryHash = hash("sha1", `${rest.length}:${rest}${body}`, "base64");
+  return hash("sha1", `${rest.length}:${rest}${body}`, "base64");
+}
 
+/** Returns `entryHash`, kept for the entry when its loader's entries are stable. */
+function remembered(entry: Entry, entryHash: string, stable: boolean): string {
   if (stable) {
-    hashes.set(entry, entryHash);
+    stableEntryHashes.set(entry, entryHash);
   }
 
   return entryHash;
@@ -247,7 +245,6 @@ async function loadEntry(
     dev: boolean;
     profile?: Profile;
     root: string;
-    /** Whether the loader's `load` has stable entries. */
     stable: boolean;
   }
 ): Promise<EntryResult> {
@@ -285,7 +282,11 @@ async function loadEntry(
     return { document: { ...document, locate } };
   }
 
-  if (stable && cached !== undefined && hashes.get(entry) === cached.hash) {
+  if (
+    stable &&
+    cached !== undefined &&
+    stableEntryHashes.get(entry) === cached.hash
+  ) {
     return reuse(cached.document);
   }
 
@@ -301,7 +302,9 @@ async function loadEntry(
   const entryHash =
     cache === undefined
       ? undefined
-      : timed(profile, "hash", () => entryHashOf(entry, metadata, stable));
+      : timed(profile, "hash", () =>
+          remembered(entry, entryHashOf(entry, metadata), stable)
+        );
 
   if (cached !== undefined && cached.hash === entryHash) {
     return reuse(cached.document);

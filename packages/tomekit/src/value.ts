@@ -77,7 +77,6 @@ function isFields(value: ContentValue): value is ContentFields {
   );
 }
 
-/** An object key, or an index into an array, Set or Map entry. */
 type PathSegment = number | string;
 
 /** Where `key` sits inside `at`, eg `meta.tags` or `meta["a-b"]`. */
@@ -89,7 +88,6 @@ function keyPath(at: string, key: string): string {
   return at === "" ? key : `${at}.${key}`;
 }
 
-/** The key path of `path`, eg `meta.tags[0]` or `meta["a-b"]`. */
 function formatPath(path: readonly PathSegment[]): string {
   let at = "";
 

@@ -88,7 +88,6 @@ interface FileResult {
   issues: LoadIssue[];
 }
 
-/** A name `fs.glob` matched, by its path relative to the folder. */
 interface Match {
   file: string;
   match: Dirent;
@@ -99,20 +98,14 @@ const EXTENSION_GLOB = /^\*\*\/\*(?<ending>\.[\w.-]+)$/u;
 // Like Node's glob, which lowercases both sides on macOS.
 const IGNORES_CASE = process.platform === "darwin";
 
-/** The endings `**\/*.<ext>` includes match, or `undefined` for other patterns, which `fs.glob` matches. */
-function endingsOf(
-  include: readonly string[],
-  exclude: readonly string[]
-): string[] | undefined {
+function endingsOf(include: readonly string[]): string[] | undefined {
   const endings = include.map(
     (pattern) => EXTENSION_GLOB.exec(pattern)?.groups?.ending
   );
 
-  return process.platform === "win32" ||
-    exclude.length > 0 ||
-    !endings.every(isString)
-    ? undefined
-    : endings.map((ending) => (IGNORES_CASE ? ending.toLowerCase() : ending));
+  return endings.every(isString)
+    ? endings.map((ending) => (IGNORES_CASE ? ending.toLowerCase() : ending))
+    : undefined;
 }
 
 /** What `fs.glob` matches for `**\/*<ending>`: it skips dot names and doesn't enter symlinked folders. */
@@ -189,14 +182,18 @@ async function filesIn(
   include: readonly string[],
   exclude: readonly string[] = []
 ): Promise<string[]> {
-  const endings = endingsOf(include, exclude);
+  // The walk builds `/` paths and has no `!` patterns, which `fs.glob` also applies to folders.
+  const endings =
+    process.platform === "win32" || exclude.length > 0
+      ? undefined
+      : endingsOf(include);
 
   const matches =
     endings === undefined
       ? await globbed(absolute, include, exclude)
       : await walk(absolute, endings);
 
-  // Globs match folders too, eg `archive.md/`. Only a symlink needs `stat`, to see whether it links to a file.
+  // Globs match folders too, eg `archive.md/`.
   const found = await Promise.all(
     matches.map(async ({ file, match }) => {
       if (!match.isSymbolicLink()) {
@@ -228,7 +225,6 @@ async function versionOf(file: string): Promise<string | undefined> {
   }
 }
 
-/** A file `filesIn` found, by its path relative to the folder, relative to the root, and absolute. */
 interface FoundFile {
   absolute: string;
   file: string;

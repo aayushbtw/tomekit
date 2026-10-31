@@ -211,7 +211,6 @@ function offsetOf(
   return offset;
 }
 
-/** The frontmatter's value, or the first problem in it. */
 function readYaml(
   source: string
 ):
@@ -273,7 +272,7 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
     return { entry: undefined, issues: [{ ...positionAt(offset), message }] };
   }
 
-  // Not checked here: YAML's core schema yields only plain data, and `loadCollection` checks every entry.
+  // Not checked here: `loadCollection` checks every entry, and YAML aliases can still make a cycle.
   const metadata: unknown = yaml?.value ?? {};
 
   const slug =
