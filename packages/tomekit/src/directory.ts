@@ -1,4 +1,4 @@
-import type { BigIntStats } from "node:fs";
+import type { Dirent } from "node:fs";
 import { glob, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
@@ -68,13 +68,6 @@ async function folderIssue(
   }
 }
 
-/** A file matched by the globs, relative to the directory. */
-interface Found {
-  file: string;
-  /** `undefined` when it can't be stat'ed, so reading it reports why. */
-  stats: BigIntStats | undefined;
-}
-
 /** A file's entry as `parse` returned it, or why it couldn't be read. */
 interface FileResult {
   entry: LocatedEntry | undefined;
@@ -87,27 +80,52 @@ async function filesIn(
   absolute: string,
   include: readonly string[],
   exclude: readonly string[] = []
-): Promise<Found[]> {
-  const matches: string[] = [];
+): Promise<string[]> {
+  const matches: Dirent[] = [];
 
-  for await (const match of glob(include, { cwd: absolute, exclude })) {
+  for await (const match of glob(include, {
+    cwd: absolute,
+    exclude,
+    withFileTypes: true,
+  })) {
     matches.push(match);
   }
 
-  // Globs match folders too, eg `archive.md/`. `stat` follows symlinks, so a linked file still loads.
+  // Globs match folders too, eg `archive.md/`. Only a symlink needs `stat`, to see whether it links to a file.
   const found = await Promise.all(
-    matches.map(async (file) => {
-      try {
-        const stats = await stat(path.join(absolute, file), { bigint: true });
+    matches.map(async (match) => {
+      const file = path.relative(
+        absolute,
+        path.resolve(absolute, match.parentPath, match.name)
+      );
 
-        return stats.isFile() ? [{ file, stats }] : [];
+      if (!match.isSymbolicLink()) {
+        return match.isFile() ? [file] : [];
+      }
+
+      try {
+        const stats = await stat(path.join(absolute, file));
+
+        return stats.isFile() ? [file] : [];
       } catch {
-        return [{ file, stats: undefined }];
+        return [file];
       }
     })
   );
 
-  return found.flat().toSorted((a, b) => (a.file < b.file ? -1 : 1));
+  return found.flat().toSorted();
+}
+
+/** `undefined` when it can't be stat'ed, so reading it reports why. */
+async function versionOf(file: string): Promise<string | undefined> {
+  try {
+    const stats = await stat(file, { bigint: true });
+
+    // ctime too: it changes on every write, even one that keeps the mtime.
+    return `${stats.size}:${stats.mtimeNs}:${stats.ctimeNs}`;
+  } catch {
+    return undefined;
+  }
 }
 
 async function read(
@@ -149,18 +167,14 @@ class ParseCache {
   async results(
     absolute: string,
     root: string,
-    files: readonly Found[],
+    files: readonly string[],
     profile?: PhaseRecorder
   ): Promise<FileResult[]> {
     const next = new Map<string, { result: FileResult; version: string }>();
 
     const results = await Promise.all(
-      files.map(async ({ file, stats }) => {
-        // ctime too: it changes on every write, even one that keeps the mtime.
-        const version =
-          stats === undefined
-            ? undefined
-            : `${stats.size}:${stats.mtimeNs}:${stats.ctimeNs}`;
+      files.map(async (file) => {
+        const version = await versionOf(path.join(absolute, file));
 
         // With the root, since one loader can load from several roots and `filePath` is relative to it.
         const key = `${root}\0${path.join(absolute, file)}`;
@@ -224,7 +238,7 @@ function directory(
 
   return {
     async load(context) {
-      const { collection, root, watch } = context;
+      const { collection, dev, root, watch } = context;
       const profile = isProfiled(context) ? context[PROFILE] : undefined;
 
       // Before any early return, so creating a missing folder still reruns `load`.
@@ -260,7 +274,12 @@ function directory(
         };
       }
 
-      const results = await cache.results(absolute, root, found, profile);
+      // Only dev loads again in the same process, so a build skips the stats the cache needs.
+      const results = dev
+        ? await cache.results(absolute, root, found, profile)
+        : await Promise.all(
+            found.map(async (file) => await read(absolute, root, file, profile))
+          );
 
       const entries: Entry<FileInfo>[] = [];
       const issues: LoadIssue[] = [];

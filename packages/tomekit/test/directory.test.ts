@@ -245,13 +245,14 @@ describe(directory, () => {
     });
     const cache = new Map();
 
-    await loadCollection("posts", posts, created.root, { cache });
+    await loadCollection("posts", posts, created.root, { cache, dev: true });
     await created.write({
       "content/posts/b.md": "---\n\ntitle: B\nslug: same\n---\n",
     });
 
     const { errors } = await loadCollection("posts", posts, created.root, {
       cache,
+      dev: true,
     });
 
     expect(errors[0]).toMatchObject({ line: 4 });
@@ -264,10 +265,14 @@ describe(directory, () => {
     const file = path.join(created.root, "content/posts/a.md");
     // Whole seconds, so setting it again restores it to the nanosecond.
     await utimes(file, 1000, 1000);
-    const loaded = await loadCollection("posts", posts, created.root);
+    const loaded = await loadCollection("posts", posts, created.root, {
+      dev: true,
+    });
     await created.write({ "content/posts/a.md": "---\ntitle: B\n---\n" });
     await utimes(file, 1000, 1000);
-    const reloaded = await loadCollection("posts", posts, created.root);
+    const reloaded = await loadCollection("posts", posts, created.root, {
+      dev: true,
+    });
 
     expect(outputs(loaded.documents)).toMatchObject([
       { metadata: { title: "A" } },
