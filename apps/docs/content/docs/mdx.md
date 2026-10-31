@@ -125,7 +125,7 @@ A result is reused only while all of these stay the same:
 
 Builds and dev, each `--mode` and each Vite environment, eg client and ssr, keep their own results, since MDX compiles differently for each. An edit to a body in dev still updates the page in place: it changes the file's text, so the file compiles again.
 
-A build saves the results when it ends, also when it fails. The dev server saves a second after it compiles a file, and when it stops. The first save in each build or dev server drops the results of deleted files.
+A build saves the results when it ends, also when it fails. The dev server saves a second after it compiles a file, and when it closes, eg on `q` or a SIGTERM. Ctrl+C stops it without saving, so a file it compiled in its last second compiles again next time. The first save in each build or dev server drops the results of deleted files.
 
 ### When nothing is cached
 

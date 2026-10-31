@@ -120,7 +120,10 @@ function unstorableMessage(file: string, reason: Unstorable): string {
  * });
  * ```
  */
-function cached(plugin: Plugin): Plugin {
+function cached(input: Plugin | { name: string }): Plugin {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- SAFETY: Vite's `plugins` runs any object with a name as a `Plugin`, so one typed for Rollup fits there, and here, without matching Vite's hook types.
+  const plugin = input as Plugin;
+
   if (
     !isObject(plugin) ||
     Array.isArray(plugin) ||
