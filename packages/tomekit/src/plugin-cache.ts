@@ -12,7 +12,6 @@ import { isPlainObject } from "./value";
 /** Without a miss for this long, dev saves anyway: a dev server stopped with Ctrl+C never runs `buildEnd`. */
 const DEV_SAVE_DELAY = 1000;
 
-/** The result fields a stored copy can hand back unchanged. */
 const STORED_FIELDS = new Set([
   "code",
   "map",
@@ -26,55 +25,41 @@ type TransformHandler = Extract<TransformHook, { handler: unknown }>["handler"];
 
 type TransformOutput = Awaited<ReturnType<TransformHandler>>;
 
-/**
- * Which file a plugin's results go to. Each one is a writer that can run at
- * the same time as another, eg a dev server next to a build, or client next
- * to ssr, so none of them shares a file.
- */
+/** Each scope is a writer that can run next to another, eg a dev server next to a build, or client next to ssr, so none of them shares a file. */
 interface CacheScope {
   readonly dev: boolean;
-  /** The Vite environment, eg `client` or `ssr`. */
   readonly environment: string;
   readonly mode: string;
   readonly plugin: string;
   readonly root: string;
 }
 
-/** What makes every result in a scope's file stale at once. */
 interface KeyParts {
-  /** `codeKey(root)`. */
   readonly code: string;
   /** The Vite config and the files it imports, read by content: they stand in for the plugin's options, which can hold functions. */
   readonly configFiles: readonly string[];
-  /** The options passed to Vite itself, eg `--base`, as text. */
   readonly inline: string;
   readonly production: boolean;
 }
 
-/** One transform result as stored. `map` is JSON text, so Vite never mutates a stored map. */
+/** `map` is JSON text, so Vite never mutates a stored map. */
 interface StoredResult {
-  /** `hashOf` the code the transform received. */
-  readonly hash: string;
+  readonly inputHash: string;
   readonly code: string;
   readonly map?: string | null;
-  readonly moduleSideEffects?: boolean | "no-treeshake";
+  readonly moduleSideEffects?: boolean | "no-treeshake" | null;
   readonly moduleType?: string;
 }
 
-/** The file on disk. `results` is keyed by id relative to the root, query included. */
+/** `results` is keyed by id relative to the root, query included. */
 interface CacheFile {
   readonly key: string;
   readonly results: Readonly<Record<string, StoredResult>>;
 }
 
-/** Why one result wasn't stored. */
-type Unstorable =
-  /** The result had a field a stored copy can't carry, eg `meta`. */
-  | { readonly field: string }
-  /** The transform read a context member whose effect a stored copy can't repeat, eg `emitFile`. */
-  | { readonly member: string };
+type Unstorable = { readonly field: string } | { readonly member: string };
 
-/** `.tomekit/cache/plugins/<plugin>/<build|dev>+<mode>+<environment>.json`. `encodeURIComponent` encodes `+` and `/`, so no two scopes share a path. */
+/** `encodeURIComponent` encodes `+` and `/`, so no two scopes share a path. */
 function cacheFileOf(scope: CacheScope): string {
   const name = [scope.dev ? "dev" : "build", scope.mode, scope.environment]
     .map((part) => encodeURIComponent(part))
@@ -103,13 +88,14 @@ async function keyOf(scope: CacheScope, parts: KeyParts): Promise<string> {
 function isStoredResult(value: unknown): value is StoredResult {
   return (
     isPlainObject(value) &&
-    "hash" in value &&
-    isString(value.hash) &&
+    "inputHash" in value &&
+    isString(value.inputHash) &&
     "code" in value &&
     isString(value.code) &&
     (!("map" in value) || value.map === null || isString(value.map)) &&
     (!("moduleType" in value) || isString(value.moduleType)) &&
     (!("moduleSideEffects" in value) ||
+      value.moduleSideEffects === null ||
       isBoolean(value.moduleSideEffects) ||
       value.moduleSideEffects === "no-treeshake")
   );
@@ -126,7 +112,6 @@ function isCacheFile(value: unknown): value is CacheFile {
   );
 }
 
-/** `id` relative to `root`, query kept, or `undefined` for an id that isn't a file, eg a `\0` virtual module. */
 function relativeId(root: string, id: string): string | undefined {
   return path.isAbsolute(id) ? path.relative(root, id) : undefined;
 }
@@ -138,7 +123,7 @@ function withoutQuery(id: string): string {
 }
 
 function storedOf(
-  hash: string,
+  inputHash: string,
   input: string,
   result: Extract<TransformOutput, object>
 ): StoredResult | Unstorable {
@@ -159,27 +144,21 @@ function storedOf(
 
   return {
     code,
-    hash,
+    inputHash,
     map:
       map === undefined || map === null || isString(map)
         ? map
         : JSON.stringify(map),
-    // JSON leaves out an `undefined` field.
-    moduleSideEffects: moduleSideEffects ?? undefined,
+    moduleSideEffects,
     moduleType,
   };
 }
 
-/**
- * One plugin's results for one scope, read once per process and saved when
- * they changed.
- */
 class PluginCache {
   readonly #file: string;
   readonly #key: string;
   readonly #root: string;
   readonly #results: Map<string, StoredResult>;
-  /** Ids this process reused or stored. Saving keeps these without a stat. */
   readonly #touched = new Set<string>();
   #dirty = false;
   /** A deleted file stays deleted, so only the first save stats untouched results. */
@@ -200,7 +179,7 @@ class PluginCache {
     this.#results = results;
   }
 
-  /** The scope's cache, starting from its file when the key matches. Never rejects: a missing, unreadable, stale or badly shaped file reads as empty. */
+  /** Never rejects: a missing, unreadable, stale or badly shaped file reads as empty. */
   static async open(scope: CacheScope, parts: KeyParts): Promise<PluginCache> {
     const file = cacheFileOf(scope);
     const [key, text] = await Promise.all([
@@ -226,7 +205,6 @@ class PluginCache {
     return new PluginCache(file, key, scope.root, new Map());
   }
 
-  /** The stored result for this module, if the transform last received exactly this code. */
   get(id: string, code: string): TransformOutput {
     const relative = relativeId(this.#root, id);
     const stored =
@@ -235,7 +213,7 @@ class PluginCache {
     if (
       relative === undefined ||
       stored === undefined ||
-      stored.hash !== hashOf([code])
+      stored.inputHash !== hashOf([code])
     ) {
       return undefined;
     }
@@ -246,7 +224,6 @@ class PluginCache {
     return { code: stored.code, map, moduleSideEffects, moduleType };
   }
 
-  /** Keeps what the transform returned for this code, or drops the old result when it returned nothing. Returns why it couldn't keep it. */
   set(
     id: string,
     code: string,
@@ -264,12 +241,12 @@ class PluginCache {
       return undefined;
     }
 
-    const hash = hashOf([code]);
+    const inputHash = hashOf([code]);
     const stored = isString(result)
-      ? { code: result, hash }
-      : storedOf(hash, code, result);
+      ? { code: result, inputHash }
+      : storedOf(inputHash, code, result);
 
-    if (!("hash" in stored)) {
+    if (!("inputHash" in stored)) {
       this.delete(id);
 
       return stored;
@@ -290,11 +267,7 @@ class PluginCache {
     }
   }
 
-  /**
-   * On the first save, drops results this process never touched whose file is
-   * gone. Then writes the results if they changed, through `replaceFile`, so a
-   * crash or another writer leaves either file whole. Never rejects.
-   */
+  /** Never rejects. */
   async save(): Promise<void> {
     clearTimeout(this.#timer);
     this.#timer = undefined;
@@ -303,7 +276,6 @@ class PluginCache {
     await this.#saving;
   }
 
-  /** `save` once `DEV_SAVE_DELAY` passes without another call. The timer never keeps a process alive. */
   saveLater(): void {
     clearTimeout(this.#timer);
     this.#timer = setTimeout(() => {

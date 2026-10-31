@@ -104,7 +104,6 @@ async function buildApp(root: string, options: InlineConfig = {}) {
   return { code, messages: messages.join("\n") };
 }
 
-/** A plugin defined in the test, for builds without a config file to put it in. */
 function upper(): Plugin {
   return {
     name: "upper",

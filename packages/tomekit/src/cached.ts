@@ -14,10 +14,10 @@ import { isFunction, isObject, isString } from "./kind";
 import { PluginCache } from "./plugin-cache";
 import type { KeyParts, TransformOutput, Unstorable } from "./plugin-cache";
 
-/** Marks a plugin `cached` returned, so wrapping it again changes nothing and duplicate names are found. Enumerable, so a spread copy keeps it. */
+/** Enumerable, so a spread copy of a cached plugin keeps it. */
 const CACHED: unique symbol = Symbol.for("tomekit.cached");
 
-/** Context members a stored result needs nothing from. Reading any other one keeps that result out of the cache. */
+/** Context members a stored result needs nothing from. */
 const SAFE_MEMBERS = new Set([
   "debug",
   "environment",
@@ -27,14 +27,13 @@ const SAFE_MEMBERS = new Set([
   "parse",
 ]);
 
-/** Why a plugin's results aren't kept on disk. */
-type Off =
+type CacheOffReason =
   | "native-config-loader"
   | "no-config-file"
   | "no-lockfile"
   | "unreadable-inline-config";
 
-const OFF_REASONS: Record<Off, string> = {
+const CACHE_OFF_REASONS: Record<CacheOffReason, string> = {
   "native-config-loader":
     "Vite's native config loader doesn't report every file the config imports",
   "no-config-file":
@@ -52,7 +51,7 @@ function isMember<TContext extends object>(
   return property in context;
 }
 
-/** `context`, recording in `reads` the first member it is asked for outside `SAFE_MEMBERS`. Methods are bound to `context`, so its private fields keep working. */
+/** Methods are bound to `context`, so its private fields keep working. */
 function guarded<TContext extends object>(
   context: TContext,
   reads: string[]
@@ -78,7 +77,7 @@ function guarded<TContext extends object>(
   });
 }
 
-/** The options passed to Vite itself, eg `vite build --base x`, as text. JSON leaves out functions; plugins and the logger can't be compared either. */
+/** JSON leaves out functions; plugins and the logger can't be compared either. */
 function inlineTextOf(inline: InlineConfig): string | undefined {
   try {
     return JSON.stringify({
@@ -87,7 +86,6 @@ function inlineTextOf(inline: InlineConfig): string | undefined {
       plugins: undefined,
     });
   } catch {
-    // A cycle or a bigint.
     return undefined;
   }
 }
@@ -138,7 +136,6 @@ function cached(plugin: Plugin): Plugin {
   }
 
   const { name } = plugin;
-  // Each hook in object form, so its options, eg `filter` and `order`, carry over.
   const buildEnd = isFunction(plugin.buildEnd)
     ? { handler: plugin.buildEnd }
     : plugin.buildEnd;
@@ -148,7 +145,7 @@ function cached(plugin: Plugin): Plugin {
   const transform = isFunction(plugin.transform)
     ? { handler: plugin.transform }
     : plugin.transform;
-  // One per Vite environment, opened by its first transform. Keyed by the environment itself, since one plugin object can serve several builds.
+  // Keyed by the environment object, not its name: one plugin object can serve several builds.
   const caches = new Map<Environment, Promise<PluginCache | undefined>>();
   const codeKeys = new Map<string, Promise<string | undefined>>();
   const warned = new Set<string>();
@@ -167,7 +164,9 @@ function cached(plugin: Plugin): Plugin {
     return await code;
   }
 
-  async function partsOf(config: ResolvedConfig): Promise<KeyParts | Off> {
+  async function partsOf(
+    config: ResolvedConfig
+  ): Promise<KeyParts | CacheOffReason> {
     const { configFile, configFileDependencies, inlineConfig } = config;
 
     if (configFile === undefined) {
@@ -205,7 +204,7 @@ function cached(plugin: Plugin): Plugin {
     const parts = await partsOf(config);
 
     if (isString(parts)) {
-      warn(logger, parts, `${OFF_REASONS[parts]}, so nothing is cached`);
+      warn(logger, parts, `${CACHE_OFF_REASONS[parts]}, so nothing is cached`);
 
       return undefined;
     }
@@ -231,11 +230,7 @@ function cached(plugin: Plugin): Plugin {
     return await cache;
   }
 
-  /** Saves and lets go of the environment's cache. A failed build saves nothing, so a half-built graph prunes nothing. */
-  async function close(
-    environment: Environment,
-    error: Error | undefined
-  ): Promise<void> {
+  async function close(environment: Environment): Promise<void> {
     // Dev runs `buildEnd` for the client only, when the server closes.
     const closing =
       environment.config.command === "serve"
@@ -246,10 +241,7 @@ function cached(plugin: Plugin): Plugin {
       closing.map(async (closed) => {
         const cache = await caches.get(closed);
         caches.delete(closed);
-
-        if (error === undefined) {
-          await cache?.save();
-        }
+        await cache?.save();
       })
     );
   }
@@ -260,7 +252,7 @@ function cached(plugin: Plugin): Plugin {
     buildEnd: {
       ...buildEnd,
       async handler(error) {
-        await close(this.environment, error);
+        await close(this.environment);
         await buildEnd?.handler.call(this, error);
       },
     },
