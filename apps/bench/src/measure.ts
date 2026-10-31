@@ -3,9 +3,8 @@ import path from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 
-import type { build as buildVelite } from "velite";
 import { build, createServer, isRunnableDevEnvironment } from "vite";
-import type { Plugin, RunnableDevEnvironment } from "vite";
+import type { RunnableDevEnvironment } from "vite";
 
 import { SCENARIOS } from "./fixtures.ts";
 import type { Scenario } from "./fixtures.ts";
@@ -55,66 +54,6 @@ function assertEntry(module: unknown): asserts module is { default: Post[] } {
   }
 }
 
-/** Velite has no Vite plugin; its docs run `build()` next to the dev server, which this does from `buildStart`. */
-function velitePlugin(velite: typeof buildVelite, dev: boolean): Plugin {
-  let started: Promise<unknown> | undefined;
-
-  return {
-    async buildStart() {
-      // No `clean`: a cold run already starts without `.velite`, and a warm one keeps it, as for the others.
-      started ??= velite({ logLevel: "silent", watch: dev });
-      await started;
-    },
-    name: "velite",
-  };
-}
-
-/** Imports only `tool`'s modules, inside the timed run, as a real `vite build` loads its config's plugins. */
-async function pluginsFor(
-  tool: Tool,
-  scenario: Scenario,
-  dev: boolean
-): Promise<Plugin[]> {
-  switch (tool) {
-    case "tomekit": {
-      if (scenario !== "mdx") {
-        const { tomekit } = await import("tomekit/vite");
-        return [tomekit()];
-      }
-
-      const [{ default: mdx }, { default: remarkFrontmatter }, { tomekit }] =
-        await Promise.all([
-          import("@mdx-js/rollup"),
-          import("remark-frontmatter"),
-          import("tomekit/vite"),
-        ]);
-
-      // tomekit leaves compiling MDX to the bundler, as its docs set it up.
-      const compileMdx: Plugin = {
-        enforce: "pre",
-        ...mdx({ remarkPlugins: [remarkFrontmatter] }),
-      };
-
-      return [compileMdx, tomekit()];
-    }
-
-    case "content-collections": {
-      const { default: contentCollections } =
-        await import("@content-collections/vite");
-      return [contentCollections()];
-    }
-
-    case "velite": {
-      const { build: velite } = await import("velite");
-      return [velitePlugin(velite, dev)];
-    }
-
-    default: {
-      throw new TypeError(`unknown tool ${String(tool)}`);
-    }
-  }
-}
-
 /** tomekit's builds that started after `since`, when `TOMEKIT_PROFILE` is set. */
 function profilesSince(since: number): BuildProfile[] {
   return performance
@@ -128,10 +67,11 @@ function profilesSince(since: number): BuildProfile[] {
     );
 }
 
-async function measureBuild(tool: Tool, scenario: Scenario): Promise<Result> {
+async function measureBuild(tool: Tool): Promise<Result> {
   const outDir = path.resolve("dist", tool);
   const start = performance.now();
 
+  // Each tool's config loads inside the timer, as a real `vite build` loads it and its plugins.
   await build({
     build: {
       emptyOutDir: true,
@@ -139,9 +79,8 @@ async function measureBuild(tool: Tool, scenario: Scenario): Promise<Result> {
       outDir,
       ssr: `entry-${tool}.ts`,
     },
-    configFile: false,
+    configFile: path.resolve(`vite.config.${tool}.ts`),
     logLevel: "silent",
-    plugins: await pluginsFor(tool, scenario, false),
     publicDir: false,
     root: process.cwd(),
   });
@@ -206,9 +145,8 @@ async function measureDev(tool: Tool, scenario: Scenario): Promise<Result> {
 
   const server = await createServer({
     appType: "custom",
-    configFile: false,
+    configFile: path.resolve(`vite.config.${tool}.ts`),
     logLevel: "silent",
-    plugins: await pluginsFor(tool, scenario, true),
     root: process.cwd(),
     server: { middlewareMode: true },
   });
@@ -276,7 +214,7 @@ async function measure(
 
   return mode === "dev"
     ? await measureDev(tool, scenario)
-    : await measureBuild(tool, scenario);
+    : await measureBuild(tool);
 }
 
 const [tool = "", mode = "", scenario = ""] = process.argv.slice(2);
