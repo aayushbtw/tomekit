@@ -1,5 +1,15 @@
 # tomekit
 
+## 0.9.0
+
+### Minor Changes
+
+- Add `cached(plugin)` to `tomekit/vite`. It keeps what a Vite plugin's transform returns for each file in `.tomekit/cache/plugins`, so the next build or dev server reuses unchanged results. Wrapping `@mdx-js/rollup` takes a warm build of 1,000 posts from about 1.05 s to 0.55 s, with identical output.
+
+### Patch Changes
+
+- Build and update content faster. `directory()` lists `**/*.<ext>` files without `fs.glob`, skips file stats in a one-off build, and in dev skips rehashing files that didn't change. A dev update at 1,000 files goes from 66 ms to 48 ms.
+
 ## 0.8.1
 
 ### Patch Changes
