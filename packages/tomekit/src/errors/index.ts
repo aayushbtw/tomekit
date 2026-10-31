@@ -6,6 +6,8 @@ export { ConfigLoadError } from "./config-load-error";
 
 export { ContentError, type ContentSubject, type Issue } from "./content-error";
 
+export { DuplicateCachedPluginError } from "./duplicate-cached-plugin-error";
+
 export { InvalidConfigError } from "./invalid-config-error";
 
 export { MisplacedModuleError } from "./misplaced-module-error";
@@ -27,6 +29,8 @@ export { TransformError } from "./transform-error";
 export { TransformMetadataError } from "./transform-metadata-error";
 
 export { TransformResultError } from "./transform-result-error";
+
+export { UncacheablePluginError } from "./uncacheable-plugin-error";
 
 export { UnknownTransformFieldError } from "./unknown-transform-field-error";
 

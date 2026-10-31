@@ -5,6 +5,7 @@ import {
   ConfigError,
   ConfigLoadError,
   ContentError,
+  DuplicateCachedPluginError,
   InvalidConfigError,
   MissingDefaultExportError,
   MissingPluginError,
@@ -13,6 +14,7 @@ import {
   TomekitError,
   TransformError,
   TransformResultError,
+  UncacheablePluginError,
   UnknownTransformFieldError,
   UnserializableInstanceError,
   UnserializableValueError,
@@ -32,6 +34,8 @@ describe("errors", () => {
       [new UnknownTransformFieldError("url"), TransformError],
       [new MissingPluginError("tomekit/content"), PluginError],
       [new PluginNotReadyError(), PluginError],
+      [new UncacheablePluginError("paths"), PluginError],
+      [new DuplicateCachedPluginError("@mdx-js/rollup"), PluginError],
     ] as const;
 
     for (const [error, category] of cases) {

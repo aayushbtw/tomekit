@@ -53,6 +53,8 @@ Every error is a class exported from `tomekit`, so check it with `instanceof`:
 | `TransformError` | `TomekitError` | The base of errors from `transform`, set as a `ContentError`'s `cause` |
 | `PluginError` | `TomekitError` | The base of errors from the Vite plugin |
 | `MissingPluginError` | `PluginError` | `tomekit/content` is imported without the `tomekit()` plugin or `tomekit/register` |
+| `UncacheablePluginError` | `PluginError` | `cached()` gets something other than one plugin with a `transform` hook |
+| `DuplicateCachedPluginError` | `PluginError` | Two plugins wrapped in `cached()` have the same name (see [MDX](/mdx#two-mdx-setups)) |
 
 Vite wraps errors thrown by plugins and keeps the originals under `errors`:
 

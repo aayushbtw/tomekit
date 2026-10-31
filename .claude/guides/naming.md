@@ -20,7 +20,7 @@ One word per concept, used everywhere that concept appears: code, generated type
 | A reference to a module in a document's body, eg a compiled MDX file, imported on demand. The document holds its path | **module** | `fileModule()`, `FileModule`, `Module<TExports>`, `importModule`, `tomekit/content-modules` |
 | Where one build's time went, printed when `TOMEKIT_PROFILE` is set. Split into **stages** (run one after another, add up to the build) and **phases** (steps inside `collections`, summed over entries) | **profile** | `TOMEKIT_PROFILE`, `Profile`, `Build.profile`, the `tomekit` performance measure, `apps/bench` `profile.ts` |
 | A metadata field that holds slugs of a collection, checked after every collection loads | **reference** | config `references`, `WithReferences`, `reference.ts` |
-| Transform results kept between builds and processes, keyed by each entry's hash and by what the transform's code depends on | **cache** | `.tomekit/cache/`, `EntryCache`, `cache.ts` (`cacheKey`, `codeKey`, `readCache`, `writeCache`), "Caching" in the docs |
+| Transform results kept between builds and processes, keyed by each entry's hash, or each file's code for a Vite plugin, and by what the transform's code depends on | **cache** | `.tomekit/cache/`, `EntryCache`, `cache.ts` (`cacheKey`, `codeKey`, `readCache`, `writeCache`), `cached()` and `.tomekit/cache/plugins/` (`cached.ts`, `PluginCache` in `plugin-cache.ts`), "Caching" in the docs |
 
 ## Reading
 

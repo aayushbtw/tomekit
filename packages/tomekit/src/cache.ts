@@ -498,4 +498,4 @@ async function writeCache(
   await replaceFile(file, JSON.stringify(contents));
 }
 
-export { cacheKey, codeKey, readCache, writeCache };
+export { cacheKey, codeKey, hashOf, readCache, writeCache };

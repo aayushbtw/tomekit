@@ -285,3 +285,5 @@ function tomekit({
 }
 
 export { tomekit, type TomekitOptions };
+
+export { cached } from "./cached";
