@@ -98,12 +98,20 @@ const EXTENSION_GLOB = /^\*\*\/\*(?<ending>\.[\w.-]+)$/u;
 // Like Node's glob, which lowercases both sides on macOS.
 const IGNORES_CASE = process.platform === "darwin";
 
+const [NODE_MAJOR = 0, NODE_MINOR = 0] = process.versions.node
+  .split(".")
+  .map(Number);
+
+// Node's glob entered some symlinked folders before 24.22, which the walk doesn't. Drop once `engines` is >=24.22.
+const GLOB_SKIPS_LINKED_FOLDERS =
+  NODE_MAJOR >= 26 || (NODE_MAJOR === 24 && NODE_MINOR >= 22);
+
 function endingsOf(include: readonly string[]): string[] | undefined {
   const endings = include.map(
     (pattern) => EXTENSION_GLOB.exec(pattern)?.groups?.ending
   );
 
-  return endings.every(isString)
+  return endings.length > 0 && endings.every(isString)
     ? endings.map((ending) => (IGNORES_CASE ? ending.toLowerCase() : ending))
     : undefined;
 }
@@ -184,7 +192,9 @@ async function filesIn(
 ): Promise<string[]> {
   // The walk builds `/` paths and has no `!` patterns, which `fs.glob` also applies to folders.
   const endings =
-    process.platform === "win32" || exclude.length > 0
+    process.platform === "win32" ||
+    exclude.length > 0 ||
+    !GLOB_SKIPS_LINKED_FOLDERS
       ? undefined
       : endingsOf(include);
 
@@ -397,7 +407,7 @@ function directory(
 
       const located = foundFiles(absolute, root, found);
 
-      // Only dev loads again in the same process, so a build skips the stats the cache needs.
+      // Only dev loads again: `vite build --watch` never reruns `load`. Gate on rebuilding once it does.
       const results = dev
         ? await cache.results(root, located, profile)
         : await Promise.all(
@@ -424,8 +434,8 @@ function directory(
     },
   };
 
-  // On `load`, not the loader, so a wrapper that replaces `load` drops it.
-  Object.assign(loader.load, { [STABLE_ENTRIES]: true });
+  // On `load`, not the loader, so a wrapper that replaces `load` drops it; not enumerable, so copying `load`'s properties drops it too.
+  Object.defineProperty(loader.load, STABLE_ENTRIES, { value: true });
 
   return loader;
 }
