@@ -8,6 +8,28 @@ on:
     paths-ignore: [apps/**]
 
 jobs:
+  changesets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Every feat or fix to tomekit adds a changeset
+        env:
+          RANGE: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || format('{0}..{1}', github.event.before, github.sha) }}
+        run: |
+          missing=0
+          for commit in $(git rev-list --no-merges "$RANGE"); do
+            subject="$(git log -1 --format=%s "$commit")"
+            [[ "$subject" =~ ^(feat|fix)(\(.*\))?!?: ]] || continue
+            git diff-tree --no-commit-id --name-only -r "$commit" -- packages/tomekit/src | grep -q . || continue
+            if ! git diff-tree --no-commit-id --name-only -r --diff-filter=A "$commit" -- .changeset | grep -q '\.md$'; then
+              echo "::error::${commit:0:7} \"$subject\" changes packages/tomekit/src without a .changeset/*.md. Add one with \`changeset add\`, or \`changeset add --empty\` if users can't notice it."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
   check:
     runs-on: ubuntu-latest
     steps:

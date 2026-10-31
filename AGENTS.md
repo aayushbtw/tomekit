@@ -46,3 +46,9 @@ Read the one that applies before starting. All are in `.claude/guides/`:
 - `roadmap.md`: what's next
 
 Record a new decision there, and a new rule or name in the guides, not here.
+
+## Mistakes made before
+
+| Rule | Enforced by |
+| --- | --- |
+| A `feat` or `fix` to `packages/tomekit/src` adds a changeset in that commit | `changesets` job in `ci.yml` |
