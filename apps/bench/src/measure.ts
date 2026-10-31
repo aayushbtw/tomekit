@@ -3,11 +3,7 @@ import path from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 
-import contentCollections from "@content-collections/vite";
-import mdx from "@mdx-js/rollup";
-import remarkFrontmatter from "remark-frontmatter";
-import { tomekit } from "tomekit/vite";
-import { build as velite } from "velite";
+import type { build as buildVelite } from "velite";
 import { build, createServer, isRunnableDevEnvironment } from "vite";
 import type { Plugin, RunnableDevEnvironment } from "vite";
 
@@ -60,7 +56,7 @@ function assertEntry(module: unknown): asserts module is { default: Post[] } {
 }
 
 /** Velite has no Vite plugin; its docs run `build()` next to the dev server, which this does from `buildStart`. */
-function velitePlugin(dev: boolean): Plugin {
+function velitePlugin(velite: typeof buildVelite, dev: boolean): Plugin {
   let started: Promise<unknown> | undefined;
 
   return {
@@ -73,12 +69,25 @@ function velitePlugin(dev: boolean): Plugin {
   };
 }
 
-function pluginsFor(tool: Tool, scenario: Scenario, dev: boolean): Plugin[] {
+/** Imports only `tool`'s modules, inside the timed run, as a real `vite build` loads its config's plugins. */
+async function pluginsFor(
+  tool: Tool,
+  scenario: Scenario,
+  dev: boolean
+): Promise<Plugin[]> {
   switch (tool) {
     case "tomekit": {
       if (scenario !== "mdx") {
+        const { tomekit } = await import("tomekit/vite");
         return [tomekit()];
       }
+
+      const [{ default: mdx }, { default: remarkFrontmatter }, { tomekit }] =
+        await Promise.all([
+          import("@mdx-js/rollup"),
+          import("remark-frontmatter"),
+          import("tomekit/vite"),
+        ]);
 
       // tomekit leaves compiling MDX to the bundler, as its docs set it up.
       const compileMdx: Plugin = {
@@ -90,11 +99,14 @@ function pluginsFor(tool: Tool, scenario: Scenario, dev: boolean): Plugin[] {
     }
 
     case "content-collections": {
+      const { default: contentCollections } =
+        await import("@content-collections/vite");
       return [contentCollections()];
     }
 
     case "velite": {
-      return [velitePlugin(dev)];
+      const { build: velite } = await import("velite");
+      return [velitePlugin(velite, dev)];
     }
 
     default: {
@@ -129,7 +141,7 @@ async function measureBuild(tool: Tool, scenario: Scenario): Promise<Result> {
     },
     configFile: false,
     logLevel: "silent",
-    plugins: pluginsFor(tool, scenario, false),
+    plugins: await pluginsFor(tool, scenario, false),
     publicDir: false,
     root: process.cwd(),
   });
@@ -196,7 +208,7 @@ async function measureDev(tool: Tool, scenario: Scenario): Promise<Result> {
     appType: "custom",
     configFile: false,
     logLevel: "silent",
-    plugins: pluginsFor(tool, scenario, true),
+    plugins: await pluginsFor(tool, scenario, true),
     root: process.cwd(),
     server: { middlewareMode: true },
   });
