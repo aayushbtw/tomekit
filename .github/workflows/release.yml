@@ -65,9 +65,6 @@ jobs:
       # Trusted Publishing needs npm 11.5.1 or later.
       - run: npm install -g npm@latest
         if: steps.version.outputs.published != 'true'
-      # npm drops a bin whose file is missing, and checks before prepublishOnly builds.
-      - run: vp run --filter tomekit build
-        if: steps.version.outputs.published != 'true'
       # prepublishOnly runs vp check, vp test and vp pack first.
       - run: npm publish
         if: steps.version.outputs.published != 'true'

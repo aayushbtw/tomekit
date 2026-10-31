@@ -16,7 +16,7 @@
     "url": "git+https://github.com/aayushbtw/tomekit.git"
   },
   "bin": {
-    "tomekit": "./dist/bin.mjs"
+    "tomekit": "dist/bin.mjs"
   },
   "files": [
     "dist"
