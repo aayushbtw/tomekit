@@ -5,7 +5,7 @@ import path from "node:path";
 import type { WatchTarget } from "./builder";
 
 /** Collects changes this long before reporting them, so a save that touches several files rebuilds once. */
-const SETTLE_MS = 20;
+const SETTLE_MS = 5;
 
 const DOT_SEGMENT = /(?:^|[\\/])\./u;
 
