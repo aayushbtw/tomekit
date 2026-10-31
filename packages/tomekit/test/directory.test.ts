@@ -56,6 +56,22 @@ describe(directory, () => {
     ]);
   });
 
+  it("gives each file's path from the root, however the folder is written", async () => {
+    const root = await project({
+      "content/posts/nested/a.md": "---\ntitle: A\n---\n",
+    });
+
+    const { documents } = await loadCollection(
+      "posts",
+      defineCollection({ ...posts, loader: directory("./content/posts/") }),
+      root
+    );
+
+    expect(outputs(documents)).toMatchObject([
+      { file: { path: "content/posts/nested/a.md" }, slug: "nested/a" },
+    ]);
+  });
+
   it("uses a frontmatter slug over the file name", async () => {
     const root = await project({
       "content/posts/2026-03-27-hello.md":

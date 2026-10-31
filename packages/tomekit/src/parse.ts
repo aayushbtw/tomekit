@@ -320,7 +320,7 @@ function parse({ file, filePath, text: raw }: ParseInput): ParseResult {
       metadata: isPlainObject(metadata) ? metadata : {},
       slug: isSlug(slug)
         ? slug
-        : file.split(path.sep).join("/").replace(EXTENSION, ""),
+        : file.replaceAll(path.sep, "/").replace(EXTENSION, ""),
     },
   };
 }

@@ -139,16 +139,42 @@ async function versionOf(file: string): Promise<string | undefined> {
   }
 }
 
-async function read(
+/** A file `filesIn` found, by its path relative to the folder, relative to the root, and absolute. */
+interface FoundFile {
+  absolute: string;
+  file: string;
+  filePath: string;
+}
+
+/** What `path.join` and `path.relative` give for each file, with those calls made once per folder. */
+function foundFiles(
   absolute: string,
   root: string,
-  file: string,
+  files: readonly string[]
+): FoundFile[] {
+  const folder = absolute.endsWith(path.sep) ? absolute : absolute + path.sep;
+  const relative = path.relative(root, absolute);
+  const prefix =
+    relative === "" || relative.endsWith(path.sep)
+      ? relative
+      : relative + path.sep;
+
+  return files.map((file) => ({
+    absolute: folder + file,
+    file,
+    // A folder outside the root can hold the root, where `path.relative` drops the `../`.
+    filePath: relative.startsWith("..")
+      ? path.relative(root, folder + file)
+      : prefix + file,
+  }));
+}
+
+async function read(
+  { absolute, file, filePath }: FoundFile,
   profile?: PhaseRecorder
 ): Promise<FileResult> {
-  const filePath = path.relative(root, path.join(absolute, file));
-
   try {
-    const text = await readFile(path.join(absolute, file), "utf-8");
+    const text = await readFile(absolute, "utf-8");
 
     const parsed = timed(profile, "parse", () =>
       parse({ file, filePath, text })
@@ -176,19 +202,18 @@ class ParseCache {
   #results = new Map<string, { result: FileResult; version: string }>();
 
   async results(
-    absolute: string,
     root: string,
-    files: readonly string[],
+    files: readonly FoundFile[],
     profile?: PhaseRecorder
   ): Promise<FileResult[]> {
     const next = new Map<string, { result: FileResult; version: string }>();
 
     const results = await Promise.all(
       files.map(async (file) => {
-        const version = await versionOf(path.join(absolute, file));
+        const version = await versionOf(file.absolute);
 
         // With the root, since one loader can load from several roots and `filePath` is relative to it.
-        const key = `${root}\0${path.join(absolute, file)}`;
+        const key = `${root}\0${file.absolute}`;
         const cached = this.#results.get(key);
 
         if (version !== undefined && cached?.version === version) {
@@ -198,7 +223,7 @@ class ParseCache {
           return cached.result;
         }
 
-        const result = await read(absolute, root, file, profile);
+        const result = await read(file, profile);
 
         // A read error is not cached, so the next load tries again.
         if (version !== undefined && result.entry !== undefined) {
@@ -285,11 +310,13 @@ function directory(
         };
       }
 
+      const located = foundFiles(absolute, root, found);
+
       // Only dev loads again in the same process, so a build skips the stats the cache needs.
       const results = dev
-        ? await cache.results(absolute, root, found, profile)
+        ? await cache.results(root, located, profile)
         : await Promise.all(
-            found.map(async (file) => await read(absolute, root, file, profile))
+            located.map(async (file) => await read(file, profile))
           );
 
       const entries: Entry<FileInfo>[] = [];
