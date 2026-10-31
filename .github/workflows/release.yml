@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths: [packages/tomekit/package.json]
+    paths: [packages/tomekit/package.json, .github/workflows/release.yml]
 
 concurrency:
   group: release
@@ -29,9 +29,13 @@ jobs:
         run: |
           version="$(node -p "require('./packages/tomekit/package.json').version")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          if npm view "tomekit@$version" version | grep -q .; then
-            echo "published=true" >> "$GITHUB_OUTPUT"
-          fi
+          # Not npm view: it errors in the repo root, whose devEngines asks for pnpm.
+          status="$(curl -s -o /dev/null -w '%{http_code}' "https://registry.npmjs.org/tomekit/$version")"
+          case "$status" in
+            200) echo "published=true" >> "$GITHUB_OUTPUT" ;;
+            404) ;;
+            *) echo "npm registry returned $status for tomekit@$version"; exit 1 ;;
+          esac
           if gh release view "v$version" > /dev/null 2>&1; then
             echo "released=true" >> "$GITHUB_OUTPUT"
           fi
@@ -60,6 +64,9 @@ jobs:
           run-install: true
       # Trusted Publishing needs npm 11.5.1 or later.
       - run: npm install -g npm@latest
+        if: steps.version.outputs.published != 'true'
+      # npm drops a bin whose file is missing, and checks before prepublishOnly builds.
+      - run: vp run --filter tomekit build
         if: steps.version.outputs.published != 'true'
       # prepublishOnly runs vp check, vp test and vp pack first.
       - run: npm publish
