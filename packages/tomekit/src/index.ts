@@ -375,19 +375,18 @@ type ReferencePath<
     ? {
         [TKey in keyof TMetadata & string]-?: TKey extends `${string}.${string}`
           ? never
-          :
-              | ([
-                  Extract<ItemOf<NonNullable<TMetadata[TKey]>>, string>,
-                ] extends [never]
-                  ? never
-                  : TKey)
-              | `${TKey}.${ReferencePath<
-                  Exclude<
-                    Extract<ItemOf<NonNullable<TMetadata[TKey]>>, object>,
-                    BuiltIn | URL
-                  >,
-                  [...TDepth, 0]
-                >}`;
+          : | ([Extract<ItemOf<NonNullable<TMetadata[TKey]>>, string>] extends [
+                never,
+              ]
+                ? never
+                : TKey)
+            | `${TKey}.${ReferencePath<
+                Exclude<
+                  Extract<ItemOf<NonNullable<TMetadata[TKey]>>, object>,
+                  BuiltIn | URL
+                >,
+                [...TDepth, 0]
+              >}`;
       }[keyof TMetadata & string]
     : never;
 
