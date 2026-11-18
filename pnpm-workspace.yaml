@@ -25,16 +25,6 @@ peerDependencyRules:
   allowedVersions:
     vitest: "*"
 minimumReleaseAgeExclude:
-  - "@voidzero-dev/vite-plus-core@1.1.0"
-  - "@voidzero-dev/vite-plus-darwin-arm64@1.1.0"
-  - "@voidzero-dev/vite-plus-darwin-x64@1.1.0"
-  - "@voidzero-dev/vite-plus-linux-arm64-gnu@1.1.0"
-  - "@voidzero-dev/vite-plus-linux-arm64-musl@1.1.0"
-  - "@voidzero-dev/vite-plus-linux-x64-gnu@1.1.0"
-  - "@voidzero-dev/vite-plus-linux-x64-musl@1.1.0"
-  - "@voidzero-dev/vite-plus-win32-arm64-msvc@1.1.0"
-  - "@voidzero-dev/vite-plus-win32-x64-msvc@1.1.0"
-  - vite-plus@1.1.0
   - "@tanstack/intent@0.5.5"
   - "@tanstack/react-start-rsc@0.1.63"
   - "@tanstack/react-start-server@1.167.50"
